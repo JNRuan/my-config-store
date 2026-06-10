@@ -1,6 +1,6 @@
 ---
 name: pr-summary
-description: Generate concise PR summaries. Use when the user asks for a PR summary, PR description, wants to create a PR, or says things like "give me a pr summary", "summarize changes", "write a PR description", or "create a PR". Also trigger when the user asks to commit and push with a PR.
+description: Generate concise PR summaries. Use when the user asks for a PR summary or PR description, or says things like "give me a pr summary" or "write a PR description". Drafts the summary text only — it does not create the PR.
 ---
 
 # PR Summary
@@ -13,10 +13,10 @@ Generate a concise pull request summary by analyzing the current branch's change
 
 Before reading commits or diffs, verify the repository in the same execution context/tool that will run the git commands:
 
-1. Run `pwd`, `git rev-parse --show-toplevel`, `git rev-parse --abbrev-ref HEAD`, and `git remote -v`
+1. Run `git rev-parse --show-toplevel && git branch --show-current && git remote -v` in a single call
 2. Confirm the repo root, branch, and remote match the user's intended project
 3. If any value looks wrong, stop and ask the user before generating a summary
-4. For tools that may run from a different default cwd, prefix every git command with `cd <verified-repo-root> && ...`
+4. For tools that may run from a different default cwd, run every git command as `git -C <verified-repo-root> ...`
 
 Do not trust the chat/session cwd alone. The command runner's cwd is the source of truth.
 
@@ -24,7 +24,7 @@ Do not trust the chat/session cwd alone. The command runner's cwd is the source 
 
 1. Determine the base branch from PR metadata/upstream when available; otherwise default to `main`
 2. Run `git log <base>..HEAD --oneline` to see all commits
-3. Run `git diff <base>..HEAD` to read the actual diff — understand what changed, not just which files
+3. Run `git diff <base>...HEAD` to read the actual diff — understand what changed, not just which files. Three dots diffs from the merge-base, matching GitHub's PR view. For large PRs, run with `--stat` first, then read the full diff.
 4. Read changed files for additional context if the diff alone doesn't tell the full story
 5. Check `git status --short` separately and distinguish uncommitted working-tree changes from the PR branch
 
@@ -45,7 +45,7 @@ If `<base>..HEAD` has no commits or diff, do not invent a PR summary from unrela
 
 ## Test plan
 
-<Checklist of how to verify the changes, tick any already done if known>
+<Checklist of how to verify the changes. Only tick items that were actually run and verified in this session>
 ```
 
 ## PR title guidelines
@@ -68,4 +68,10 @@ If `<base>..HEAD` has no commits or diff, do not invent a PR summary from unrela
 
 ## Output format
 
-Always write the summary to `/tmp/pr-summary-{branch-slug}.md` using the Write tool (e.g. `/tmp/pr-summary-fix-auth-flow.md`). Then tell the user to copy it with `pbcopy < /tmp/pr-summary-{branch-slug}.md`. This ensures clean formatting when pasted into GitHub's PR editor, which breaks when copying from inline code blocks.
+Always write the summary to `/tmp/pr-summary-{branch-slug}.md` using the Write tool (e.g. `/tmp/pr-summary-fix-auth-flow.md`). Then copy it to the clipboard with the platform's tool:
+
+- macOS: `pbcopy < <file>`
+- Linux (Wayland): `wl-copy < <file>`, (X11): `xclip -selection clipboard < <file>`
+- Windows/WSL: `clip.exe < <file>`
+
+If no clipboard tool is available, skip copying and give the user the file path and copy command instead. Copying from the file (not from an inline code block) ensures clean formatting when pasted into GitHub's PR editor.

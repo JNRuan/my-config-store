@@ -1,6 +1,6 @@
 ---
 name: conventional-commit
-description: "Workflow for generating conventional commit messages. Used to create standardized, descriptive commit messages in line with the Conventional Commits specification, including instructions, examples, and validation."
+description: "Format git commit messages using the Conventional Commits standard — type prefixes like feat/fix/chore, with optional scope. Use when drafting, rewriting, or suggesting commit messages in projects whose git log uses type prefixes. Counterpart to scoped-commit: if the project's log shows bare scopes with no types, use that skill instead."
 ---
 
 ## Workflow
@@ -11,14 +11,29 @@ ask which to include and wait for an answer.
 
 **Follow these steps:**
 
-1. Run `git status` and `git diff --cached` to inspect what the user has staged.
-2. Read the staged diff to draft a succinct and simple commit message.
-3. Construct your commit message using the structure described below for coventional comits.
-4. Run the commit:
+1. Run `git status`, `git log --oneline -15`, and `git diff --cached --stat` to inspect what is staged and learn the project's existing commit conventions (types and scopes in use).
+2. Read the full staged diff (`git diff --cached`) to draft a succinct and simple commit message.
+3. Construct your commit message using the structure described below for conventional commits.
+4. Run the commit. Most commits need only the single-line form:
 
 ```bash
 git commit -m "type(scope): description"
 ```
+
+Add the optional body/footer(s) only when the subject line can't carry the why — use a heredoc so blank lines and quoting survive:
+
+```bash
+git commit -m "$(cat <<'EOF'
+type(scope): description
+
+Optional body explaining why, wrapped at ~72 chars.
+
+Refs: #123
+EOF
+)"
+```
+
+5. Verify with `git log -1` — pre-commit hooks can rewrite or reject the message.
 
 ## Conventional Commit Structure
 
@@ -37,7 +52,7 @@ The commit contains the following structural elements, to communicate intent to 
 1. `fix:` a commit of the type `fix` patches a bug in your codebase (this correlates with PATCH in Semantic Versioning).
 2. `feat:` a commit of the type `feat` introduces a new feature to the codebase (this correlates with MINOR in Semantic Versioning).
 3. `BREAKING CHANGE:` a commit that has a footer `BREAKING CHANGE:`, or appends a `!` after the type/scope, introduces a breaking API change (correlating with MAJOR in Semantic Versioning). A BREAKING CHANGE can be part of commits of any type.
-4. types other than `fix:` and `feat:` are allowed, for example `build:`, `chore:`, `ci:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, `packages:`, and others as long as they have semantic meaning for the codebase.
+4. types other than `fix:` and `feat:` are allowed, for example `build:`, `chore:`, `ci:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, and others as long as they have semantic meaning for the codebase.
 5. footers other than `BREAKING CHANGE:` may be provided and follow a convention similar to git trailer format.
 
 Additional types are not mandated by the Conventional Commits specification, and have no implicit effect in Semantic Versioning (unless they include a BREAKING CHANGE). A scope may be provided to a commit's type, to provide additional contextual information and is contained within parenthesis, e.g., `feat(parser): add ability to parse arrays`.
@@ -99,21 +114,17 @@ Refs: #123
 Ticket: ABC-123
 ```
 
-## Specification
+## Formatting rules
+
+Distilled from the Conventional Commits spec — the rules that matter when writing a message.
 
 1. Commits MUST be prefixed with a type, which consists of a noun, `feat`, `fix`, etc., followed by the OPTIONAL scope, OPTIONAL `!`, and REQUIRED terminal colon and space.
-2. The type `feat` MUST be used when a commit adds a new feature to your application or library.
-3. The type `fix` MUST be used when a commit represents a bug fix for your application.
-4. A scope MAY be provided after a type. A scope MUST consist of a noun describing a section of the codebase surrounded by parenthesis, e.g., `fix(parser):`
-5. A description MUST immediately follow the colon and space after the type/scope prefix. The description is a short summary of the code changes, e.g., fix: array parsing issue when multiple spaces were contained in string.
-6. A longer commit body MAY be provided after the short description, providing additional contextual information about the code changes. The body MUST begin one blank line after the description.
-7. A commit body is free-form and MAY consist of any number of newline separated paragraphs.
-8. One or more footers MAY be provided one blank line after the body. Each footer MUST consist of a word token, followed by either a `: ` or ` #` separator, followed by a string value (this is inspired by the git trailer convention).
-9. A footer's token MUST use `-` in place of whitespace characters, e.g., `Acked-by` (this helps differentiate the footer section from a multi-paragraph body). An exception is made for `BREAKING CHANGE`, which MAY also be used as a token.
-10. A footer's value MAY contain spaces and newlines, and parsing MUST terminate when the next valid footer token/separator pair is observed.
-11. Breaking changes MUST be indicated in the type/scope prefix of a commit, or as an entry in the footer.
-12. If included as a footer, a breaking change MUST consist of the uppercase text BREAKING CHANGE, followed by a colon, space, and description, e.g., BREAKING CHANGE: environment variables now take precedence over config files.
-13. If included in the type/scope prefix, breaking changes MUST be indicated by a `!` immediately before the `:`. If `!` is used, `BREAKING CHANGE:` MAY be omitted from the footer section, and the commit description SHALL be used to describe the breaking change.
-14. Types other than `feat` and `fix` MAY be used in your commit messages, e.g., docs: update ref docs.
-15. The units of information that make up Conventional Commits MUST NOT be treated as case-sensitive by implementors, with the exception of BREAKING CHANGE which MUST be uppercase.
-16. BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in a footer.
+2. A scope MAY be provided after a type. A scope MUST consist of a noun describing a section of the codebase surrounded by parenthesis, e.g., `fix(parser):`
+3. A description MUST immediately follow the colon and space after the type/scope prefix. The description is a short summary of the code changes, e.g., fix: array parsing issue when multiple spaces were contained in string.
+4. A longer commit body MAY be provided after the short description, providing additional contextual information about the code changes. The body MUST begin one blank line after the description.
+5. A commit body is free-form and MAY consist of any number of newline separated paragraphs.
+6. One or more footers MAY be provided one blank line after the body. Each footer MUST consist of a word token, followed by either a `: ` or ` #` separator, followed by a string value (this is inspired by the git trailer convention).
+7. A footer's token MUST use `-` in place of whitespace characters, e.g., `Acked-by` (this helps differentiate the footer section from a multi-paragraph body). An exception is made for `BREAKING CHANGE`, which MAY also be used as a token.
+8. Breaking changes MUST be indicated in the type/scope prefix of a commit, or as an entry in the footer.
+9. If included as a footer, a breaking change MUST consist of the uppercase text BREAKING CHANGE, followed by a colon, space, and description, e.g., BREAKING CHANGE: environment variables now take precedence over config files.
+10. If included in the type/scope prefix, breaking changes MUST be indicated by a `!` immediately before the `:`. If `!` is used, `BREAKING CHANGE:` MAY be omitted from the footer section, and the commit description SHALL be used to describe the breaking change.

@@ -1,6 +1,6 @@
 ---
 name: scoped-commit
-description: Format git commit messages using the Scoped Commits standard. Use when drafting, rewriting, or suggesting commit messages. Deliberately NOT Conventional Commits — no type prefixes (feat/fix/chore).
+description: Format git commit messages using the Scoped Commits standard. Use when drafting, rewriting, or suggesting commit messages. Deliberately NOT Conventional Commits — no type prefixes (feat/fix/chore). Counterpart to conventional-commit: if the project's log uses type prefixes, use that skill instead.
 ---
 # Scoped Commits
 
@@ -12,14 +12,29 @@ You need to **Commit exactly what the user staged or asked to commit.** When sco
 
 **Follow these steps:**
 
-1. Run `git status` and `git diff --cached` to inspect what the user has staged.
-2. Read the staged diff to draft a succinct and simple commit message.
+1. Run `git status`, `git log --oneline -15`, and `git diff --cached --stat` to inspect what is staged and learn the project's existing scope names and style.
+2. Read the full staged diff (`git diff --cached`) to draft a succinct and simple commit message.
 3. Construct your commit message as per conventions described for scoped commits.
-4. Run the commit:
+4. Run the commit. Most commits need only the single-line form:
 
 ```bash
 git commit -m "scope: description"
 ```
+
+Add the optional body/trailer(s) only when the subject line can't carry the why — use a heredoc so blank lines and quoting survive:
+
+```bash
+git commit -m "$(cat <<'EOF'
+scope: description
+
+Optional body explaining why, wrapped at ~72 chars.
+
+TICKET-123
+EOF
+)"
+```
+
+5. Verify with `git log -1` — pre-commit hooks can rewrite or reject the message.
 
 ## Format
 
@@ -31,7 +46,7 @@ git commit -m "scope: description"
 [optional trailer(s)]
 ```
 
-- **scope** — the subsystem, area, or module touched (e.g., `auth`, `net/http`, `i2c: virtio`, `app`, `all`, `packages`)
+- **scope** — the subsystem, area, or module touched (e.g., `auth`, `net/http`, `i2c: virtio`, `global`, `packages`)
 - **description** — short, clear summary of the change
 - **body** — *why* this change, not *what*; wrap at ~72 chars
 - **trailers** — metadata: `TICKET-123`, `Co-authored-by`, `BREAKING:`, etc.
@@ -42,7 +57,7 @@ git commit -m "scope: description"
   - One subsystem → use it (`auth`, `compiler`, `cli`)
   - Nested path → include parents for clarity: `i2c: virtio: ...` (Linux style)
   - Two clear scopes → comma-separated: `cli, config: ...`
-  - Many areas, no clear primary → `all`, or `global`
+  - Many areas, no clear primary → `global`
   - Pure revert/merge/fixup → freeform, follow project style
 2. **Write the description**:
   - Imperative mood ("add", not "added")
@@ -92,13 +107,7 @@ requests, with a soft bump to 20 once a valid session exists.
 TICKET-4821
 ```
 
-App wide:
-
-```
-app: bump minimum Node version to 20
-```
-
-Global:
+Repo-wide:
 
 ```
 global: bump minimum Node version to 20
@@ -114,9 +123,9 @@ packages: xwayland: 24.1.11 -> 24.1.12
 
 - **Don't use Conventional Commits types** (`feat:`, `fix:`, `chore:`, `refactor:`). Scoped Commits deliberately omits them — the scope is the only prefix.
 - **Don't make the body a rephrasing of the subject** — body is for *why* and context.
-- **Don't over-nest the scope** — two levels is usually enough. `auth/oauth` is fine; `auth/oauth/google/handlers/login` is too much.
+- **Don't over-nest the scope** — two levels is usually enough. `auth: oauth:` is fine; `auth: oauth: google: handlers: login:` is too much. A path scope like `net/http` is a single scope naming a package, not nesting.
 - **Don't pad the description** — "fixed a bug in the authentication system" should be `auth: fix login bug`.
-- **Don't auto-derive a changelog from the log** — different audiences, different formats. See Keep a Changelog guidance.
+- **Don't auto-derive a changelog from the log** — different audiences, different formats.
 - **Multi-scope is a last resort** — if you can find a unifying general scope, use that.
 - **Defer to the project's existing style** for case, nesting depth, and trailer placement.
 
