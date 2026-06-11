@@ -1,6 +1,6 @@
 ---
 name: scoped-commit
-description: Format git commit messages using the Scoped Commits standard. Use when drafting, rewriting, or suggesting commit messages. Deliberately NOT Conventional Commits — no type prefixes (feat/fix/chore). Counterpart to conventional-commit: if the project's log uses type prefixes, use that skill instead.
+description: "Format git commit messages using the Scoped Commits standard. Use when drafting, rewriting, or suggesting commit messages. Deliberately NOT Conventional Commits — no type prefixes (feat/fix/chore). Counterpart to conventional-commit: if the project's log uses type prefixes, use that skill instead."
 ---
 # Scoped Commits
 
