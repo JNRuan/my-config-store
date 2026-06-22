@@ -1,0 +1,114 @@
+" VIM CONFIG
+
+" Disable compatibility with vi which can cause unexpected issues.
+set nocompatible
+
+" File type detection
+filetype on
+filetype plugin on
+filetype indent on
+
+" Editor options
+syntax on
+set number
+" set cursorline
+set cursorcolumn
+set mouse=a
+" tabs
+set shiftwidth=4
+set tabstop=4
+set expandtab
+set autoindent
+" don't save backups
+set nobackup
+" limit N lines cursor can scroll off lines
+set scrolloff=10
+set nowrap
+" incremental highlight on search
+set incsearch
+" ignore case on search
+set ignorecase
+" override if searching for capital letters
+set smartcase
+" show partial commands
+set showcmd
+set showmode
+" highlight when searching
+set hlsearch
+set history=1000
+" auto complete menu
+set wildmenu
+set wildmode=list:longest
+set wildignore=*.docx,*.jpg,*.png,*.gif,*.pdf,*.pyc,*.exe,*.flv,*.img,*.xlsx
+
+" PLUGINS ---------------------------------------------------------------- {{{
+
+call plug#begin('~/.vim/plugged')
+
+Plug 'preservim/nerdtree'
+Plug 'EdenEast/nightfox.nvim'
+
+call plug#end()
+
+" }}}
+
+
+" MAPPINGS --------------------------------------------------------------- {{{
+
+" NERDTree specific mappings.
+" Map the F3 key to toggle NERDTree open and close.
+nnoremap <F3> :NERDTreeToggle<cr>
+
+" }}}
+
+
+" VIMSCRIPT -------------------------------------------------------------- {{{
+
+" This will enable code folding.
+" Use the marker method of folding.
+augroup filetype_vim
+    autocmd!
+    autocmd FileType vim setlocal foldmethod=marker
+augroup END
+
+" If the current file type is HTML, set indentation to 2 spaces.
+autocmd Filetype html setlocal tabstop=2 shiftwidth=2 expandtab
+
+" If Vim version is equal to or greater than 7.3 enable undofile.
+" This allows you to undo changes to a file even after saving it.
+if version >= 703
+    set undodir=~/.vim/backup
+    set undofile
+    set undoreload=10000
+endif
+
+" You can split a window into sections by typing `:split` or `:vsplit`.
+" Display cursorline and cursorcolumn ONLY in active window.
+augroup cursor_off
+    autocmd!
+    autocmd WinLeave * set nocursorline nocursorcolumn
+    autocmd WinEnter * set cursorline cursorcolumn
+augroup END
+
+
+" }}}
+
+
+" STATUS LINE ------------------------------------------------------------ {{{
+
+" Clear status line when vimrc is reloaded.
+set statusline=
+
+" Status line left side.
+set statusline+=\ %F\ %M\ %Y\ %R
+
+" Use a divider to separate the left side from the right side.
+set statusline+=%=
+
+" Status line right side.
+set statusline+=\ ascii:\ %b\ hex:\ 0x%B\ row:\ %l\ col:\ %c\ percent:\ %p%%
+
+" Show the status on the second to last line.
+set laststatus=2
+
+" }}}

@@ -1,0 +1,263 @@
+{
+  "$schema": "https://unpkg.com/@aliou/pi-guardrails@0.12.1/schema.json",
+  "applyBuiltinDefaults": true,
+  "version": "0.9.0-20260327",
+  "onboarding": {
+    "completed": true,
+    "completedAt": "2026-05-05T03:17:30.097Z",
+    "version": "0.9.0-20260327"
+  },
+  "features": {
+    "pathAccess": true
+  },
+  "pathAccess": {
+    "mode": "ask",
+    "allowedPaths": [
+      "/dev/null",
+      "/dev/stdin",
+      "/dev/stdout",
+      "/dev/stderr",
+      "/dev/tty",
+      "/dev/zero",
+      "/dev/random",
+      "/dev/urandom",
+      "/tmp/",
+      "/private/tmp/",
+      "/var/folders/",
+      "~/.agents/",
+      "~/.bun/install/global/node_modules/",
+      "~/.claude/",
+      "~/.nvm/versions/node/",
+      "~/.pi/"
+    ]
+  },
+  "permissionGate": {
+    "patterns": [
+      {
+        "pattern": "DROP DATABASE",
+        "description": "SQL database drop"
+      },
+      {
+        "pattern": "DROP TABLE",
+        "description": "SQL table drop"
+      },
+      {
+        "pattern": "aws ec2 terminate-instances",
+        "description": "AWS EC2 instance termination"
+      },
+      {
+        "pattern": "aws iam",
+        "description": "AWS IAM permission changes"
+      },
+      {
+        "pattern": "aws s3 rm",
+        "description": "AWS S3 object deletion"
+      },
+      {
+        "pattern": "brew",
+        "description": "Homebrew package manager"
+      },
+      {
+        "pattern": "docker compose down",
+        "description": "Docker Compose service teardown"
+      },
+      {
+        "pattern": "docker inspect",
+        "description": "Docker inspect (may expose env vars)"
+      },
+      {
+        "pattern": "docker rm",
+        "description": "Docker container removal"
+      },
+      {
+        "pattern": "docker rmi",
+        "description": "Docker image removal"
+      },
+      {
+        "pattern": "docker system prune",
+        "description": "Docker system cleanup"
+      },
+      {
+        "pattern": "git push --force",
+        "description": "Git force push"
+      },
+      {
+        "pattern": "npm publish",
+        "description": "NPM package publishing"
+      },
+      {
+        "pattern": "pnpm publish",
+        "description": "PNPM package publishing"
+      },
+      {
+        "pattern": "sudo",
+        "description": "Superuser command"
+      },
+      {
+        "pattern": "terraform apply",
+        "description": "Terraform infrastructure changes"
+      },
+      {
+        "pattern": "terraform destroy",
+        "description": "Terraform infrastructure destruction"
+      },
+      {
+        "pattern": "terraform import",
+        "description": "Terraform resource import"
+      },
+      {
+        "pattern": "yarn publish",
+        "description": "Yarn package publishing"
+      }
+    ]
+  },
+  "policies": {
+    "rules": [
+      {
+        "id": "certificate-files",
+        "name": "Certificates",
+        "description": "Block certificate and key files",
+        "patterns": [
+          {
+            "pattern": "*.crt"
+          },
+          {
+            "pattern": "*.key"
+          },
+          {
+            "pattern": "*.p12"
+          }
+        ],
+        "allowedPatterns": [
+          {
+            "pattern": "*.csr"
+          }
+        ],
+        "protection": "noAccess",
+        "onlyIfExists": true,
+        "enabled": true
+      },
+      {
+        "id": "database-files",
+        "name": "Database files",
+        "description": "Protect database files from modification",
+        "patterns": [
+          {
+            "pattern": "*.db"
+          },
+          {
+            "pattern": "*.sqlite"
+          },
+          {
+            "pattern": "*.sqlite3"
+          }
+        ],
+        "protection": "readOnly",
+        "onlyIfExists": true,
+        "enabled": true
+      },
+      {
+        "id": "home-aws",
+        "name": "AWS directory",
+        "description": "Block access to AWS credentials and configuration",
+        "patterns": [
+          {
+            "pattern": "~/.aws/**"
+          }
+        ],
+        "protection": "noAccess",
+        "onlyIfExists": true,
+        "enabled": true
+      },
+      {
+        "id": "home-ssh",
+        "name": "SSH directory",
+        "description": "Block access to SSH configuration and keys, except public keys",
+        "patterns": [
+          {
+            "pattern": "~/.ssh/**"
+          }
+        ],
+        "allowedPatterns": [
+          {
+            "pattern": "*.pub"
+          }
+        ],
+        "protection": "noAccess",
+        "onlyIfExists": true,
+        "enabled": true
+      },
+      {
+        "id": "log-files",
+        "name": "Log files",
+        "description": "Treat log files as read-only",
+        "patterns": [
+          {
+            "pattern": "*.log"
+          },
+          {
+            "pattern": "*.out"
+          }
+        ],
+        "protection": "readOnly",
+        "onlyIfExists": true,
+        "enabled": true
+      },
+      {
+        "id": "pi-agent-auth",
+        "name": "Pi agent auth",
+        "description": "Block access to Pi agent authentication data",
+        "patterns": [
+          {
+            "pattern": "~/.pi/agent/auth.json"
+          }
+        ],
+        "protection": "noAccess",
+        "onlyIfExists": true,
+        "enabled": true
+      },
+      {
+        "id": "secret-files",
+        "name": "Secret files",
+        "description": "Block dotenv files and variants",
+        "patterns": [
+          {
+            "pattern": ".env"
+          },
+          {
+            "pattern": ".env.*"
+          },
+          {
+            "pattern": ".dev.vars"
+          }
+        ],
+        "allowedPatterns": [
+          {
+            "pattern": ".env.example"
+          },
+          {
+            "pattern": ".env.sample"
+          },
+          {
+            "pattern": ".env.test"
+          },
+          {
+            "pattern": ".env.local"
+          },
+          {
+            "pattern": "*.example.env"
+          },
+          {
+            "pattern": "*.sample.env"
+          },
+          {
+            "pattern": "*.test.env"
+          }
+        ],
+        "protection": "noAccess",
+        "onlyIfExists": true,
+        "enabled": true
+      }
+    ]
+  }
+}
