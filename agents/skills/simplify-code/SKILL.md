@@ -15,7 +15,7 @@ description: >-
 
 # Simplify Code
 
-`simplify → four cleanup angles → apply the fixes`
+`gather diff → four angles → apply fixes`
 
 Improve the quality of recently changed code without changing its behavior.
 Review the diff for **reuse, simplification, efficiency, and altitude** issues,
@@ -51,18 +51,22 @@ Get the unified diff under review:
   that instead.
 
 Treat this diff as the review scope. Read the enclosing function/file around each
-hunk when context is needed, but do not wander outside the changed code.
+hunk when context is needed. You may search adjacent/shared code to understand
+reuse opportunities, but limit edits to the reviewed diff and what it directly
+touches.
 
 ## Phase 1 — Review (four angles)
 
 Work through the four angles below. **If your harness supports subagents or
 parallel tasks, launch one agent per angle concurrently**, each given the diff
 and a single angle — this isolates context and is faster. **Otherwise, walk the
-four angles sequentially** in a single pass; the findings are identical either
-way.
+four angles sequentially** in a single pass; both should land on the same
+findings.
 
-For each finding, record: `file`, `line`, a one-line `summary`, and the concrete
-**cost** (what is duplicated, wasted, or harder to maintain).
+For each finding, record: `file`, `line`, a one-line `summary`, the concrete
+**cost** (what is duplicated, wasted, or harder to maintain), and a **severity**
+(`low` / `med` / `high`) reflecting how much the issue hurts maintainability —
+use this to prioritize when there are many findings.
 
 ### Reuse
 
@@ -80,10 +84,7 @@ simpler form that does the same job.
 
 Flag wasted work the diff introduces: redundant computation or repeated I/O,
 independent operations run sequentially, blocking work added to startup or hot
-paths. Also flag long-lived objects built from closures or captured environments
-— they keep the entire enclosing scope alive for the object's lifetime (a memory
-leak when that scope holds large values); prefer a class/struct that copies only
-the fields it needs. Name the cheaper alternative.
+paths. Name the cheaper alternative.
 
 ### Altitude
 
@@ -94,15 +95,34 @@ cases.
 
 ## Phase 2 — Apply the fixes
 
-Collect all findings, dedup any that point at the same line or mechanism, and fix
-each remaining one directly. **Skip** any finding whose fix would:
+Collect all findings, dedup any that point at the same line or mechanism, and
+resolve conflicts between angles (see below) before fixing. Fix each remaining
+one directly. **Skip** any finding whose fix would:
 
 - change intended behavior,
 - require changes well outside the reviewed diff, or
 - that you judge to be a false positive.
 
-Note the skip rather than arguing with it. Finish with a brief summary of what
-was fixed and what was skipped (or confirm the code was already clean).
+Note the skip rather than arguing with it.
+
+**Resolving inter-angle conflicts.** Two angles can point at the same code with
+different fixes — e.g. Reuse says call an existing helper, Altitude says that
+helper is the wrong abstraction and the underlying mechanism should be
+generalized. When this happens, review both against the actual code and pick the
+single most correct fix; do not apply both. Note the tension and your reasoning
+in the summary.
+
+After applying the fixes, if the project has fast tests, a type-check, or lint
+covering the touched code, run them to confirm behavior is preserved. If none
+exist, say so in the summary rather than claiming verification you didn't do.
+Finally, inspect the resulting `git diff` and confirm the patch contains only
+behavior-preserving simplifications within scope.
+
+Leave changes uncommitted for the user to review — do not amend, commit, or
+push automatically unless explicitly told to.
+
+Finish with a brief summary of what was fixed and what was skipped (or confirm
+the code was already clean).
 
 ## Rules
 
@@ -113,3 +133,6 @@ was fixed and what was skipped (or confirm the code was already clean).
 - **Stay in scope.** Limit changes to the reviewed diff and what it directly
   touches; don't opportunistically refactor unrelated code.
 - **Don't argue with skips.** Record them and move on.
+- **Don't touch generated or machine-managed files.** Skip generated code,
+  vendored dependencies, lockfiles, and migration snapshots — they aren't meant
+  for hand-editing even if they appear in the diff.
