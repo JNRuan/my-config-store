@@ -1,11 +1,13 @@
 ---
-name: pr-summary
-description: Generate concise PR summaries. Use when the user asks for a PR summary or PR description, or says things like "give me a pr summary" or "write a PR description". Drafts the summary text only — it does not create the PR.
+name: pr-create
+description: Draft a PR description and open the pull request via `gh`. Use when the user asks to create/open a PR, or to write a PR description or summary. Opens the PR by default; if the user asks for a summary or description *only*, it drafts the text without creating the PR.
 ---
 
-# PR Summary
+# PR Create
 
-Generate a concise pull request summary by analyzing the current branch's changes against the base branch.
+Draft a pull request description from the current branch's changes and open the PR — unless the user asks for the description only.
+
+By default this skill opens the PR. If the user asks for a "summary only", "description only", or "don't open the PR", stop after producing the text (see [Summary-only mode](#summary-only-mode)).
 
 ## How to gather context
 
@@ -15,10 +17,20 @@ Before reading commits or diffs, verify the repository in the same execution con
 
 1. Run `git rev-parse --show-toplevel && git branch --show-current && git remote -v` in a single call
 2. Confirm the repo root, branch, and remote match the user's intended project
-3. If any value looks wrong, stop and ask the user before generating a summary
+3. If any value looks wrong, stop and ask the user before continuing
 4. For tools that may run from a different default cwd, run every git command as `git -C <verified-repo-root> ...`
 
 Do not trust the chat/session cwd alone. The command runner's cwd is the source of truth.
+
+### Repository PR template
+
+Before choosing a structure, check whether the repo defines its own PR template:
+
+- `.github/PULL_REQUEST_TEMPLATE.md` or `.github/pull_request_template.md`
+- `PULL_REQUEST_TEMPLATE.md` at the repo root or under `docs/`
+- multiple templates under `.github/PULL_REQUEST_TEMPLATE/`
+
+If one exists, fill it in and follow its sections instead of the default structure below. If several exist, pick the best fit for the change or ask the user. If none exists, use the default structure.
 
 ### Branch diff
 
@@ -32,12 +44,16 @@ If `<base>..HEAD` has no commits or diff, do not invent a PR summary from unrela
 
 ## Summary structure
 
-```
-# <PR title — short, under 70 characters, imperative mood>
+Use this when the repo has no PR template of its own. The PR **title** is separate from the body — it goes in GitHub's title field, so don't repeat it as a heading inside the body.
 
+```
 ## Summary
 
 <1-3 paragraphs max describing the PURPOSE of the PR — why it exists, what goal it achieves. Prefer one paragraph where possible. This frames the motivation, not the implementation.>
+
+## Impact
+
+<Include only if the change affects existing behaviour: breaking changes — removed/renamed exports, changed API or schema shapes, migrations, behavioural shifts that affect consumers. Lead with the most disruptive item.>
 
 ## Changes
 
@@ -47,6 +63,8 @@ If `<base>..HEAD` has no commits or diff, do not invent a PR summary from unrela
 
 <Checklist of how to verify the changes. Only tick items that were actually run and verified in this session>
 ```
+
+Treat the structure as flexible, not fixed: include a section only if it helps the reviewer understand or verify the change, and drop any that would be empty or just restate what's already clear (e.g. omit Impact when nothing breaks, omit per-area grouping on a single-area PR).
 
 ## PR title guidelines
 
@@ -58,7 +76,7 @@ If `<base>..HEAD` has no commits or diff, do not invent a PR summary from unrela
 ## Writing principles
 
 - Summary paragraphs are about intent — what problem is being solved or what goal is being achieved. "Overhauls the blog to support category browsing and improve discoverability" is good. "Added filters, changed routing, updated SEO" is bad — that's just restating the bullets.
-- If the change breaks existing consumers — removed exports, changed API shapes, renamed public interfaces — lead with that in the Summary.
+- If the change breaks existing consumers — removed exports, changed API shapes, renamed public interfaces — lead with that in the Impact section, and flag it in the Summary.
 - Open directly with what the change does — the PR is already the context.
 - Write in plain prose. Let the content carry weight, not decoration.
 - Lead with the change, not the file. "Statically generated category routes with client-side filtering via react-query" adds useful context. "Updated `[[...slug]].tsx`" does not.
@@ -66,12 +84,26 @@ If `<base>..HEAD` has no commits or diff, do not invent a PR summary from unrela
 - Prefer one strong sentence over two weak ones. If a bullet needs a second line, the first line wasn't direct enough.
 - Prefer concise sentences or bullet points only, verbosity makes it hard to quickly understand the PR.
 
-## Output format
+## Creating the PR
 
-Always write the summary to `/tmp/pr-summary-{branch-slug}.md` using the Write tool (e.g. `/tmp/pr-summary-fix-auth-flow.md`). Then copy it to the clipboard with the platform's tool:
+This is the default. Write the body to `/tmp/pr-body-{branch-slug}.md` using the Write tool (e.g. `/tmp/pr-body-fix-auth-flow.md`), then:
 
-- macOS: `pbcopy < <file>`
-- Linux (Wayland): `wl-copy < <file>`, (X11): `xclip -selection clipboard < <file>`
-- Windows/WSL: `clip.exe < <file>`
+1. **Ensure the branch is pushed.** If it has no upstream, push it: `git -C <root> push -u origin HEAD`.
+2. **Check for an existing PR** for this branch: `gh pr view --json number,url 2>/dev/null`.
+   - **None** → open it: `gh pr create --base <base> --title "<title>" --body-file <body-file>`
+   - **Exists** → update its title and body instead of creating a duplicate: `gh pr edit --title "<title>" --body-file <body-file>`
+3. Report the PR URL.
+
+If `gh` is not installed or not authenticated, stop and report it, then fall back to Summary-only mode so the work isn't lost.
+
+## Summary-only mode
+
+If the user asked for the description/summary only, run no `gh` create/edit commands. Instead:
+
+- Write the body to `/tmp/pr-body-{branch-slug}.md` using the Write tool.
+- Give the user the title, then copy the body to the clipboard with the platform's tool:
+  - macOS: `pbcopy < <file>`
+  - Linux (Wayland): `wl-copy < <file>`, (X11): `xclip -selection clipboard < <file>`
+  - Windows/WSL: `clip.exe < <file>`
 
 If no clipboard tool is available, skip copying and give the user the file path and copy command instead. Copying from the file (not from an inline code block) ensures clean formatting when pasted into GitHub's PR editor.
