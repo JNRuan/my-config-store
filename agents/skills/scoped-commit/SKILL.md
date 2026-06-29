@@ -27,7 +27,8 @@ Add the optional body/trailer(s) only when the subject line can't carry the why 
 git commit -m "$(cat <<'EOF'
 scope: description
 
-Optional body explaining why, wrapped at ~72 chars.
+- why this change, in bullets (lines wrap at ~72; body ≤500 chars)
+- another distinct point if needed
 
 TICKET-123
 EOF
@@ -47,8 +48,8 @@ EOF
 ```
 
 - **scope** — the subsystem, area, or module touched (e.g., `auth`, `net/http`, `i2c: virtio`, `global`, `packages`)
-- **description** — short, clear summary of the change
-- **body** — *why* this change, not *what*; wrap at ~72 chars
+- **description** — short, clear summary of the change; subject ≤72 chars total
+- **body** — *why* this change, not *what*; bullet points only, ≤500 chars total, grouped under topic subheadings where useful, lines wrapped at ~72
 - **trailers** — metadata: `TICKET-123`, `Co-authored-by`, `BREAKING:`, etc.
 
 ## Procedure
@@ -64,11 +65,12 @@ EOF
   - Lowercase first letter unless project style says otherwise
   - No trailing period
   - Subject line under ~72 chars total
-3. **Add a body only when it earns its place**:
+3. **Add a body only when it earns its place** — bullet points only, no prose:
   - The *why* and trade-offs the subject can't carry
-  - Reference related code, decisions, or constraints
-  - Keep the body short and concise.
-  - Wrap at ~72 chars
+  - **≤500 chars total** — a hard ceiling; cut detail the diff shows or move it to the PR/ticket
+  - Group bullets under topic subheadings where useful; a flat list is fine for one topic
+  - Wrap lines at ~72 chars (width only — a bullet may span several wrapped lines)
+  - Skip the body entirely when the subject says it all
 4. **Add trailers** for non-obvious metadata:
   - Ticket refs: in body or as trailer (`TICKET-123`) — match project preference
   - Co-authors: `Co-authored-by: Name <email>`
@@ -100,9 +102,9 @@ With body and trailer:
 ```
 api: rate-limit /v1/login to 5 req/min
 
-The previous limit of 100 req/min was being abused to enumerate
-credentials. Lowering to 5 req/min per IP for unauthenticated
-requests, with a soft bump to 20 once a valid session exists.
+- 100 req/min was abused to enumerate credentials
+- now 5 req/min per IP for unauthenticated requests
+- soft bump to 20 once a valid session exists
 
 TICKET-4821
 ```

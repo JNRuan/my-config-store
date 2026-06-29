@@ -26,7 +26,8 @@ Add the optional body/footer(s) only when the subject line can't carry the why �
 git commit -m "$(cat <<'EOF'
 type(scope): description
 
-Optional body explaining why, wrapped at ~72 chars.
+- why this change, in bullets (lines wrap at ~72; body ≤500 chars)
+- another distinct point if needed
 
 Refs: #123
 EOF
@@ -56,6 +57,17 @@ The commit contains the following structural elements, to communicate intent to 
 5. footers other than `BREAKING CHANGE:` may be provided and follow a convention similar to git trailer format.
 
 Additional types are not mandated by the Conventional Commits specification, and have no implicit effect in Semantic Versioning (unless they include a BREAKING CHANGE). A scope may be provided to a commit's type, to provide additional contextual information and is contained within parenthesis, e.g., `feat(parser): add ability to parse arrays`.
+
+## Length and body style
+
+Keep messages scannable — no huge subjects, no sprawling bodies.
+
+- **Subject ≤72 chars total** (type + scope + `!` + description). If it won't fit, the commit is probably doing too much — split it.
+- **Body ≤500 chars total** — a hard ceiling. If you're over, cut detail the diff already shows or move it to the PR/ticket.
+- **Body is bullet points only — no prose paragraphs.** Add one only when the subject can't carry the why.
+- **Group bullets under topic subheadings where useful** (e.g. `Behaviour:` / `Cleanup:`); a flat list is fine when there's one topic.
+- **Wrap lines at ~72 chars** — this is line width only; a single bullet may span several wrapped lines.
+- Skip the body entirely when the subject says it all.
 
 ## Examples
 
@@ -99,16 +111,17 @@ docs: correct spelling of CHANGELOG
 feat(lang): add Polish language
 ```
 
-### Commit message with multi-paragraph body and multiple footers
+### Commit message with body grouped under subheadings, and multiple footers
 
 ```
 fix: prevent racing of requests
 
-Introduce a request id and a reference to latest request. Dismiss
-incoming responses other than from latest request.
+Behaviour:
+- add request id + reference to the latest request
+- dismiss incoming responses other than from the latest request
 
-Remove timeouts which were used to mitigate the racing issue but are
-obsolete now.
+Cleanup:
+- remove timeouts that mitigated the race but are now obsolete
 
 Refs: #123
 Ticket: ABC-123
@@ -122,7 +135,7 @@ Distilled from the Conventional Commits spec — the rules that matter when writ
 2. A scope MAY be provided after a type. A scope MUST consist of a noun describing a section of the codebase surrounded by parenthesis, e.g., `fix(parser):`
 3. A description MUST immediately follow the colon and space after the type/scope prefix. The description is a short summary of the code changes, e.g., fix: array parsing issue when multiple spaces were contained in string.
 4. A longer commit body MAY be provided after the short description, providing additional contextual information about the code changes. The body MUST begin one blank line after the description.
-5. A commit body is free-form and MAY consist of any number of newline separated paragraphs.
+5. House style: a commit body, when present, is **bullet points only**, ≤500 chars total, lines wrapped at ~72, grouped under topic subheadings where useful. (The spec allows free-form paragraphs; we don't — see Length and body style.)
 6. One or more footers MAY be provided one blank line after the body. Each footer MUST consist of a word token, followed by either a `: ` or ` #` separator, followed by a string value (this is inspired by the git trailer convention).
 7. A footer's token MUST use `-` in place of whitespace characters, e.g., `Acked-by` (this helps differentiate the footer section from a multi-paragraph body). An exception is made for `BREAKING CHANGE`, which MAY also be used as a token.
 8. Breaking changes MUST be indicated in the type/scope prefix of a commit, or as an entry in the footer.
