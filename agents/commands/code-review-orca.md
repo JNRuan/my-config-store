@@ -107,6 +107,15 @@ Open the synthesis for inline human comment:
 
 crit auto-detects file mode and waits for the human to leave inline comments in the browser. After they finish, read the review file back and report the unresolved comments — that's the human's verdict on the cross-model findings.
 
+## PR Signoff
+
+When you're instructed to post comments on a PR, end each one with a divider followed by the sign-off line:
+
+```markdown
+---
+Reviewed by Claude Opus 4.8 and GPT-5.5 with Orca
+```
+
 ## Rules
 
 - This command coordinates; it does not review. Never substitute a read of the diff for a worker's report — the two spawned workers are the only reviewers.
