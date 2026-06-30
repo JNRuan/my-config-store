@@ -84,6 +84,17 @@ Treat the structure as flexible, not fixed: include a section only if it helps t
 - Prefer one strong sentence over two weak ones. If a bullet needs a second line, the first line wasn't direct enough.
 - Prefer concise sentences or bullet points only, verbosity makes it hard to quickly understand the PR.
 
+## PR signoff
+
+End the PR body with a divider, then a sign-off naming the model you are:
+
+```markdown
+---
+PR created by {model}
+```
+
+Replace `{model}` with your own model name and version (e.g. `Claude Opus 4.8`, `GPT-5.5`) — the skill doesn't know which agent ran it, so you fill it in.
+
 ## Creating the PR
 
 This is the default. Write the body to `/tmp/pr-body-{branch-slug}.md` using the Write tool (e.g. `/tmp/pr-body-fix-auth-flow.md`), then:
