@@ -18,7 +18,7 @@ git --no-pager diff --stat <BASE>...HEAD     # shape of what's being reviewed
 [ -n "$(git diff --name-only <BASE>...HEAD)" ] || { echo "empty diff vs <BASE> — nothing to review"; exit 1; }
 ```
 
-`<REVIEWDIR>` carries the review's start time, so each run is unique and the path **cannot** be recomputed later — capture the literal path printed above and substitute it into every block below, along with the resolved `<BASE>` (the command argument, or `origin/main` if none). The two terminal handles likewise need capturing once Phase 2 returns them. Every run leaves its own folder under `docs/review/`.
+> `<REVIEWDIR>` carries the review's start time, so each run is unique and the path **cannot** be recomputed later — capture the literal path printed above and substitute it into every block below, along with the resolved `<BASE>` (the command argument, or `origin/main` if none). The two terminal handles likewise need capturing once Phase 2 returns them. Every run leaves its own folder under `docs/review/`.
 
 ## Phase 2: Spawn both reviewers via Orca
 
@@ -29,7 +29,7 @@ orca terminal create --worktree current --title "review:claude-opus" \
   --command "claude --model opus --effort high --permission-mode bypassPermissions" --json
 
 orca terminal create --worktree current --title "review:codex-gpt5.5" \
-  --command "codex --model gpt-5.5 -c 'model_reasoning_effort=\"high\"' --ask-for-approval never" --json
+  --command "codex --model gpt-5.5 -c 'model_reasoning_effort=\"high\"' -c 'sandbox_mode=\"workspace-write\"' -c 'sandbox_workspace_write.network_access=true' --ask-for-approval never" --json
 ```
 
 Capture each terminal **handle** from the `--json` response (`.result.terminal.handle`) as `<H_CLAUDE>` and `<H_CODEX>`, then wait for both to finish booting so they can receive a dispatch:
@@ -53,7 +53,7 @@ orca orchestration dispatch --task <T_CLAUDE> --to <H_CLAUDE> --inject --json
 orca orchestration dispatch --task <T_CODEX>  --to <H_CODEX>  --inject --json
 ```
 
-> Both agents run in **visible, interactive tabs** in the **current** worktree against the same `<BASE>`, so they review identical code and you can watch them. Each writes only its own report file — no code edits. `bypassPermissions` (Claude) / `--ask-for-approval never` (Codex) let them run the review and write the report without stalling on a permission prompt; pre-seed a `git`/`Read`/`Write`/`Task` allowlist instead if you'd rather not.
+> Both agents run in **visible, interactive tabs** in the **current** worktree against the same `<BASE>`, so they review identical code and you can watch them.
 
 ## Phase 3: Wait + collect
 
@@ -114,3 +114,4 @@ crit auto-detects file mode and waits for the human to leave inline comments in 
 - Synthesis removes only on the existence check. Never drop a finding for being wrong, weak, or one-model-only — surface it with its attribution and let the human rule.
 - Report honestly: if a worker failed, if a lens is missing, if auth blocked Codex — say so. A single-lens run is not a cross-model run.
 - Read-only end to end. The only writes are the report/synthesis files under `<REVIEWDIR>`.
+
