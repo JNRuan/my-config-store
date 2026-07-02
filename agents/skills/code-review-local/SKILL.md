@@ -104,7 +104,7 @@ Each subagent must return findings with these fields:
 ```
 **Issue 1** - Short name of issue
 **Severity (draft)**: Critical | High | Medium | Low
-**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | Requirements gap | UX/Design
+**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | UX/Design
 **File:** `path:line(s)`
 **Findings:** 
 - Concise statement and list of findings
@@ -118,7 +118,7 @@ Each subagent must return findings with these fields:
 
 ### Subagent failure
 
-If a subagent fails or returns garbage, restart it with the same package — up to 3 failed attempts total. After the third failure, note the gap in the report and proceed with what came back.
+If a subagent fails or returns garbage, restart it with the same package — up to 3 failed attempts total. After the third failure, report it via the Coverage note (see Step 4) and proceed with what came back.
 
 ### What to look for
 
@@ -211,6 +211,12 @@ Always include this subsection.
   > **Tests review** — Skipped (no test files in diff). New production logic added without coverage: `{symbols from Test coverage scout}`. Review recommended.
 - Tests subagent skipped, no new logic either: `Tests review — Skipped (no test files in diff, no new production logic).`
 
+### Coverage note
+
+Include only if a category subagent failed all attempts:
+
+> **Coverage note** — {Category} lens did not complete; this report does not cover {category} concerns.
+
 ### Code Issues
 
 For each surviving finding you must report:
@@ -219,7 +225,7 @@ For each surviving finding you must report:
 **Issue 1** - Short name of issue
 **Severity**: Critical | High | Medium
 **Confidence**: {score/100}
-**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | Requirements gap | UX/Design
+**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | UX/Design
 **File:** `path:line(s)`
 **Findings:** 
 - Concise statement and list of findings
@@ -256,6 +262,8 @@ If none: **NO RECOMMENDATIONS.**
 One line: **Ready to merge** | **Needs work** (medium issues only) | **Blocked** (any critical/high).
 
 ## Example finding
+
+This is a generic example to illustrate the output format only. Base your findings on the actual code reviewed, not on the content of this example.
 
 **Issue 1** - Token refresh race condition
 **Severity:** High
