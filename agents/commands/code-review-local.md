@@ -48,7 +48,7 @@ Each subagent receives:
 Each subagent returns findings with these fields:
 
 - Severity (draft): Critical | High | Medium | Low
-- Category: Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | UX/Design
+- Category: Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap
 - File: `path:line(s)`
 - Finding: concise statement
 - Why: impact; cite CWE/OWASP if security
@@ -70,12 +70,9 @@ Use these as starting points per category, not as exhaustive checklists. The goa
 - Logic errors, edge cases (null/empty, off-by-one, time zones, leap boundaries), unhandled errors
 - Implicit assumptions (ordering, idempotency, availability); invalid state transitions
 - Concurrency: races, deadlocks, check-then-act, shared mutable state escaping sync boundaries
-- Data integrity: partial writes, missing rollbacks, silent truncation, items dropped in transformation
+- Data integrity (logical): silent truncation, items dropped in transformation, partial writes leaving inconsistent state — operational data safety (migrations, destructive ops, rollback paths) is Reliability's
 - Breaking changes: signature/export/API/schema shifts — cross-check against the blast-radius map
 - Hallucinated APIs: fabricated option keys, invented config values, behavior that doesn't match the pinned library version
-- Misleading names: `getX()` that mutates, `validateX()` that writes, `isX()` with side effects
-- Stale comments, docstrings, or doc references that no longer match the code after this change
-- Comment hygiene: flag comments that restate what the code already says or explain "what" instead of "why". Missing comments on self-evident code are NOT a finding.
 
 **Tests**
 
@@ -107,7 +104,7 @@ Use these as starting points per category, not as exhaustive checklists. The goa
 - Silent error swallowing; over-broad catches masking specific failure modes
 - Missing timeouts/retries/circuit breakers on external calls
 - Migrations: reversible, zero-downtime-safe — no NOT NULL without default on large tables, no dropping columns still referenced, no locking backfills
-- Destructive ops without rollback path or explicit "accepted loss" note
+- Destructive ops without rollback path or explicit "accepted loss" note — logical data loss inside transformations is Correctness's
 - Feature flags: safe default to ship; clean up dead branches on removal
 - Observability: if similar paths emit structured logs/metrics/traces, new paths should match — don't prescribe where no pattern exists
 
@@ -116,6 +113,9 @@ Use these as starting points per category, not as exhaustive checklists. The goa
 - Read project conventions: `CLAUDE.md`, `AGENTS.md`, `.claude/rules/`, `` or equivalent
 - Search the codebase for utilities the PR could have reused; flag duplication of an already-solved problem
 - Architecture fit: new global mutable state where scoped alternatives exist, layering bypass (UI → persistence), logic in the wrong module, circular deps introduced by the diff
+- Misleading names: `getX()` that mutates, `validateX()` that writes, `isX()` with side effects
+- Stale comments, docstrings, or doc references that no longer match the code after this change
+- Comment hygiene: flag comments that restate what the code already says or explain "what" instead of "why". Missing comments on self-evident code are NOT a finding.
 
 Wait for all spawned subagents to complete before Phase 3.
 
@@ -161,7 +161,7 @@ For each surviving finding you must report:
 ```
 **Severity**: Critical | High | Medium
 **Confidence**: {score}/100
-**Category**: eg., Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | UX/Design
+**Category**: eg., Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap
 **File**: `path:line(s)`
 **Finding**: concise statement of what's wrong
 **Why**: impact/consequence; cite CWE/OWASP for security
