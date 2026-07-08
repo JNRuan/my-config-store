@@ -9,18 +9,19 @@ description: >-
   diff, branch, or PR before committing. Trigger phrases: "simplify this",
   "clean up the code", "tidy this up", "make it cleaner / simpler", "refactor
   for readability", "reduce complexity", "DRY this up", "polish the diff".
+  Also aligns the diff with project convention files (CLAUDE.md/AGENTS.md).
   Quality only - does NOT hunt for correctness bugs as that is for code
   reviews only.
 ---
 
 # Simplify Code
 
-`gather diff → four angles → apply fixes`
+`gather diff → five angles → apply fixes`
 
 Improve the quality of recently changed code without changing its behavior.
-Review the diff for **reuse, simplification, efficiency, and altitude** issues,
-then fix what you find. This is a quality pass, **not a bug hunt** — behavior
-must be identical before and after.
+Review the diff for **reuse, simplification, efficiency, altitude, and
+conventions** issues, then fix what you find. This is a quality pass, **not a
+bug hunt** — behavior must be identical before and after.
 
 ## Inputs
 
@@ -54,12 +55,12 @@ hunk when context is needed. You may search adjacent/shared code to understand
 reuse opportunities, but limit edits to the reviewed diff and what it directly
 touches.
 
-## Phase 1 — Review (four angles)
+## Phase 1 — Review (five angles)
 
-Work through the four angles below. **If your harness supports subagents or
+Work through the five angles below. **If your harness supports subagents or
 parallel tasks, launch one agent per angle concurrently**, each given the diff
 and a single angle — this isolates context and is faster. **Otherwise, walk the
-four angles sequentially** in a single pass; both should land on the same
+five angles sequentially** in a single pass; both should land on the same
 findings.
 
 For each finding, record: `file`, `line`, a one-line `summary`, the concrete
@@ -83,7 +84,11 @@ simpler form that does the same job.
 
 Flag wasted work the diff introduces: redundant computation or repeated I/O,
 independent operations run sequentially, blocking work added to startup or hot
-paths. Name the cheaper alternative.
+paths. Also flag long-lived objects built from closures or captured
+environments — they keep the entire enclosing scope alive for the object's
+lifetime (a memory leak when that scope holds large values); prefer a
+class/struct that copies only the fields it needs. Name the cheaper
+alternative.
 
 ### Altitude
 
@@ -91,6 +96,20 @@ Check that each change is implemented at the right depth, not as a fragile
 band-aid. Special cases layered on shared infrastructure are a sign the fix isn't
 deep enough — prefer generalizing the underlying mechanism over adding special
 cases.
+
+### Conventions
+
+Find the convention files that govern the changed code: the user-level
+`~/.claude/CLAUDE.md`, the repo-root `CLAUDE.md` or `AGENTS.md`, plus any
+`CLAUDE.md`, `CLAUDE.local.md`, or `AGENTS.md` in a directory that is an
+ancestor of a changed file (a directory's file only applies to files at or
+below it). Read each one that exists, then check the diff for clear violations
+of the rules they state.
+
+Only flag a violation when you can quote the exact rule and the exact line
+that breaks it — no style preferences, no vague "spirit of the doc"
+inferences. In the finding, name the convention file and quote the rule. If no
+convention file applies, return nothing for this angle.
 
 ## Phase 2 — Apply the fixes
 
