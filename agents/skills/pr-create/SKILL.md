@@ -86,14 +86,29 @@ Treat the structure as flexible, not fixed: include a section only if it helps t
 
 ## PR signoff
 
-End the PR body with a divider, then a sign-off naming the model you are:
+Append a sign-off as the final lines of the PR body — a divider, then the model identity:
 
 ```markdown
 ---
 PR created by {model}
 ```
 
-Replace `{model}` with your own model name and version (e.g. `Claude Opus 4.8`, `GPT-5.5`) — the skill doesn't know which agent ran it, so you fill it in.
+**Filling in `{model}` (do this, don't skip):**
+
+- Your exact model name and ID are stated in your own system prompt / environment
+  context (e.g. Claude Code's environment block names the model and its ID). Read your
+  identity from there, not from memory.
+- Format as vendor + human-readable name + version: `Claude Opus 4.8`, `GPT-5.5`,
+  `GLM 5.2`. If your context gives the model but not the vendor, prefix the vendor
+  yourself. If it gives an internal ID only (e.g. `claude-opus-4-8`), convert it to the
+  display name (`Claude Opus 4.8`).
+- Resolve as far down this chain as your context allows, and never invent detail beyond it:
+  1. Vendor + name + version — `Claude Opus 4.8`
+  2. Vendor + family, no version — `Claude Opus`, `GPT-5`
+  3. Nothing determinable — use the literal `an AI agent`
+
+Before running `gh pr create`/`gh pr edit`, confirm the body file ends with this sign-off
+and that `{model}` has been replaced (no literal `{model}` and no invented version remain).
 
 ## Creating the PR
 
