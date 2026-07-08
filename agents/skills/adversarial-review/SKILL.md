@@ -9,7 +9,7 @@ allowed-tools:
 
 # Adversarial Review
 
-Test the current branch against origin/main. Assume bugs exist and hunt for them. Output ONLY concrete, reproducible findings — no summaries, praise, opinions, or process narration.
+Test the current branch against `origin/main` — unless the user specifies a different base ref (e.g. `origin/develop`, a tag, a commit SHA, or a comparison range), in which case use that. Assume bugs exist and hunt for them. Output ONLY concrete, reproducible findings — no summaries, praise, opinions, or process narration.
 
 Your job is to break things, not review code style. You run the code and try to make it fail.
 
@@ -20,9 +20,11 @@ Your job is to break things, not review code style. You run the code and try to 
 
 Run these directly (no subagents):
 
-1. Run `git log --oneline origin/main...HEAD` and `git diff --stat origin/main...HEAD` to understand the shape of the branch.
+Let `BASE` = the user-specified base ref, or `origin/main` if none was given.
 
-2. Run the full diff: `git --no-pager diff --no-color --patch --unified=3 --find-renames=50% origin/main...HEAD`
+1. Run `git log --oneline $BASE...HEAD` and `git diff --stat $BASE...HEAD` to understand the shape of the branch.
+
+2. Run the full diff: `git --no-pager diff --no-color --patch --unified=3 --find-renames=50% $BASE...HEAD`
 
 3. **Map the attack surface**: identify every user-facing path affected — routes, endpoints, forms, buttons, state transitions. Note which are new vs modified. Trace from changed functions to their callers and entry points.
 
@@ -140,35 +142,9 @@ If the same issue recurs, report it once and reference later as "See issue #N".
 If no findings at all, output exactly: **NO ISSUES FOUND. PASS.**
 
 
-## Examples
+## Example finding
 
-These are generic examples to illustrate the output format only.
-
-### Browser Finding
-
-- Severity: High
-- Category: Bug
-- Type: Browser
-- Location: /orders/new
-- Finding: Double-clicking submit creates duplicate orders
-- Reproduction: Navigate to /orders/new, fill valid details, double-click Submit rapidly
-- Expected: One order created, button disabled after first click
-- Actual: Two identical orders with consecutive IDs
-- Evidence: screenshots/double-submit-orders.png
-
-### Code Finding
-
-- Severity: Critical
-- Category: Security
-- Type: Code
-- Location: src/api/orders.ts:47
-- Finding: No authorization check on order retrieval — any authenticated user can access any order by ID
-- Reproduction: Call GET /api/orders/456 as user A (order belongs to user B)
-- Expected: 403 Forbidden
-- Actual: Full order details returned
-- Evidence: Adversarial test output showing 200 response with user B's data
-
-### Test Gap
+This is a generic example to illustrate the output format only.
 
 - Severity: Medium
 - Category: Test gap

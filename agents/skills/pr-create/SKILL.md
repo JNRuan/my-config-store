@@ -82,7 +82,6 @@ Treat the structure as flexible, not fixed: include a section only if it helps t
 - Lead with the change, not the file. "Statically generated category routes with client-side filtering via react-query" adds useful context. "Updated `[[...slug]].tsx`" does not.
 - Include implementation details only when they help explain the change.
 - Prefer one strong sentence over two weak ones. If a bullet needs a second line, the first line wasn't direct enough.
-- Prefer concise sentences or bullet points only, verbosity makes it hard to quickly understand the PR.
 
 ## PR signoff
 

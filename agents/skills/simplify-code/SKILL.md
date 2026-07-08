@@ -19,8 +19,7 @@ description: >-
 
 Improve the quality of recently changed code without changing its behavior.
 Review the diff for **reuse, simplification, efficiency, and altitude** issues,
-then fix what you find. This is a quality pass, **not a bug hunt** — do not look
-for correctness bugs; that belongs to a dedicated code-review skill. Behavior
+then fix what you find. This is a quality pass, **not a bug hunt** — behavior
 must be identical before and after.
 
 ## Inputs

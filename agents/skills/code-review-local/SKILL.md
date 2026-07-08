@@ -14,7 +14,7 @@ As the code reviewer:
 
 ## SCOPE
 - Review the diff holistically. Use per-commit context and commit messages to understand intent.
-- Assume all tests pass and code compiles — the orchestrator runs those separately.
+- Assume all tests pass and code compiles — running them is outside this review.
 - Flag only MEDIUM, HIGH, or CRITICAL severity issues.
 
 **Your focus is what this branch introduces or breaks:**
@@ -39,7 +39,7 @@ Let `BASE` = the user-specified base ref, or `origin/main` if none was given.
 
 Keep it in context — you'll pass it inline to the category review subagents in Step 2.
 
-Then launch these **Explore or Scout subagents in parallel** to scout:
+Then launch these **Explore subagents in parallel** to scout:
 
 ### Scout 1: Blast radius
 - For each function, type, or export that was **modified or removed** in the diff, identify upstream callers and dependents
@@ -93,8 +93,8 @@ Such as `CLAUDE.md`, `AGENTS.md`.
 
 If no concrete issues, return exactly `NO FINDINGS.` Do not pad.
 
-**Additional Information**
-Additional information you deem important for the subagent to know about, concisely.
+**Additional information** (optional)
+Anything else this subagent needs, concisely.
 ```
 
 ### Subagent output
@@ -193,9 +193,7 @@ Across **all surviving findings**:
 
 4. **Consolidate** — merge findings with the same root cause; reference duplicates as "See issue #N." Cross-reference related findings.
 5. **Normalize severity** — adjust draft Severity from subagents based on the full set.
-6. **Drop low severity** - drop any you confirm is Low severity.
-7. **Drop anything below 75** - unless your judgment overrides due to functionality, maintainability, or security.  
-8. **Drop nits** - drop any findings that are nits unless they hinder functionality or maintainability.
+6. **Drop what doesn't earn a place** — Low severity findings, nits, and anything below 75 confidence — unless your judgment overrides for functionality, maintainability, or security.
 
 Subagents proposed; you rule.
 
@@ -238,7 +236,7 @@ For each surviving finding you must report:
 ```
 
 Recurring issue → report once, reference later as "See issue #N".
-Formatting → ensure that there is an empty line between each finding for readability.
+Leave an empty line between findings for readability.
 
 If none survive: **NO CODE ISSUES.**
 
@@ -300,4 +298,3 @@ async function refreshToken() {
 Your role is to observe and report:
 - Your only output is the review report
 - Source code is off-limits — read it, don't change it while you are reviewing
-

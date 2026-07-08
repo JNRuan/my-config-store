@@ -8,7 +8,7 @@ A commit message format that puts the most useful information — *what area of 
 
 ## Workflow
 
-You need to **Commit exactly what the user staged or asked to commit.** When scope is ambiguous (e.g. the user said "commit my changes" with both staged and unstaged work present, or nothing staged), ask which to include and wait for an answer.
+You need to **commit exactly what the user staged or asked to commit.** When scope is ambiguous (e.g. the user said "commit my changes" with both staged and unstaged work present, or nothing staged), ask which to include and wait for an answer.
 
 **Follow these steps:**
 
@@ -49,7 +49,7 @@ EOF
 
 - **scope** — the subsystem, area, or module touched (e.g., `auth`, `net/http`, `i2c: virtio`, `global`, `packages`)
 - **description** — short, clear summary of the change; subject ≤72 chars total
-- **body** — *why* this change, not *what*; bullet points only, ≤500 chars total, grouped under topic subheadings where useful, lines wrapped at ~72
+- **body** — *why* this change, not *what*; bullet points only, ≤500 chars total, grouped under topic subheadings where useful, lines wrapped at ~72 (width only — a bullet may span several wrapped lines)
 - **trailers** — metadata: `TICKET-123`, `Co-authored-by`, `BREAKING:`, etc.
 
 ## Procedure
@@ -64,13 +64,7 @@ EOF
   - Imperative mood ("add", not "added")
   - Lowercase first letter unless project style says otherwise
   - No trailing period
-  - Subject line under ~72 chars total
-3. **Add a body only when it earns its place** — bullet points only, no prose:
-  - The *why* and trade-offs the subject can't carry
-  - **≤500 chars total** — a hard ceiling; cut detail the diff shows or move it to the PR/ticket
-  - Group bullets under topic subheadings where useful; a flat list is fine for one topic
-  - Wrap lines at ~72 chars (width only — a bullet may span several wrapped lines)
-  - Skip the body entirely when the subject says it all
+3. **Add a body only when it earns its place** — the *why* and trade-offs the subject can't carry, following the body rules in Format above. If you're over the ceiling, cut detail the diff shows or move it to the PR/ticket. Skip the body entirely when the subject says it all.
 4. **Add trailers** for non-obvious metadata:
   - Ticket refs: in body or as trailer (`TICKET-123`) — match project preference
   - Co-authors: `Co-authored-by: Name <email>`
@@ -130,4 +124,3 @@ packages: xwayland: 24.1.11 -> 24.1.12
 - **Don't auto-derive a changelog from the log** — different audiences, different formats.
 - **Multi-scope is a last resort** — if you can find a unifying general scope, use that.
 - **Defer to the project's existing style** for case, nesting depth, and trailer placement.
-
