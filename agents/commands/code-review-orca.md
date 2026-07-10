@@ -1,9 +1,9 @@
 ---
-description: Cross-model code review — run /code-review-local in parallel on Claude (Opus) and Codex (GPT-5.5) via Orca, then synthesize and open crit for human comment
+description: Cross-model code review — run /code-review-local in parallel on Claude (Fable) and Codex (GPT-5.6-Sol) via Orca, then synthesize and open crit for human comment. Used for more thorough manually run code reviews.
 ---
 # Cross-Model Code Review
 
-Runs a code review with two different models in parallel: **Claude (Opus, high effort)**, **Codex (GPT5.5, high reasoning effort)** — using **Orca** cli too spawn and supervise both. Then synthesize the two reports into one and hand it to **crit** for human comment.
+Runs a code review with two different models in parallel: **Claude (Fable, high effort)**, **Codex (GPT-5.6-Sol, high reasoning effort)** — using **Orca** cli too spawn and supervise both. Then synthesize the two reports into one and hand it to **crit** for human comment.
 
 `<BASE>` is the ref passed to this command (branch, tag, or SHA), or `origin/main` .
 
@@ -25,11 +25,11 @@ git --no-pager diff --stat <BASE>...HEAD     # shape of what's being reviewed
 Boot each agent **interactively** with its model set at launch, in the current worktree:
 
 ```bash
-orca terminal create --worktree current --title "review:claude-opus" \
-  --command "claude --model opus --effort high --permission-mode bypassPermissions" --json
+orca terminal create --worktree current --title "review:claude-fable" \
+  --command "claude --model fable --effort high --permission-mode bypassPermissions" --json
 
-orca terminal create --worktree current --title "review:codex-gpt5.5" \
-  --command "codex --model gpt-5.5 -c 'model_reasoning_effort=\"high\"' -c 'sandbox_mode=\"workspace-write\"' -c 'sandbox_workspace_write.network_access=true' --ask-for-approval never" --json
+orca terminal create --worktree current --title "review:codex-gpt5.6-sol" \
+  --command "codex --model gpt-5.6-sol -c 'model_reasoning_effort=\"high\"' -c 'sandbox_mode=\"workspace-write\"' -c 'sandbox_workspace_write.network_access=true' --ask-for-approval never" --json
 ```
 
 Capture each terminal **handle** from the `--json` response (`.result.terminal.handle`) as `<H_CLAUDE>` and `<H_CODEX>`, then wait for both to finish booting so they can receive a dispatch:
@@ -113,7 +113,7 @@ When you're instructed to post comments on a PR, end each one with a divider fol
 
 ```markdown
 ---
-Reviewed by Claude Opus 4.8 and GPT-5.5 with Orca
+Reviewed by Claude Fable 5 and GPT-5.6-Sol with Orca
 ```
 
 ## Rules

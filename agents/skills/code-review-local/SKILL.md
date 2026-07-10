@@ -26,6 +26,19 @@ As the code reviewer:
 - Trust the team's formatters, linters, and type checkers for style and static analysis — flagging what they catch creates duplicate noise
 - Trust deliberate lint-ignore / type-ignore comments unless the suppression itself masks a real problem
 
+## Subagent models
+
+When spawning subagents, set model and effort per this table, choosing the column for the harness you are running in:
+
+| Role | Claude | Codex | Other harness |
+|---|---|---|---|
+| Tracing scout — Blast radius (Step 1, Scout 1) | Sonnet, medium effort | gpt-5.6-terra, medium reasoning effort | session default |
+| Retrieval scouts — Patterns, Test coverage (Step 1, Scouts 2–3) | Haiku, medium effort | gpt-5.6-luna, medium reasoning effort | session default |
+| Category reviewers (Step 2) | Opus, high effort | gpt-5.6-sol, high reasoning effort | session default |
+
+- If the harness can't set model or effort per subagent call, spawn with defaults — subagents inherit the session model. This table is an upgrade, not a requirement; never fail a review over it.
+- The verify + consolidate pass (Step 3) is your own context: session model, no override.
+
 ## Step 1: Gather context
 
 Run directly (no subagents):
@@ -39,7 +52,7 @@ Let `BASE` = the user-specified base ref, or `origin/main` if none was given.
 
 Keep it in context — you'll pass it inline to the category review subagents in Step 2.
 
-Then launch these **Explore subagents in parallel** to scout:
+Then launch these **Explore subagents in parallel** to scout (model per the Subagent models table):
 
 ### Scout 1: Blast radius
 - For each function, type, or export that was **modified or removed** in the diff, identify upstream callers and dependents
@@ -58,7 +71,7 @@ Wait for all scouts to complete. Note the highest-risk areas where blast radius 
 
 ## Step 2: Spawn category review subagents
 
-Spawn one subagent per category in parallel. Always spawn Correctness, Security, Reliability, Patterns. Spawn Tests **only if** the diff contains test files.
+Spawn one subagent per category in parallel (model per the Subagent models table). Always spawn Correctness, Security, Reliability, Patterns. Spawn Tests **only if** the diff contains test files.
 
 > **Tool degradation**: if your agentic tool can't spawn parallel subagents, apply the 5 lenses sequentially in your own context using the framing below, then proceed to Step 3.
 
