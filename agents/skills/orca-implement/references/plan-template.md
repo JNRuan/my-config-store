@@ -9,6 +9,8 @@ source: {ref | "ad-hoc"}   # gh-123, lin-abc-123, a file path, or ad-hoc
 base: {base ref}           # the PR's target branch
 base_sha: {pinned SHA}     # what the run branch was created from; all diffs use this
 branch: {captured run branch}   # Orca-derived; captured from the integration worktree
+plan_review_tier: {low | medium | high | xhigh}
+run_complexity: {pending before critique | low | medium | high | xhigh after critique}
 created: {ISO 8601 UTC}    # date -u +%Y-%m-%dT%H:%M:%SZ; update modified on edits
 modified: {ISO 8601 UTC}
 ---
@@ -18,6 +20,17 @@ modified: {ISO 8601 UTC}
 ## Overview
 
 What needs to be built and why, briefly.
+
+## Review Policy
+
+- **Plan-critique cap used**: {1 | 2 | 3, snapshotted before critique}
+- **Run-complexity rationale**: {aggregate risk, blast radius, coupling, failure impact, and observability evidence from the reviewed plan}
+- **Code-review cap**: {pending before critique | 1 | 2 | 3 after critique}
+- **Adversarial QA**: {pending before critique | skip for low/medium | run after all code review for high/xhigh}
+
+Fill the plan-review fields before critique from `references/routing.md`.
+After critique, replace every pending downstream field from canonical
+`run_complexity`. Keep all recorded values synchronized with `run-state.json`.
 
 ## Requirements & Acceptance Criteria
 
@@ -43,10 +56,13 @@ change goes through the coordinator (re-pin), never through a worker.
 
 ## Tasks
 
-Complexity is `low` | `medium` | `high` | `xhigh`, classified with the rubric in
-`references/routing.md`. The `high`/`xhigh` boundary is the nature of the
-remaining work, not size: `high` is heavy but reasonable once the plan pins the
-target; `xhigh` means the remaining reasoning itself is the risk if we get it wrong.
+Each task's complexity is `low` | `medium` | `high` | `xhigh`, classified with
+the task rubric in `references/routing.md`. It routes that task's builder and is
+independent of `plan_review_tier` and `run_complexity`. The `high`/`xhigh`
+boundary is the nature of
+the remaining work, not size: `high` is heavy but reasonable once the plan pins
+the target; `xhigh` means the remaining reasoning itself is the risk if we get
+it wrong.
 
 | seq | slug | deps | complexity | builder | covers |
 |-----|------|------|------------|---------|--------|

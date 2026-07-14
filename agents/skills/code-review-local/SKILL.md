@@ -33,7 +33,7 @@ When spawning subagents, set model and effort per this table, choosing the colum
 | Role | Claude | Codex | Other harness |
 |---|---|---|---|
 | Scouts — Blast radius, Patterns, Test coverage (Step 1) | Sonnet, medium effort | gpt-5.6-luna, high reasoning effort | session default |
-| Category reviewers (Step 2) | Fable, high effort | gpt-5.6-sol, high reasoning effort | session default |
+| Category reviewers (Step 2) | Fable, high effort; if unavailable and the agent is not running, Opus, xhigh effort | gpt-5.6-sol, high reasoning effort | session default |
 
 - If the harness can't set model or effort per subagent call, spawn with defaults — subagents inherit the session model. This table is an upgrade, not a requirement; never fail a review over it.
 - The verify + consolidate pass (Step 3) is your own context: session model, no override.
