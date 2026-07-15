@@ -52,7 +52,7 @@ The coordinator must run inside an Orca-managed terminal. The expected environme
 - `code-review-local` available in both the Claude and Codex skill directories visible to Orca terminals.
 - `agent-browser` available to the coordinator's runtime for browser verification.
 - For `high`/`xhigh` runs, `adversarial-review` and `agent-browser` available in the Codex skill environment visible to Orca terminals.
-- Claude Code and Codex available to boot the routed worker terminals.
+- Claude Code and Codex available through the login-interactive zsh aliases `nclaude` and `ncodex`, backed by the `my-claude` and `my-codex` nono profiles.
 - GitHub tooling available for GitHub intake or PR creation, and a working Linear connection for Linear intake.
 
 Install Orca from its [official repository](https://github.com/stablyai/orca). The upstream project documents desktop downloads and package-manager installation, including:
