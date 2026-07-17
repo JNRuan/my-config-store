@@ -231,8 +231,9 @@ After a successful report, close the QA terminal, remove its worktree by recorde
 
 ```markdown
 ---
-Built with Orca
-Code review: {completed reviewer lenses and rounds only}
+:space_invader: Built with Orca
+Build: {display names of every model that produced or fixed shipped code, deduped; no effort levels}
+Code review: {display names of the reviewer models behind completed lenses, with rounds run; no effort levels}
 ```
 
 5. Teardown, verified **against the manifest**: close every terminal handle recorded in `run-state.json`, remove any remaining task/QA worktrees by recorded id, confirm each is gone. Never sweep unfiltered `terminal list` / `worktree list` output — the runtime is shared. Only the integration worktree survives, kept until the PR merges (`orca worktree rm` is the human's post-merge step, not yours).

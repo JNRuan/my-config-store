@@ -113,7 +113,7 @@ When you're instructed to post comments on a PR, end each one with a divider fol
 
 ```markdown
 ---
-Reviewed by Claude Fable 5 and GPT-5.6-Sol with Orca
+:space_invader: Reviewed by Claude Fable 5 and GPT-5.6-Sol with Orca
 ```
 
 ## Rules

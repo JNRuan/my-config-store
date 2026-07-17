@@ -89,7 +89,7 @@ Append a sign-off as the final lines of the PR body — a divider, then the mode
 
 ```markdown
 ---
-PR created by {model}
+:space_invader: PR created by {model}
 ```
 
 **Filling in `{model}` (do this, don't skip):**
