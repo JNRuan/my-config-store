@@ -119,3 +119,5 @@ of, the opinion freely given.
   authorisation hasn't been given, ask first.
 - **Never install packages without authorisation**: if one would help, recommend it and explain
   why, concisely.
+- **Never delete skills without authorisation**: never remove or mirror-sync over installed
+  skill directories (`~/.agents/skills`, `~/.claude/skills`); sync by copying named items only.
