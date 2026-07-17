@@ -1,6 +1,6 @@
 ---
 name: code-review-local
-description: "Actionable code review of the current branch against a base ref — scout, review across correctness/security/reliability/patterns/tests, verify, and report only confirmed issues. Use when the user asks to review the current branch, review a diff or local changes before a PR, or mentions 'code review', 'review my branch', 'review my changes', or 'code-review-local'."
+description: "Actionable code review of the current branch against a base ref — scout, review across requirements/correctness/security/reliability/patterns/tests, verify, and report only confirmed issues. Use when the user asks to review the current branch, review a diff or local changes before a PR, or mentions 'code review', 'review my branch', 'review my changes', or 'code-review-local'."
 ---
 # Code Review
 
@@ -49,7 +49,12 @@ Let `BASE` = the user-specified base ref, or `origin/main` if none was given.
 
    `git --no-pager diff --no-color --patch -U3 --find-renames=50% $BASE...HEAD`
 
-Keep it in context — you'll pass it inline to the category review subagents in Step 2.
+3. Resolve the **intent source** — what this branch is supposed to accomplish — in priority order:
+   1. Context you already hold: a spec/task/plan file the user pointed to, requirements the user stated when invoking the review, or — if the changes were implemented in this session — the request that drove the implementation
+   2. A spec, task, or plan file the branch itself references (e.g. in commit messages or a tasks/specs directory)
+   3. A PR or issue description, if the branch has one (`gh pr view` — skip quietly if there's no PR)
+
+Keep the diff in context — you'll pass it inline to the category review subagents in Step 2.
 
 Then launch these **Explore subagents in parallel** to scout (model per the Subagent models table):
 
@@ -70,9 +75,9 @@ Wait for all scouts to complete. Note the highest-risk areas where blast radius 
 
 ## Step 2: Spawn category review subagents
 
-Spawn one subagent per category in parallel (model per the Subagent models table). Always spawn Correctness, Security, Reliability, Patterns. Spawn Tests **only if** the diff contains test files.
+Spawn one subagent per category in parallel (model per the Subagent models table). Always spawn Correctness, Reliability, Patterns. Spawn Requirements **only if** Step 1 resolved an intent source — pass it (or its path) in the spawn package. Spawn Security **unless** the diff plainly has no attack surface (no input handling, auth, network calls, dependency changes, or agent/skill/prompt files; e.g., docs-only or pure-rename refactors); when in doubt, spawn it. If you skip Security, record it in the Coverage note (Step 4). Spawn Tests **only if** the diff contains test files.
 
-> **Tool degradation**: if your agentic tool can't spawn parallel subagents, apply the 5 lenses sequentially in your own context using the framing below, then proceed to Step 3.
+> **Tool degradation**: if your agentic tool can't spawn parallel subagents, apply the category lenses sequentially in your own context using the framing below, then proceed to Step 3.
 
 ### Spawn package
 
@@ -80,7 +85,7 @@ Each subagent receives:
 
 ```
 **Role**: 
-You are a specialist code reviewer focused on {category}. Apply the {category} lens to this diff. 
+You are a code reviewer focused on {category}. Apply the {category} lens to this diff. 
 - The 'Review Categories' items are starting points and not exhaustive
 - You should analyse and review the code beyond the list of items where relevant to your review category. 
 - Flag concrete issues you find, on or off the list. 
@@ -116,7 +121,7 @@ Each subagent must return findings with these fields:
 ```
 **Issue 1** - Short name of issue
 **Severity (draft)**: Critical | High | Medium | Low
-**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap
+**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | Requirements gap
 **File:** `path:line(s)`
 **Findings:** 
 - Concise statement and list of findings
@@ -135,6 +140,14 @@ If a subagent fails or returns garbage, restart it with the same package — up 
 ### What to look for
 
 Use these as starting points per category, not as exhaustive checklists. The goal is real issues, not bullet coverage. Flag anything concrete you find, on or off the list.
+
+**Requirements**
+
+- The intent source from Step 1 is the spec. Reflect and determine acceptance criteria, constraints, non-goals.
+  - Missing: acceptance criteria not delivered, or only partially delivered
+  - Unasked: behaviour the spec never asked for — extra features, options, config, endpoints, or speculative abstractions (scope creep)
+  - Wrong: criteria that look implemented but don't hold — trace each acceptance criterion to the code that satisfies it and confirm the behaviour matches
+- Cite the spec line alongside the code reference for each finding
 
 **Correctness**
 
@@ -163,9 +176,7 @@ Use these as starting points per category, not as exhaustive checklists. The goa
 - Secrets in code, insecure defaults, deprecated crypto (MD5, SHA-1, DES, RC4)
 - Information disclosure: PII in logs, stack traces or schema leaking to clients
 - CORS/SSRF/CSRF, missing security headers on new responses
-- Dependencies: known CVEs, typosquats, unpinned versions
 - Agentic (only if PR touches agents/skills/tools/memory/prompts): prompt injection from user-controlled content, unbounded tool allow-lists, memory poisoning, vague agent instructions — reference OWASP Agentic Top 10
-- Cite CWE/OWASP IDs when relevant
 
 **Reliability**
 
@@ -185,12 +196,19 @@ Use these as starting points per category, not as exhaustive checklists. The goa
 - Architecture fit: new global mutable state where scoped alternatives exist, layering bypass (UI → persistence), logic in the wrong module, circular deps introduced by the diff
 - Misleading names: `getX()` that mutates, `validateX()` that writes, `isX()` with side effects
 - Comment hygiene: flag comments or docstrings that are stale or merely restate the code instead of explaining why. Missing comments on self-evident code are NOT a finding.
+- Smell baseline (judgement calls, never hard violations; a documented repo standard overrides them):
+  - Duplicated Code — the same logic shape appears in more than one hunk of the diff → extract the shared shape
+  - Data Clumps — the same few fields or params keep travelling together → bundle them into one type
+  - Primitive Obsession — a primitive or string standing in for a domain concept → give the concept its own type
+  - Repeated Switches — the same switch/if-cascade on the same type recurs across the change → polymorphism, or one map both sites share
+  - Shotgun Surgery — one logical change forced scattered edits across many files → gather what changes together into one module
+  - Speculative Generality — abstraction, parameters, or hooks for needs the task doesn't have → delete; inline until a real need shows
 
 Wait for all spawned subagents to complete before Step 3.
 
 ## Step 3: Verify + Consolidate
 
-You hold all category subagent findings, the full diff, all scout output, and project conventions. Apply the protocol:
+You hold all category subagent findings, the full diff, all scout output, the intent source, and project conventions. Apply the protocol:
 
 For **each finding**:
 
@@ -223,9 +241,11 @@ Always include this subsection.
 
 ### Coverage note
 
-Include only if a category subagent failed all attempts:
+Include only if a category subagent failed all attempts or the Security lens was skipped:
 
 > **Coverage note** — {Category} lens did not complete; this report does not cover {category} concerns.
+
+> **Coverage note** — Security lens skipped: no attack surface in the diff (no input handling, auth, network, dependency, or agent/skill/prompt changes).
 
 ### Code Issues
 
@@ -235,7 +255,7 @@ For each surviving finding you must report:
 **Issue 1** - Short name of issue
 **Severity**: Critical | High | Medium
 **Confidence**: {score/100}
-**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap
+**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | Requirements gap
 **File:** `path:line(s)`
 **Findings:** 
 - Concise statement and list of findings
