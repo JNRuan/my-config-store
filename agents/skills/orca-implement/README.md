@@ -35,7 +35,7 @@ The skill is **not** triggered by a general request to implement, fix, or build 
 6. **Build**: creates an owned task DAG and dispatches workers in parallel Orca worktrees where dependencies allow. Worker routing follows the complexity rubric in [`references/routing.md`](./references/routing.md).
 7. **Verify and integrate**: checks worker commits and reports, runs the required checks, merges valid task branches, and turns failures into worker fix cycles.
 8. **Whole-run verification**: runs the full project checks and headless browser verification for UI changes. Verification failures must be fixed or explicitly recorded as not verified before review.
-9. **Review**: runs the complexity-capped Claude and Codex review loop. Substantive verified review fixes trigger another review round and one post-review verification pass.
+9. **Review**: runs the complexity-capped Claude and Codex review loop. Substantive verified review fixes trigger another review round while under the cap, and one post-review verification pass.
 10. **Final adversarial QA**: after all code-review rounds and fixes finish, runs adversarial QA once for high/xhigh against the latest post-review HEAD. Low/medium skip it without allocating QA resources. Accepted QA fixes apply to the integration branch and rerun their reproductions plus whole-run verification.
 11. **Ship**: commits the run artifacts, pushes only the run branch, and opens a PR. Failed or blocked runs use the abort routine instead.
 
@@ -88,16 +88,18 @@ Each run keeps its audit trail inside the integration worktree at:
 <WT-PATH>/.agents/orca/orchestration/<RUN>/
 ```
 
-The run folder is committed to the run branch as artifacts land, including at phase boundaries. It must not be committed while a worker is active in the integration worktree.
+The run folder is committed to the run branch as artifacts land, including at phase boundaries.
 
-Artifacts include:
+The artifact set is closed; a run writes these and nothing else:
 
 - `run-state.json`, the run manifest for state transitions and recovery
-- `plan.md`, the plan and specification of record
+- `plan/`, the specification of record and critic reports for every round run
 - `tasks/`, worker assignments and reports
-- `review/`, cross-model review and synthesis reports for every round run, plus final QA findings for high/xhigh runs
+- `review/`, cross-model review and synthesis for every round run, plus QA findings for high/xhigh runs
 - `summary.md`, acceptance evidence, decisions, incidents, and final status
 - `screenshots/`, browser-verification evidence when applicable
+
+Scouting, the plan fact check, and browser verification report in context. Source material is cited by path or URL, and the plan distills it into requirements.
 
 The integration worktree and run branch survive until the PR merges. Task and disposable QA worktrees are removed using only the IDs recorded in the run manifest.
 

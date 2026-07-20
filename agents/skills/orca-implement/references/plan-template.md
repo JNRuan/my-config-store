@@ -1,6 +1,6 @@
 # Plan template
 
-Write `<RUNDIR>/plan.md` in exactly this shape. The plan is the run's spec of record: workers and reviewers never need the original ticket.
+Write `<RUNDIR>/plan/plan.md` in exactly this shape. The plan is the run's spec of record: workers and reviewers never need the original ticket.
 
 ```markdown
 ---
@@ -23,7 +23,7 @@ What needs to be built and why, briefly.
 
 ## Review Policy
 
-- **Plan-critique cap used**: {1 | 2 | 3, snapshotted before critique}
+- **Plan-review cap used**: {1 | 2 | 3, snapshotted before critique}
 - **Run-complexity rationale**: {aggregate risk, blast radius, coupling, failure impact, and observability evidence from the reviewed plan}
 - **Code-review cap**: {pending before critique | 1 | 2 | 3 after critique}
 - **Adversarial QA**: {pending before critique | skip for low/medium | run after all code review for high/xhigh}
@@ -34,9 +34,13 @@ After critique, replace every pending downstream field from canonical
 
 ## Requirements & Acceptance Criteria
 
-Quoted from the task source at intake, or drafted from the prompt. Each
-criterion gets an ID (`AC-1`, `AC-2`, ...) so tasks, verification, and the PR
-can reference it. Every criterion must be covered by at least one task.
+Distilled from the task source at intake, or drafted from the prompt, citing
+the source: `path@<BASE_SHA>` for a repo document, URL or ref for an issue.
+Quote only the lines that carry a requirement or constraint; never paste the
+source in whole. State each requirement fully enough to build and verify
+against without opening the source. Each criterion gets an ID (`AC-1`, `AC-2`,
+...) so tasks, verification, and the PR can reference it. Every criterion must
+be covered by at least one task.
 
 ## Out of Scope
 
@@ -58,11 +62,7 @@ change goes through the coordinator (re-pin), never through a worker.
 
 Each task's complexity is `low` | `medium` | `high` | `xhigh`, classified with
 the task rubric in `references/routing.md`. It routes that task's builder and is
-independent of `plan_review_tier` and `run_complexity`. The `high`/`xhigh`
-boundary is the nature of
-the remaining work, not size: `high` is heavy but reasonable once the plan pins
-the target; `xhigh` means the remaining reasoning itself is the risk if we get
-it wrong.
+independent of `plan_review_tier` and `run_complexity`.
 
 | seq | slug | deps | complexity | builder | covers |
 |-----|------|------|------------|---------|--------|

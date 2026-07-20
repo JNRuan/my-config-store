@@ -31,7 +31,7 @@ Identical regardless of coordinator.
 | Adversarial QA            | Codex `gpt-5.6-sol`                  | `high`            | —                          | `high`/`xhigh` runs only; runs once after all code-review rounds and fixes; disposable worktree, branch never merged |
 
 
-If Fable is unavailable and the agent is not running, use the listed fallback model. Record the requested model, selected model, and reason in `run-state.json`. If the fallback agent also does not run, use the role's normal phase failure path.
+If a Fable worker fails to boot or run, use the listed fallback model. Record the requested model, selected model, and reason in `run-state.json`. If the fallback agent also does not run, use the role's normal phase failure path.
 
 Every fix is classified with the task-complexity rubric and routed through the matching builder row, including that row's fallback.
 
@@ -77,9 +77,9 @@ Rules:
 ## Boot recipes
 
 - Substitute model and effort from the tables.
-- Confinement comes from the outer nono sandbox (the `nclaude`/`ncodex` aliases, backed by the `my-claude`/`my-codex` profiles). Codex's own sandbox cannot start nested inside nono, so every Codex worker passes `--sandbox danger-full-access` explicitly; the flag stays in the recipe so behavior never depends on the machine's Codex config. Network access is governed by the nono profile.
-- Codex workers booted outside the integration worktree (builders in task worktrees, QA in its disposable worktree) need `<RUNDIR>` for their report/findings paths, which live in the integration worktree. `--add-dir` informs Codex only; the nono grant requires `--allow "<RUNDIR>"`, so these workers boot with the expanded `nono run` command instead of the `ncodex` alias.
-- Workers booted in `<WT>` (reviewers, plan critics, fix workers) use the `ncodex` alias with no extra grant.
+- Confinement comes from the outer nono sandbox (the `nclaude`/`ncodex` aliases, backed by the `my-claude`/`my-codex` profiles), which also governs network access. Codex's own sandbox cannot nest inside nono: every Codex worker passes `--sandbox danger-full-access` in the recipe, never relying on machine config.
+- Codex workers booted outside the integration worktree (builders and fix workers in task worktrees, QA in its disposable worktree) need `<RUNDIR>` for their report/findings paths, which live in the integration worktree. `--add-dir` informs Codex only; the nono grant requires `--allow "<RUNDIR>"`, so these workers boot with the expanded `nono run` command instead of the `ncodex` alias.
+- Workers booted in `<WT>` (reviewers, plan critics) use the `ncodex` alias with no extra grant.
 - After every `terminal create`, capture `.result.terminal.handle` into the run manifest and `terminal wait --for tui-idle --timeout-ms 120000` before dispatching.
 
 **Claude worker (builder / reviewer / fix)**:
@@ -89,21 +89,21 @@ orca terminal create --worktree <WT-or-task-worktree> --title "<role>:<slug>" \
   --command "nclaude --model <fable|opus> --effort <effort> --permission-mode bypassPermissions" --json
 ```
 
-**Codex worker in `<WT>` (reviewer / fix)**:
+**Codex worker in `<WT>` (reviewer)**:
 
 ```bash
 orca terminal create --worktree <WT> --title "<role>:<slug>" \
   --command "ncodex --model gpt-5.6-sol -c 'model_reasoning_effort=\"<effort>\"' --sandbox danger-full-access --ask-for-approval never" --json
 ```
 
-**Codex worker in a task or QA worktree (builder / QA)**:
+**Codex worker in a task or QA worktree (builder / fix / QA)**:
 
 ```bash
 orca terminal create --worktree <task-or-qa-worktree> --title "<role>:<slug>" \
   --command "nono run --profile my-codex --allow-cwd --allow \"<RUNDIR>\" -- codex --model gpt-5.6-sol -c 'model_reasoning_effort=\"<effort>\"' --sandbox danger-full-access --add-dir \"<RUNDIR>\" --ask-for-approval never" --json
 ```
 
-**Plan critics** (both boot, regardless of coordinator) — read-only by instruction, not by sandbox: each must write `<RUNDIR>/plan-critique-<M>-r<ROUND>.md` and send its completion; the mandate text names its critique file as the only permitted write, and the coordinator verifies the integration worktree is untouched outside the run folder after collection.
+**Plan critics** (both boot, regardless of coordinator) — read-only by instruction, not by sandbox: each must write `<RUNDIR>/plan/critique-<M>-r<ROUND>.md` and send its completion; the mandate text names its critique file as the only permitted write, and the coordinator verifies the integration worktree is untouched outside the run folder after collection.
 
 ```bash
 # Codex critic:
