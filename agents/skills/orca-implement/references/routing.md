@@ -76,9 +76,10 @@ Rules:
 
 ## Boot recipes
 
-- Substitute model and effort from the tables. 
-- Codex workers booted outside the integration worktree (builders in task worktrees, QA in its disposable worktree) get `--add-dir "<RUNDIR>"` as their report/findings paths live in the integration worktree, outside their sandbox. 
-- Workers booted in `<WT>` (reviewers, plan critics, fix workers) omit it. 
+- Substitute model and effort from the tables.
+- Confinement comes from the outer nono sandbox (the `nclaude`/`ncodex` aliases, backed by the `my-claude`/`my-codex` profiles). Codex's own sandbox cannot start nested inside nono, so every Codex worker passes `--sandbox danger-full-access` explicitly; the flag stays in the recipe so behavior never depends on the machine's Codex config. Network access is governed by the nono profile.
+- Codex workers booted outside the integration worktree (builders in task worktrees, QA in its disposable worktree) need `<RUNDIR>` for their report/findings paths, which live in the integration worktree. `--add-dir` informs Codex only; the nono grant requires `--allow "<RUNDIR>"`, so these workers boot with the expanded `nono run` command instead of the `ncodex` alias.
+- Workers booted in `<WT>` (reviewers, plan critics, fix workers) use the `ncodex` alias with no extra grant.
 - After every `terminal create`, capture `.result.terminal.handle` into the run manifest and `terminal wait --for tui-idle --timeout-ms 120000` before dispatching.
 
 **Claude worker (builder / reviewer / fix)**:
@@ -88,19 +89,26 @@ orca terminal create --worktree <WT-or-task-worktree> --title "<role>:<slug>" \
   --command "nclaude --model <fable|opus> --effort <effort> --permission-mode bypassPermissions" --json
 ```
 
-**Codex worker (builder / reviewer / QA / fix)**:
+**Codex worker in `<WT>` (reviewer / fix)**:
 
 ```bash
-orca terminal create --worktree <WT-or-task-worktree> --title "<role>:<slug>" \
-  --command "ncodex --model gpt-5.6-sol -c 'model_reasoning_effort=\"<effort>\"' --sandbox workspace-write -c 'sandbox_workspace_write.network_access=true' --add-dir \"<RUNDIR>\" --ask-for-approval never" --json
+orca terminal create --worktree <WT> --title "<role>:<slug>" \
+  --command "ncodex --model gpt-5.6-sol -c 'model_reasoning_effort=\"<effort>\"' --sandbox danger-full-access --ask-for-approval never" --json
+```
+
+**Codex worker in a task or QA worktree (builder / QA)**:
+
+```bash
+orca terminal create --worktree <task-or-qa-worktree> --title "<role>:<slug>" \
+  --command "nono run --profile my-codex --allow-cwd --allow \"<RUNDIR>\" -- codex --model gpt-5.6-sol -c 'model_reasoning_effort=\"<effort>\"' --sandbox danger-full-access --add-dir \"<RUNDIR>\" --ask-for-approval never" --json
 ```
 
 **Plan critics** (both boot, regardless of coordinator) — read-only by instruction, not by sandbox: each must write `<RUNDIR>/plan-critique-<M>-r<ROUND>.md` and send its completion; the mandate text names its critique file as the only permitted write, and the coordinator verifies the integration worktree is untouched outside the run folder after collection.
 
 ```bash
-# Codex critic (no network flag: critics only read the repo and write their critique):
+# Codex critic:
 orca terminal create --worktree <WT> --title "plan-critic-codex" \
-  --command "ncodex --model gpt-5.6-sol -c 'model_reasoning_effort=\"xhigh\"' --sandbox workspace-write --ask-for-approval never" --json
+  --command "ncodex --model gpt-5.6-sol -c 'model_reasoning_effort=\"xhigh\"' --sandbox danger-full-access --ask-for-approval never" --json
 
 # Claude critic primary:
 orca terminal create --worktree <WT> --title "plan-critic-claude" \

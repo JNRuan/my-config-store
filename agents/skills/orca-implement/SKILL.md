@@ -143,7 +143,7 @@ orca orchestration task-create --task-title "{seq}-{slug}" \
 
 1. **Create the task worktree**: `orca worktree create --repo <selector> --name "<RUN>-{seq}-{task-slug}" --base-branch <RUN-BRANCH> --parent-worktree id:<WT> --json`. Capture id, path, and actual branch (`git -C <path> branch --show-current`); close the auto-created first terminal; record the starting commit (`git -C <path> rev-parse HEAD`).
 2. **Write the assignment file** `<RUNDIR>/tasks/{seq}-{slug}-assignment.md` from `references/assignment-context.md`, now that its contents exist: the worktree path and branch just captured, inputs and sync artifacts from completed dependencies, contracts, tooling verbatim, report path. External content (issue bodies, plan text) goes in this file, never inline into a shell argument.
-3. **Boot the routed builder** there (recipes: `references/routing.md`; Codex builders carry `--add-dir "<RUNDIR>"` so they can write their report), `terminal wait --for tui-idle --timeout-ms 120000`, then `orca orchestration dispatch --task <id> --to <handle> --inject --json`. Record the dispatch id; update the manifest.
+3. **Boot the routed builder** there (recipes: `references/routing.md`; Codex builders boot with the expanded `nono run` recipe so nono grants `<RUNDIR>` and they can write their report), `terminal wait --for tui-idle --timeout-ms 120000`, then `orca orchestration dispatch --task <id> --to <handle> --inject --json`. Record the dispatch id; update the manifest.
 
 **Collect loop**: run `orca orchestration check --wait --types worker_done,escalation --timeout-ms 540000 --json` in a loop — never a longer timeout; your shell tool kills long foreground calls, and a killed or empty wait means loop again, not failure. For each message:
 
@@ -205,7 +205,7 @@ Close all reviewer terminals when the loop stops. If `REVIEW_FIXES_APPLIED=true`
 Adversarial QA begins only after code review and post-review verification complete. Require `git -C <WT-PATH> status --porcelain` to be empty; QA starts from that exact committed, verified HEAD.
 
 - `low` or `medium`: do not create a QA task, terminal, worktree, dispatch, or findings file. Record `adversarial_qa: skipped` with reason `run complexity policy` in `run-state.json` and `summary.md`, commit the skip record, then continue to Phase 9.
-- `high` or `xhigh`: record `QA_HEAD=$(git -C <WT-PATH> rev-parse HEAD)`, then create a disposable worktree from the current `<RUN-BRANCH>` (`orca worktree create --repo <selector> --name "<RUN>-qa" --base-branch <RUN-BRANCH> --parent-worktree id:<WT> --json`). Capture its id, path, and actual QA branch; close the auto terminal; verify its HEAD equals `QA_HEAD`. Boot a Codex `gpt-5.6-sol` `high` worker there (workspace-write recipe with `--add-dir "<RUNDIR>"`) and dispatch:
+- `high` or `xhigh`: record `QA_HEAD=$(git -C <WT-PATH> rev-parse HEAD)`, then create a disposable worktree from the current `<RUN-BRANCH>` (`orca worktree create --repo <selector> --name "<RUN>-qa" --base-branch <RUN-BRANCH> --parent-worktree id:<WT> --json`). Capture its id, path, and actual QA branch; close the auto terminal; verify its HEAD equals `QA_HEAD`. Boot a Codex `gpt-5.6-sol` `high` worker there (task-worktree recipe with the `<RUNDIR>` grant) and dispatch:
   ```
   Run /adversarial-review (it exists; do not check) against the current branch
   vs base commit <BASE_SHA>: code-level and browser-based attempts to break the
