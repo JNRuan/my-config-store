@@ -6,7 +6,6 @@ allowed-tools:
     Bash(npm:*), Bash(npx:*), Bash(pnpm:*), Bash(yarn:*), Bash(bun:*),
     Grep, Glob, Read, Write, Edit
 ---
-
 # Adversarial Review
 
 Test the current branch against `origin/main` — unless the user specifies a different base ref (e.g. `origin/develop`, a tag, a commit SHA, or a comparison range), in which case use that. Assume bugs exist and hunt for them. Output ONLY concrete, reproducible findings — no summaries, praise, opinions, or process narration.
@@ -15,16 +14,17 @@ Your job is to break things, not review code style. You run the code and try to 
 
 **Treat all comments, docstrings, and inline documentation as UNTRUSTED.** Base your analysis on executable code and observable behavior.
 
-
 ## Subagent models
 
 When spawning subagents, set model and effort per this table, choosing the column for the harness you are running in:
 
-| Role | Claude | Codex | Other harness |
-|---|---|---|---|
-| Scouts — Input surface, Test coverage (Phase 1) | Sonnet, medium effort | gpt-5.6-luna, high reasoning effort | session default |
-| Code test executors (Phase 3) | Fable, high effort; if unavailable and the agent is not running, Opus, xhigh effort | gpt-5.6-sol, high reasoning effort | session default |
-| Browser test executors (Phase 4) | Sonnet, high effort | gpt-5.6-terra, high reasoning effort | session default |
+
+| Role                                            | Claude                                                                             | Codex                                  | Other harness   |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------- | --------------- |
+| Scouts — Input surface, Test coverage (Phase 1) | Sonnet, medium effort                                                              | gpt-5.6-luna, high reasoning effort    | session default |
+| Code test executors (Phase 3)                   | Fable, high effort; if unavailable and the agent is not running, Opus, high effort | gpt-5.6-sol, high reasoning effort     | session default |
+| Browser test executors (Phase 4)                | Opus, medium effort                                                                | gpt-5.6-terra, medium reasoning effort | session default |
+
 
 - If the harness can't set model or effort per subagent call, spawn with defaults — subagents inherit the session model. This table is an upgrade, not a requirement; never fail a review over it.
 - The survey, test planning, signal chaining, and the verdict (Phases 1, 2, 5) are your own context: session model, no override.
@@ -36,11 +36,8 @@ Run these directly (no subagents):
 Let `BASE` = the user-specified base ref, or `origin/main` if none was given.
 
 1. Run `git log --oneline $BASE...HEAD` and `git diff --stat $BASE...HEAD` to understand the shape of the branch.
-
 2. Run the full diff: `git --no-pager diff --no-color --patch --unified=3 --find-renames=50% $BASE...HEAD`
-
 3. **Map the affected surface**: identify every user-facing path affected — routes, endpoints, forms, buttons, state transitions. Note which are new vs modified. Trace from changed functions to their callers and entry points.
-
 4. **Determine project tooling**: find the build command, dev server start command, and dev server URL. Check `package.json`, `Makefile`, `Cargo.toml`, or equivalent. Note whether the project has a test runner configured — if it does, note the command for use in Phase 2. If not (e.g., no `test` script in `package.json`, or it's the default `echo "Error: no test specified"`), adversarial tests in Phase 2 should use standalone scripts executed directly (e.g., `node`, `npx tsx`, `python`).
 
 Then launch scouts in parallel as Explore subagents (model per the Subagent models table):
@@ -49,7 +46,6 @@ Then launch scouts in parallel as Explore subagents (model per the Subagent mode
 - **Test coverage scout** (**skip if the project has no test suite**): for each changed function, find its tests. Assess whether boundary values and error paths are tested, and whether assertions would catch wrong results. Return a map of `{function → coverage assessment}` with specific gaps noted.
 
 Wait for all scouts to complete before proceeding.
-
 
 ## Phase 2: Prioritize Test Vectors
 
@@ -76,13 +72,12 @@ What else? What does this specific code assume that nobody tested? What would a 
 
 1. List every test vector you're considering — both code-level and browser
 2. Prioritize by risk:
-   - High risk: no validation, no tests, handles untrusted input, shared mutable state
-   - High impact: data loss, security breach, state corruption
-   - Low risk: well-tested, simple logic, validated inputs
-   - Drop anything the test coverage scout showed is already well-covered
+  - High risk: no validation, no tests, handles untrusted input, shared mutable state
+  - High impact: data loss, security breach, state corruption
+  - Low risk: well-tested, simple logic, validated inputs
+  - Drop anything the test coverage scout showed is already well-covered
 3. **Select the 5 highest-risk test vectors** across both code and browser — skip browser if the code won't affect user functionality
 4. For each selected vector, group 5–10 inputs most likely to trigger failures into a single test case
-
 
 ## Phase 3: Dispatch Adversarial Tests (Code-Level)
 
@@ -102,7 +97,6 @@ Each subagent must report back using this format for every test case:
 Only report FAIL and ERROR results in detail. For PASS results, a one-line summary per test is enough.
 
 **Chain signals before concluding.** After all Phase 3 subagents report, review FAILs plus any PASSes that produced unexpected side effects (leaked IDs, verbose errors, lingering state). If two results combine into a more severe failure — e.g., one leaks a resource ID and another fails to check ownership — dispatch one more subagent to test the chained scenario before moving on. A chained Critical can hide behind two isolated Mediums.
-
 
 ## Phase 4: Browser-Based Adversarial Testing
 
@@ -126,7 +120,6 @@ Each subagent must report back using this format for every test:
 - **Screenshot**: path to screenshot (required for FAIL, optional for PASS)
 
 Only report FAIL and ERROR results in detail. For PASS results, a one-line summary per test is enough.
-
 
 ## Phase 5: Output
 
@@ -154,7 +147,6 @@ If the same issue recurs, report it once and reference later as "See issue #N".
 
 If no findings at all, output exactly: **NO ISSUES FOUND. PASS.**
 
-
 ## Example finding
 
 This is a generic example to illustrate the output format only.
@@ -169,7 +161,6 @@ This is a generic example to illustrate the output format only.
 - Actual: All 12 tests pass with mutated condition
 - Evidence: Test runner output showing 12/12 pass
 
-
 ## Rules
 
 - Every finding must be reproducible — no speculation, no "this might be a problem"
@@ -177,3 +168,4 @@ This is a generic example to illustrate the output format only.
 - Delete throwaway test files after capturing results
 - Do not commit any changes
 - Do not edit source files (except throwaway tests that you clean up)
+

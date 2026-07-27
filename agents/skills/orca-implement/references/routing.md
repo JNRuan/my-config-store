@@ -1,4 +1,4 @@
-# Routing & worker boot recipes
+# Routing &amp; worker boot recipes
 
 **Concurrency cap**: 5 concurrent builders (Orca worker terminals; workers' internal native subagents are not counted).
 
@@ -12,7 +12,7 @@ Resolved by which runtime runs `/orca-implement`.
 | Coordinator          | the invoking session | the invoking session     | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only   |
 | Scouts               | `sonnet` subagent    | `gpt-5.6-luna` subagent  | `medium` / `high`       | read-only; native subagents, not Orca terminals                                            |
 | Plan fact check      | `sonnet` subagent    | `gpt-5.6-luna` subagent  | `medium` / `high`       | read-only; verifies the plan's checkable claims only, no content judgment; native subagent |
-| Browser verification | `sonnet` subagent    | `gpt-5.6-terra` subagent | `high` / `high`         | `agent-browser`, headless; native subagent, not an Orca terminal                           |
+| Browser verification | `opus` subagent      | `gpt-5.6-terra` subagent | `medium` / `medium`     | `agent-browser`, headless; native subagent, not an Orca terminal                           |
 
 
 ## Pinned roles
@@ -24,11 +24,11 @@ Identical regardless of coordinator.
 | ------------------------- | ------------------------------------ | ----------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Plan critics              | Claude `fable` + Codex `gpt-5.6-sol` | `xhigh` / `xhigh` | Opus `xhigh`               | both each round; read-only by instruction; round cap comes from `plan_review_tier`                                   |
 | Builder, `low` complexity | Codex `gpt-5.6-sol`                  | `medium`          | —                          |                                                                                                                      |
-| Builder, `medium`         | Codex `gpt-5.6-sol`                  | `high`            | —                          | default builder                                                                                                      |
-| Builder, `high`           | Codex `gpt-5.6-sol`                  | `xhigh`           | —                          | many-file or mechanically hard, but fully specified by plan + contracts                                              |
-| Builder, `xhigh`          | Claude `fable`                       | `high`            | `gpt-5.6-sol` `xhigh`      | the remaining reasoning is the risk: see the task complexity rubric                                                  |
-| Reviewers                 | Claude `fable` + Codex `gpt-5.6-sol` | `high` / `high`   | Opus `xhigh`               | both each round; round cap comes from `run_complexity`                                                               |
-| Adversarial QA            | Codex `gpt-5.6-sol`                  | `high`            | —                          | `high`/`xhigh` runs only; runs once after all code-review rounds and fixes; disposable worktree, branch never merged |
+| Builder, `medium`         | Claude `opus`                        | `medium`          | —                          | default builder                                                                                                      |
+| Builder, `high`           | Claude `opus`                        | `high`            | —                          | many-file or mechanically hard, but fully specified by plan + contracts                                              |
+| Builder, `xhigh`          | Claude `fable`                       | `high`            | `gpt-5.6-sol` `high`       | the remaining reasoning is the risk: see the task complexity rubric                                                  |
+| Reviewers                 | Claude `fable` + Codex `gpt-5.6-sol` | `high` / `high`   | Opus `high`                | both each round; round cap comes from `run_complexity`                                                               |
+| Adversarial QA            | Codex `opus`                         | `high`            | —                          | `high`/`xhigh` runs only; runs once after all code-review rounds and fixes; disposable worktree, branch never merged |
 
 
 If a Fable worker fails to boot or run, use the listed fallback model. Record the requested model, selected model, and reason in `run-state.json`. If the fallback agent also does not run, use the role's normal phase failure path.
@@ -118,3 +118,4 @@ orca terminal create --worktree <WT> --title "plan-critic-claude" \
 orca terminal create --worktree <WT> --title "plan-critic-claude" \
   --command "nclaude --model opus --effort xhigh --permission-mode bypassPermissions" --json
 ```
+

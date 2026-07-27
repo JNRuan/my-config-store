@@ -7,12 +7,14 @@ description: "Actionable code review of the current branch against a base ref �
 Review the current branch against `origin/main` — unless the user specifies a different base ref (e.g. `origin/develop`, a tag, a commit SHA, or a comparison range), in which case use that.
 
 As the code reviewer: 
+
 - You analyse and review how code breaks, not just how it works. You challenge the assumptions behind changes — "what if this isn't true?" 
 - You thoroughly trace the path — follow calls, check boundaries, consider what happens when things go wrong. 
 - Flag what matters, skip what doesn't. No padding, no praise. Your report must be actionable without fluff.
 - You scout first, fan the review across category specialist subagents, then verify and consolidate findings yourself.
 
 ## SCOPE
+
 - Review the diff holistically. Use per-commit context and commit messages to understand intent.
 - Assume all tests pass and code compiles — running them is outside this review.
 - Flag only MEDIUM, HIGH, or CRITICAL severity issues.
@@ -30,10 +32,12 @@ As the code reviewer:
 
 When spawning subagents, set model and effort per this table, choosing the column for the harness you are running in:
 
-| Role | Claude | Codex | Other harness |
-|---|---|---|---|
-| Scouts — Blast radius, Patterns, Test coverage (Step 1) | Sonnet, medium effort | gpt-5.6-luna, high reasoning effort | session default |
-| Category reviewers (Step 2) | Fable, high effort; if unavailable and the agent is not running, Opus, xhigh effort | gpt-5.6-sol, high reasoning effort | session default |
+
+| Role                                                    | Claude                                                                             | Codex                               | Other harness   |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------- | --------------- |
+| Scouts — Blast radius, Patterns, Test coverage (Step 1) | Sonnet, medium effort                                                              | gpt-5.6-luna, high reasoning effort | session default |
+| Category reviewers (Step 2)                             | Fable, high effort; if unavailable and the agent is not running, Opus, high effort | gpt-5.6-sol, high reasoning effort  | session default |
+
 
 - If the harness can't set model or effort per subagent call, spawn with defaults — subagents inherit the session model. This table is an upgrade, not a requirement; never fail a review over it.
 - The verify + consolidate pass (Step 3) is your own context: session model, no override.
@@ -47,27 +51,29 @@ Let `BASE` = the user-specified base ref, or `origin/main` if none was given.
 1. `git log --oneline $BASE...HEAD` and `git diff --stat $BASE...HEAD` for shape and intent.
 2. Fetch the full diff:
 
-   `git --no-pager diff --no-color --patch -U3 --find-renames=50% $BASE...HEAD`
-
+  `git --no-pager diff --no-color --patch -U3 --find-renames=50% $BASE...HEAD`
 3. Resolve the **intent source** — what this branch is supposed to accomplish — in priority order:
-   1. Context you already hold: a spec/task/plan file the user pointed to, requirements the user stated when invoking the review, or — if the changes were implemented in this session — the request that drove the implementation
-   2. A spec, task, or plan file the branch itself references (e.g. in commit messages or a tasks/specs directory)
-   3. A PR or issue description, if the branch has one (`gh pr view` — skip quietly if there's no PR)
+  1. Context you already hold: a spec/task/plan file the user pointed to, requirements the user stated when invoking the review, or — if the changes were implemented in this session — the request that drove the implementation
+  2. A spec, task, or plan file the branch itself references (e.g. in commit messages or a tasks/specs directory)
+  3. A PR or issue description, if the branch has one (`gh pr view` — skip quietly if there's no PR)
 
 Keep the diff in context — you'll pass it inline to the category review subagents in Step 2.
 
 Then launch these **Explore subagents in parallel** to scout (model per the Subagent models table):
 
 ### Scout 1: Blast radius
+
 - For each function, type, or export that was **modified or removed** in the diff, identify upstream callers and dependents
 - Return: a map of `{changed symbol → list of callers/dependents}`
 
 ### Scout 2: Pattern consistency
+
 - Retrieve and report any important patterns and rules such as in CLAUDE.md, AGENTS.md, or any rules
 - For new or significantly changed code, find similar implementations in the codebase
 - Return: similar patterns found and how they differ from the new code
 
 ### Scout 3: Test coverage
+
 - For each changed function or module, find its tests — what scenarios they cover, what edge cases are present or missing
 - Return: a map of `{changed symbol → test files, what they cover, gaps noted}`
 
@@ -217,7 +223,7 @@ For **each finding**:
 3. **Score confidence 0–100**:
   - 75-100: Likely real or is verified. Concrete triggers, no handling found, verified against call sites.
   - 50-74: Plausible but uncertain. Trigger requires assumptions you couldn't confirm.
-  - <50: Speculative. No trigger that survived scrutiny, or handling likely prevents it, or referenced code doesn't exist.
+  - &lt;50: Speculative. No trigger that survived scrutiny, or handling likely prevents it, or referenced code doesn't exist.
 
 Across **all surviving findings**:
 
@@ -301,13 +307,16 @@ This is a generic example to illustrate the output format only. Base your findin
 **Category:** Bug
 **File:** lib/auth/session.ts:34
 **Findings:** 
+
 - Token refresh race condition — concurrent requests can both read an expired token before either writes the new one
 - Users get intermittent 401s under concurrent API calls
 
 **Evidence:** 
+
 - Traced `refreshToken()` callers in `api-client.ts:89` and `middleware.ts:42` — both invoke without dedup guard; no mutex or pending-promise pattern in scope
 
 **Fix:** 
+
 - Wrap the refresh call in a dedup guard so concurrent callers share one in-flight refresh:
 
 ```ts
@@ -319,6 +328,7 @@ async function refreshToken() {
 ```
 
 ## RULES
+
 - Precision over recall — a shorter report with only real issues beats a longer one with noise.
 - If you can't articulate a concrete triggering scenario, drop the finding.
 - Defend findings with evidence when challenged, but withdraw without ego when the evidence isn't there.
@@ -327,6 +337,9 @@ async function refreshToken() {
 - If something is genuinely ambiguous, use your best judgment and move on.
 
 ## SAFETY
+
 Your role is to observe and report:
+
 - Your only output is the review report
 - Source code is off-limits — read it, don't change it while you are reviewing
+
