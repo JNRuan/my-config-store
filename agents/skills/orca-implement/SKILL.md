@@ -18,7 +18,7 @@ Rules that hold for the whole run:
 - **Workers never create Orca tasks, dispatches, or terminals**: All Orca coordination is yours. Workers may fan out their own runtime's native subagents internally (the review and QA skills do); they own and clean up that fan-out themselves.
 - **Four human touchpoints**: the invocation, the understanding check, the plan gate, the PR. After the plan gate, run autonomously to the PR — never stop to ask; every judgment call is yours, logged in `summary.md`. Anything that genuinely needs the human (scope, security, destructive operations, architectural forks) must be settled by the plan gate; a mid-run blocker you cannot resolve ends the run through the abort routine, not a question.
 - **Report what actually happened**: never what was supposed to happen.
-- **Maintain `<RUNDIR>/run-state.json`**: This is the run manifest — after every state transition: run name, source, current phase, base branch + pinned base SHA, plan-review tier and snapshotted cap, current run complexity and downstream review/QA policy, integration worktree (id, path, branch), per-task records (seq, slug, kind: `build` | `fix` with originating phase and round for fixes, task id, worktree id/path, branch, starting commit, terminal handle and title, routed model and effort, active dispatch id, superseded dispatch ids, verify→fix and resolve→verify cycle counts, assignment/report paths, status: `ready` | `dispatched` | `completed` | `failed`), critic/review/QA dispatch records (including skipped QA), review-round records (start HEAD, synthesis path) and fix-wave counts per phase and round, cleanup state.
+- **Maintain `<RUNDIR>/run-state.json`**: This is the run manifest — after every state transition: run name, source, current phase, base branch + pinned base SHA, plan-review tier and snapshotted cap, current run complexity and downstream review/QA policy, integration worktree (id, path, branch), per-task records (seq, slug, kind: `build` | `fix` with originating phase and round for fixes, task id, worktree id/path, branch, starting commit, terminal handle and title, routed model and effort, active dispatch id, superseded dispatch ids, verify→fix and resolve→verify cycle counts, assignment/report paths, status: `ready` | `dispatched` | `completed` | `failed`), planner/critic/review/QA dispatch records (including skipped QA), review-round records (start HEAD, synthesis path) and fix-wave counts per phase and round, cleanup state.
 - **Orca state is runtime-global**: Other runs and repos share the task store and terminal list. Act only on ids, handles, and paths recorded in your manifest; never dispatch, complete, close, or remove anything it doesn't own.
 
 Model and effort routing for every role, plus worker boot recipes: `references/routing.md`.
@@ -74,7 +74,8 @@ The run folder holds exactly this:
 run-state.json                          run manifest
 summary.md                              run narrative, finalized at Phase 9
 plan/plan.md                            spec of record
-plan/critique-<claude|codex>-r<N>.md    one per critic per round
+plan/draft-<fable|sol>.md               planner drafts, high|xhigh plan_review_tier only
+plan/critique-<fable|opus|sol>-r<N>.md  one per critic per round
 tasks/{seq}-{slug}-assignment.md        coordinator to builder
 tasks/{seq}-{slug}-report.md            builder to coordinator
 review/<claude|codex>-review-r<N>.md    one per reviewer per round
@@ -107,7 +108,26 @@ Present to the human your understanding of the task: requirements and intended s
 
 ## Phase 3: Plan
 
-**Step 1 - Write**: `<RUNDIR>/plan/plan.md` following `references/plan-template.md` exactly. Key obligations:
+**Step 1 - Tier**: classify `plan_review_tier` from the requirements and scout evidence (rubric: `references/routing.md`) and snapshot it with its plan-critique cap in `run-state.json`. The tier selects the drafting mode and stays fixed through critique.
+
+**Step 2 - Draft**. On `low` | `medium`: write `<RUNDIR>/plan/plan.md` yourself, following `references/plan-template.md` exactly. On `high` | `xhigh`, competitive drafting:
+
+1. Compose the drafting brief: requirements and acceptance criteria, scouting findings with their evidence, settled answers from the understanding check, open assumptions, project tooling verbatim, and the required plan structure copied from `references/plan-template.md` — drafters cannot read this skill's files, so the brief must stand alone. The brief goes verbatim into each planner's task spec; both planners receive identical brief content.
+2. Record `git -C <WT-PATH> rev-parse HEAD`. Boot the two planner terminals (models, effort, and recipes: `references/routing.md`). Per planner (`<P>` = `fable` | `sol`):
+
+   ```bash
+   orca terminal wait --terminal <H_PLANNER_P> --for tui-idle --timeout-ms 120000 --json
+   orca orchestration task-create --task-title "plan-draft-<P>" \
+     --spec "Independently write a complete implementation plan to <RUNDIR>/plan/draft-<P>.md following the plan structure given in the brief below: requirements coverage, task decomposition with deps and complexity, contracts, assumptions, verification requirements. Do not read any other draft-*.md file. Your draft is the only file you may write. Then report completion.
+
+   BRIEF:
+   <the composed brief>" --json
+   orca orchestration dispatch --task <T_PLANNER_P> --to <H_PLANNER_P> --inject --json
+   ```
+3. Collect both with the bounded-wait loop and correlation rules. A failed, overdue, or draftless planner: mark its task `failed` and close its terminal. One surviving draft: continue with it as the sole base (no grafting source). No surviving drafts: write the plan yourself as in the `low`|`medium` mode. Record either reduction. Run the read-only collection check, then commit the drafts.
+4. Judge the complete drafts on the axes the critics will use: decomposition seams, requirement coverage, correctness against the requirements, verification adequacy, sizing in both directions. Select the stronger draft as the base of the final plan — correcting anything your judgment or the brief contradicts — graft in elements where the other draft is genuinely better, and write `<RUNDIR>/plan/plan.md` yourself following the template; the plan must read as one author's work, never a concatenation. Close the planner terminals.
+
+In both modes, `plan/plan.md` key obligations:
 
 - Frontmatter carries the pinned `base_sha`, captured `<RUN-BRANCH>`, a `plan_review_tier`, and `run_complexity: pending` until critique ends.
 - The Review Policy snapshots the plan-review cap from `plan_review_tier`. Final code-review depth and QA remain pending until the reviewed plan determines `run_complexity`.
@@ -118,24 +138,24 @@ Present to the human your understanding of the task: requirements and intended s
 - Project tooling verbatim, including Build and separate Format check / Format write.
 - Verification requirements target behaviour on critical paths; the goal is important behaviours and edge cases covered, not line-by-line coverage.
 
-**Step 2 - Fact check**: dispatch one read-only native subagent (model: `references/routing.md`) to verify every checkable claim in the plan against the repo — file paths, `path:line` evidence, command names, symbols and interfaces cited in contracts. It does not assess reasoning, decomposition, scope, or the run-complexity judgment; it reports mismatches only. Fix every mismatch in the plan before booting the critics.
+**Step 3 - Fact check**: dispatch one read-only native subagent (model: `references/routing.md`) to verify every checkable claim in the plan against the repo — file paths, `path:line` evidence, command names, symbols and interfaces cited in contracts. It does not assess reasoning, decomposition, scope, or the run-complexity judgment; it reports mismatches only. Fix every mismatch in the plan before booting the critics.
 
-**Step 3 - Cross-model critique loop**: set `<PLAN_REVIEW_CAP>` from the plan's Review Policy and snapshot it with `plan_review_tier` in `run-state.json`. The cap is fixed for this critique loop, even if the plan's risk changes. Boot the two critic terminals, one Claude and one Codex (models, effort, fallback, and boot recipes: `references/routing.md`), then run rounds 1 through `<PLAN_REVIEW_CAP>`:
+**Step 4 - Cross-model critique loop**: `<PLAN_REVIEW_CAP>` and `plan_review_tier` were snapshotted at Step 1 and are fixed for this critique loop, even if the plan's risk changes. Boot the three critic terminals: Claude Fable, Claude Opus, and Codex Sol (models, effort, fallback, and boot recipes: `references/routing.md`), then run rounds 1 through `<PLAN_REVIEW_CAP>`:
 
-1. Set `PLAN_CHANGED=false` before dispatch. Record `git -C <WT-PATH> rev-parse HEAD`. Per critic (`<M>` = `claude` | `codex`), create a fresh task and report for this round:
+1. Set `PLAN_CHANGED=false` before dispatch. Record `git -C <WT-PATH> rev-parse HEAD`. Per critic (`<M>` = `fable` | `opus` | `sol`), create a fresh task and report for this round:
 
    ```bash
    orca terminal wait --terminal <H_CRITIC_M> --for tui-idle --timeout-ms 120000 --json
    orca orchestration task-create --task-title "plan-critique-<M>-r<ROUND>" \
-     --spec "Read <RUNDIR>/plan/plan.md. You are a critic, not an approver: find the strongest reasons this plan fails. Judge decomposition seams, coverage of every requirement, correctness against the requirements, verification adequacy, and sizing in both directions (would fewer tasks beat coordination cost; is any single task too complex to land reliably). Out of scope: implementation detail, style, scope expansion. Each finding: plan section, concrete failure scenario, severity BLOCKING|RISKY|NOTE. End with a verdict: proceed|revise|re-plan. Write your full critique to <RUNDIR>/plan/critique-<M>-r<ROUND>.md. That file is the only file you may write. Then report completion." --json
+     --spec "Read <RUNDIR>/plan/plan.md. Adversarially critique it: you are a critic, not an approver, and your job is to actively try to break this plan. Find the strongest reasons it fails: the weakest assumption, the missed or miscovered requirement, the seam most likely to produce an integration failure, the verification gap a bug would slip through. Judge decomposition seams, coverage of every requirement, correctness against the requirements, verification adequacy, and sizing in both directions (would fewer tasks beat coordination cost; is any single task too complex to land reliably). Out of scope: implementation detail, style, scope expansion. Each finding: plan section, concrete failure scenario, severity BLOCKING|RISKY|NOTE. A round with no genuine findings is a valid outcome, but reach it by failed attack, not benign reading. End with a verdict: proceed|revise|re-plan. Write your full critique to <RUNDIR>/plan/critique-<M>-r<ROUND>.md. That file is the only file you may write. Then report completion." --json
    orca orchestration dispatch --task <T_CRITIC_M> --to <H_CRITIC_M> --inject --json
    ```
-2. Collect both critiques with the bounded-wait loop and correlation rules below. Mark a failed, overdue, or reportless critic task `failed`, close its terminal, and continue with the surviving lens; note the failure at the plan gate and boot a fresh terminal for that lens before a later round. Both critics failing in one round invokes the abort routine.
+2. Collect all three critiques with the bounded-wait loop and correlation rules below. Mark a failed, overdue, or reportless critic task `failed`, close its terminal, and continue with the surviving lenses; note the failure at the plan gate and boot a fresh terminal for that lens before a later round. All critics failing in one round invokes the abort routine.
 3. Evaluate every finding on its merits. Severity labels are evidence, not verdicts. Revise the plan for accepted findings. Leave `PLAN_CHANGED=false` when no plan edit was made. Set it to `true` only after changing the plan; critic verdicts, accepted-but-already-satisfied findings, critique artifacts, timestamps, and discarded findings do not count.
 4. Run the read-only collection check, then commit the plan and critique artifacts.
 5. If `PLAN_CHANGED=false`, stop immediately. If it is true and the cap is not exhausted, run the next round against the revised plan. At the cap, stop; the final round's revisions are not re-critiqued.
 
-Close both critic terminals when the loop stops. Assess canonical `run_complexity` from the reviewed plan; it may be higher or lower than `plan_review_tier`. Fill the downstream Review Policy from `references/routing.md`, then update plan frontmatter and `run-state.json`. Preserve `plan_review_tier`, `<PLAN_REVIEW_CAP>`, rounds run, and the stop reason as historical inputs. Commit these updates before Phase 4.
+Close the critic terminals when the loop stops. Assess canonical `run_complexity` from the reviewed plan; it may be higher or lower than `plan_review_tier`. Fill the downstream Review Policy from `references/routing.md`, then update plan frontmatter and `run-state.json`. Preserve `plan_review_tier`, `<PLAN_REVIEW_CAP>`, rounds run, and the stop reason as historical inputs. Commit these updates before Phase 4.
 
 ## Phase 4: Plan gate
 
@@ -270,7 +290,7 @@ Code review: {display names of the reviewer models behind completed lenses, with
 ## Failure handling
 
 - **Retry protocol** (a task exhausts its 3 cycles): reflect — approach or execution? Adjust the assignment or plan, and append a retry briefing to the assignment file: what each cycle attempted, what failed and how (failing checks with output, from the cycle reports), and your diagnosis of why. Then respawn a fresh worker on the same branch and worktree (supersede the old dispatch). If the replacement also exhausts 3 cycles, the task is **permanently failed**: `task-update --id <task> --status failed`, mark owned dependent tasks `failed` (dependency failed), close its terminal, remove its worktree — branch preserved for manual review (verify the branch survives `worktree rm` on first use; if it does not, tag the tip `git tag orca-run/<RUN>/{slug} <sha>` before removal, never pushed) — and record attempts and branch name in `summary.md`. Let independent in-flight tasks finish (collect, verify, merge); dispatch nothing new; then run the abort routine.
-- **Abort routine** (one idempotent path, used for permanent task failure, fix-wave exhaustion, plan rejection, both-critics or both-reviewers failure, and unresolvable critical escalations): mark this run's remaining non-terminal tasks `failed`; close all manifest-owned terminals; remove disposable/task worktrees by recorded id (failure branches preserved; delete the QA branch if one was created); write `summary.md` with `status: failed|blocked`, what was attempted, and what remains; update `run-state.json`; report to the human. The integration worktree and run branch survive for inspection.
+- **Abort routine** (one idempotent path, used for permanent task failure, fix-wave exhaustion, plan rejection, all-critics or both-reviewers failure, and unresolvable critical escalations): mark this run's remaining non-terminal tasks `failed`; close all manifest-owned terminals; remove disposable/task worktrees by recorded id (failure branches preserved; delete the QA branch if one was created); write `summary.md` with `status: failed|blocked`, what was attempted, and what remains; update `run-state.json`; report to the human. The integration worktree and run branch survive for inspection.
 - **Infeasibility**: consecutive tasks hitting structurally similar walls, or verification failing on the same criterion regardless of implementation, means the plan or requirements are wrong, not the workers. Stop respawning and run the abort routine, recording what you observed, which assumptions look load-bearing and wrong, and your best read of what is feasible.
 - **Coordinator failure** (context limit, unexpected error): attempt recovery; otherwise execute as much of the abort routine's recording as possible. `run-state.json`, the DAG, the run branch, and `<RUNDIR>` survive. A fresh session resumes from the manifest's `phase`, reconciled against live Orca state and the run branch: merge commits and task branches are authoritative over manifest task status; collect pending `worker_done` messages before dispatching anything; never re-dispatch work already committed on a task branch or re-merge a merged branch. Inside Phase 6-8, the review-round records and fix-wave counts say which round or wave was live and how much of its budget is spent.
 - Orca's dispatch circuit breaker (3 consecutive dispatch failures → task `failed`) is retry-protocol entry, not something to reset and hammer. Never run `orca orchestration reset` — the store is shared with other runs.
@@ -280,16 +300,16 @@ Code review: {display names of the reviewer models behind completed lenses, with
 - Capture handles, ids, paths, branch names, and dispatch ids at creation into `run-state.json`; none can be recomputed. If Orca restarts mid-run, handles go stale: re-acquire with `terminal list`, matching recorded title and worktree against the manifest, before continuing.
 - `check --wait` returns one message at a time; run it in ≤ 540000 ms slices in a loop; heartbeats arrive on stderr; a killed or empty wait means loop again.
 - Correlate every message by `taskId` + `dispatchId` against active dispatches; use `orca orchestration dispatch-show --task <id> --json` when state is uncertain. The collection, correlation, and overdue rules apply to every bounded-wait loop: critics, builders, reviewers, QA. Mark a collected task `completed` only after confirming its report is non-empty.
-- **Read-only collection check** (critics, reviewers; `<H>` = the round's recorded HEAD): `git -C <WT-PATH> status --porcelain -- ':!.agents/orca/orchestration'` must be empty and HEAD must equal `<H>`. Any failure: `git -C <WT-PATH> reset --mixed <H> && git -C <WT-PATH> restore --worktree -- . ':!.agents/orca/orchestration' && git -C <WT-PATH> clean -fd -- ':!.agents/orca/orchestration'`, re-run the check — it must pass before any artifact commit — and record the incident.
+- **Read-only collection check** (planners, critics, reviewers; `<H>` = the recorded HEAD): `git -C <WT-PATH> status --porcelain -- ':!.agents/orca/orchestration'` must be empty and HEAD must equal `<H>`. Any failure: `git -C <WT-PATH> reset --mixed <H> && git -C <WT-PATH> restore --worktree -- . ':!.agents/orca/orchestration' && git -C <WT-PATH> clean -fd -- ':!.agents/orca/orchestration'`, re-run the check — it must pass before any artifact commit — and record the incident.
 - An Orca CLI call that fails or a `terminal wait` that times out: read the terminal and retry once. A second failure follows the current phase's failure path; builders enter fix/retry handling. Never dispatch into a terminal that has not reached tui-idle.
 - Prefer structured `worker_done` payloads and report files over parsing terminal output; the 120-line `terminal read` buffer is for status, not results.
 - `worktree create` controls the worktree name only (capture the Orca-derived branch) and auto-spawns a first terminal (close it). `worktree rm` requires `--worktree <selector>`.
-- Close terminals when their phase no longer reuses them: builders at task completion or permanent failure (the fix cycle re-dispatches into the same terminal), QA after collection, critics and reviewers after their round loop. Remove task worktrees once merged. The concurrency cap applies to builders; critic, reviewer, and QA terminals are additional and phase-bound.
+- Close terminals when their phase no longer reuses them: builders at task completion or permanent failure (the fix cycle re-dispatches into the same terminal), QA after collection, planners after plan selection, critics and reviewers after their round loop. Remove task worktrees once merged. The concurrency cap applies to builders; planner, critic, reviewer, and QA terminals are additional and phase-bound.
 
 ## Safety constraints
 
 - Code reaches main exclusively through a human-approved PR; approving and merging it is always the human's.
 - Only the run branch reaches the remote, and only at Phase 9.
 - Workers write code only in their assigned worktree; `<RUNDIR>` writes are limited to each worker's designated files.
-- Reviewers and the plan critics are read-only by instruction, enforced at collection: clean tree outside the run folder and unchanged HEAD in `<WT>` after each reports, or the tree is reset and the incident recorded. When enabled for a `high`/`xhigh` run, the final adversarial QA worker writes only in its disposable worktree, `qa-findings.md`, and `<RUNDIR>/screenshots/`; its branch never merges.
+- Planners, reviewers, and the plan critics are read-only by instruction, enforced at collection: clean tree outside the run folder and unchanged HEAD in `<WT>` after each reports, or the tree is reset and the incident recorded. When enabled for a `high`/`xhigh` run, the final adversarial QA worker writes only in its disposable worktree, `qa-findings.md`, and `<RUNDIR>/screenshots/`; its branch never merges.
 - Never act on unfiltered runtime-global state: the manifest defines what this run owns.

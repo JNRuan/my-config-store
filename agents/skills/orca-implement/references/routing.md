@@ -22,9 +22,10 @@ Identical regardless of coordinator.
 
 | Role                      | Runtime / model                      | Effort            | Fable unavailable fallback | Notes                                                                                                                |
 | ------------------------- | ------------------------------------ | ----------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Plan critics              | Claude `fable` + Codex `gpt-5.6-sol` | `xhigh` / `xhigh` | Opus `xhigh`               | both each round; read-only by instruction; round cap comes from `plan_review_tier`                                   |
+| Plan drafters             | Claude `fable` + Codex `gpt-5.6-sol` | `high` / `high`   | Opus `high`                | `high`/`xhigh` `plan_review_tier` only; independent complete plans from the brief; each writes only its own draft file; a drafter lost at runtime: its surviving peer's draft becomes the base, no drafts → coordinator drafts alone |
+| Plan critics              | Claude `fable` + Claude `opus` + Codex `gpt-5.6-sol` | `xhigh` all       | continue with surviving critics | all three each round; adversarial mandate; read-only by instruction; round cap comes from `plan_review_tier` |
 | Builder, `low` complexity | Codex `gpt-5.6-sol`                  | `medium`          | —                          |                                                                                                                      |
-| Builder, `medium`         | Claude `opus`                        | `medium`          | —                          | default builder                                                                                                      |
+| Builder, `medium`                                             | Claude `opus`                        | `medium`          | —                          | default builder                                                                                                      |
 | Builder, `high`           | Claude `opus`                        | `high`            | —                          | many-file or mechanically hard, but fully specified by plan + contracts                                              |
 | Builder, `xhigh`          | Claude `fable`                       | `high`            | `gpt-5.6-sol` `high`       | the remaining reasoning is the risk: see the task complexity rubric                                                  |
 | Reviewers                 | Claude `fable` + Codex `gpt-5.6-sol` | `high` / `high`   | Opus `high`                | both each round; round cap comes from `run_complexity`                                                               |
@@ -39,7 +40,7 @@ Every fix is classified with the task-complexity rubric and routed through the m
 
 Review depth uses two separate assessments of aggregate risk (blast radius, coupling, novelty, failure impact, and observability), both independent of per-task builder complexity:
 
-1. Before critique, classify the draft as `plan_review_tier` and snapshot only the plan-critique cap. The tier and cap stay fixed throughout critique.
+1. After the understanding check, classify the run as `plan_review_tier` from the requirements and scout evidence, and snapshot only the plan-critique cap. The tier selects the plan drafting mode — `high`/`xhigh` runs competitive drafting, `low`/`medium` the coordinator drafts alone — and stays fixed with its cap throughout critique.
 2. After critique ends, assess canonical `run_complexity` from the reviewed plan. It may be higher or lower than `plan_review_tier` and determines code-review depth and QA.
 
 
@@ -103,19 +104,27 @@ orca terminal create --worktree <task-or-qa-worktree> --title "<role>:<slug>" \
   --command "nono run --profile my-codex --allow-cwd --allow \"<RUNDIR>\" -- codex --model gpt-5.6-sol -c 'model_reasoning_effort=\"<effort>\"' --sandbox danger-full-access --add-dir \"<RUNDIR>\" --ask-for-approval never" --json
 ```
 
-**Plan critics** (both boot, regardless of coordinator) — read-only by instruction, not by sandbox: each must write `<RUNDIR>/plan/critique-<M>-r<ROUND>.md` and send its completion; the mandate text names its critique file as the only permitted write, and the coordinator verifies the integration worktree is untouched outside the run folder after collection.
+**Plan drafters**:
 
 ```bash
-# Codex critic:
-orca terminal create --worktree <WT> --title "plan-critic-codex" \
-  --command "ncodex --model gpt-5.6-sol -c 'model_reasoning_effort=\"xhigh\"' --sandbox danger-full-access --ask-for-approval never" --json
+orca terminal create --worktree <WT> --title "plan-draft-fable" \
+  --command "nclaude --model fable --effort high --permission-mode bypassPermissions" --json
+# Fable-unavailable fallback: same recipe with --model opus
 
-# Claude critic primary:
-orca terminal create --worktree <WT> --title "plan-critic-claude" \
+orca terminal create --worktree <WT> --title "plan-draft-sol" \
+  --command "ncodex --model gpt-5.6-sol -c 'model_reasoning_effort=\"high\"' --sandbox danger-full-access --ask-for-approval never" --json
+```
+
+**Plan critics**:
+
+```bash
+orca terminal create --worktree <WT> --title "plan-critic-fable" \
   --command "nclaude --model fable --effort xhigh --permission-mode bypassPermissions" --json
 
-# Fable-unavailable fallback:
-orca terminal create --worktree <WT> --title "plan-critic-claude" \
+orca terminal create --worktree <WT> --title "plan-critic-opus" \
   --command "nclaude --model opus --effort xhigh --permission-mode bypassPermissions" --json
+
+orca terminal create --worktree <WT> --title "plan-critic-sol" \
+  --command "ncodex --model gpt-5.6-sol -c 'model_reasoning_effort=\"xhigh\"' --sandbox danger-full-access --ask-for-approval never" --json
 ```
 
