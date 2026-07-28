@@ -12,7 +12,7 @@ Resolved by which runtime runs `/orca-implement`.
 | Coordinator          | the invoking session | the invoking session     | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only   |
 | Scouts               | `sonnet` subagent    | `gpt-5.6-luna` subagent  | `medium` / `high`       | read-only; native subagents, not Orca terminals                                            |
 | Plan fact check      | `sonnet` subagent    | `gpt-5.6-luna` subagent  | `medium` / `high`       | read-only; verifies the plan's checkable claims only, no content judgment; native subagent |
-| Browser verification | `opus` subagent      | `gpt-5.6-terra` subagent | `medium` / `medium`     | `agent-browser`, headless; native subagent, not an Orca terminal                           |
+| Browser verification | `opus` subagent      | `gpt-5.6-sol` subagent   | `medium` / `medium`     | `agent-browser`, headless; native subagent, not an Orca terminal                           |
 
 
 ## Pinned roles
@@ -22,7 +22,7 @@ Identical regardless of coordinator.
 
 | Role                      | Runtime / model                      | Effort            | Fable unavailable fallback | Notes                                                                                                                |
 | ------------------------- | ------------------------------------ | ----------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Plan drafters             | Claude `fable` + Codex `gpt-5.6-sol` | `high` / `high`   | Opus `high`                | `high`/`xhigh` `plan_review_tier` only; independent complete plans from the brief; each writes only its own draft file; a drafter lost at runtime: its surviving peer's draft becomes the base, no drafts → coordinator drafts alone |
+| Plan drafters             | Claude `fable` + Codex `gpt-5.6-sol` | `high` / `high`   | Opus `high`                | `medium`/`high`/`xhigh` `plan_review_tier` only; independent complete plans from the brief; each writes only its own draft file; a drafter lost at runtime is retried once on a fresh terminal; failing twice, its surviving peer's draft becomes the base, no drafts → coordinator drafts alone |
 | Plan critics              | Claude `fable` + Claude `opus` + Codex `gpt-5.6-sol` | `xhigh` all       | continue with surviving critics | all three each round; adversarial mandate; read-only by instruction; round cap comes from `plan_review_tier` |
 | Builder, `low` complexity | Codex `gpt-5.6-sol`                  | `medium`          | —                          |                                                                                                                      |
 | Builder, `medium`                                             | Claude `opus`                        | `medium`          | —                          | default builder                                                                                                      |
@@ -40,7 +40,7 @@ Every fix is classified with the task-complexity rubric and routed through the m
 
 Review depth uses two separate assessments of aggregate risk (blast radius, coupling, novelty, failure impact, and observability), both independent of per-task builder complexity:
 
-1. After the understanding check, classify the run as `plan_review_tier` from the requirements and scout evidence, and snapshot only the plan-critique cap. The tier selects the plan drafting mode — `high`/`xhigh` runs competitive drafting, `low`/`medium` the coordinator drafts alone — and stays fixed with its cap throughout critique.
+1. After the understanding check, classify the run as `plan_review_tier` from the requirements and scout evidence, and snapshot only the plan-critique cap. The tier selects the plan drafting mode — `medium`/`high`/`xhigh` runs competitive drafting, `low` the coordinator drafts alone — and stays fixed with its cap throughout critique.
 2. After critique ends, assess canonical `run_complexity` from the reviewed plan. It may be higher or lower than `plan_review_tier` and determines code-review depth and QA.
 
 

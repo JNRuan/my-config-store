@@ -74,7 +74,7 @@ The run folder holds exactly this:
 run-state.json                          run manifest
 summary.md                              run narrative, finalized at Phase 9
 plan/plan.md                            spec of record
-plan/draft-<fable|sol>.md               planner drafts, high|xhigh plan_review_tier only
+plan/draft-<fable|sol>.md               planner drafts, medium|high|xhigh plan_review_tier only
 plan/critique-<fable|opus|sol>-r<N>.md  one per critic per round
 tasks/{seq}-{slug}-assignment.md        coordinator to builder
 tasks/{seq}-{slug}-report.md            builder to coordinator
@@ -110,7 +110,7 @@ Present to the human your understanding of the task: requirements and intended s
 
 **Step 1 - Tier**: classify `plan_review_tier` from the requirements and scout evidence (rubric: `references/routing.md`) and snapshot it with its plan-critique cap in `run-state.json`. The tier selects the drafting mode and stays fixed through critique.
 
-**Step 2 - Draft**. On `low` | `medium`: write `<RUNDIR>/plan/plan.md` yourself, following `references/plan-template.md` exactly. On `high` | `xhigh`, competitive drafting:
+**Step 2 - Draft**. On `low`: write `<RUNDIR>/plan/plan.md` yourself, following `references/plan-template.md` exactly. On `medium` | `high` | `xhigh`, competitive drafting:
 
 1. Compose the drafting brief: requirements and acceptance criteria, scouting findings with their evidence, settled answers from the understanding check, open assumptions, project tooling verbatim, and the required plan structure copied from `references/plan-template.md` — drafters cannot read this skill's files, so the brief must stand alone. The brief goes verbatim into each planner's task spec; both planners receive identical brief content.
 2. Record `git -C <WT-PATH> rev-parse HEAD`. Boot the two planner terminals (models, effort, and recipes: `references/routing.md`). Per planner (`<P>` = `fable` | `sol`):
@@ -124,7 +124,7 @@ Present to the human your understanding of the task: requirements and intended s
    <the composed brief>" --json
    orca orchestration dispatch --task <T_PLANNER_P> --to <H_PLANNER_P> --inject --json
    ```
-3. Collect both with the bounded-wait loop and correlation rules. A failed, overdue, or draftless planner: mark its task `failed` and close its terminal. One surviving draft: continue with it as the sole base (no grafting source). No surviving drafts: write the plan yourself as in the `low`|`medium` mode. Record either reduction. Run the read-only collection check, then commit the drafts.
+3. Collect both with the bounded-wait loop and correlation rules. A failed, overdue, or draftless planner: mark its task `failed`, close its terminal, then **retry that lens once** — boot a fresh terminal for that lens per its routing row (fallback included), create a fresh task with the identical brief, and dispatch. Collect the retry on the same loop. A lens that fails twice is done: one surviving draft continues as the sole base (no grafting source); no surviving drafts means writing the plan yourself as in the `low` mode. Record every retry and either reduction. Run the read-only collection check, then commit the drafts.
 4. Judge the complete drafts on the axes the critics will use: decomposition seams, requirement coverage, correctness against the requirements, verification adequacy, sizing in both directions. Select the stronger draft as the base of the final plan — correcting anything your judgment or the brief contradicts — graft in elements where the other draft is genuinely better, and write `<RUNDIR>/plan/plan.md` yourself following the template; the plan must read as one author's work, never a concatenation. Close the planner terminals.
 
 In both modes, `plan/plan.md` key obligations:
