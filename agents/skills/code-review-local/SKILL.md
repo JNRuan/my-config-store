@@ -1,10 +1,10 @@
 ---
 name: code-review-local
-description: "Actionable code review of the current branch against a base ref — scout, review across requirements/correctness/security/reliability/patterns/tests, verify, and report only confirmed issues. Use when the user asks to review the current branch, review a diff or local changes before a PR, or mentions 'code review', 'review my branch', 'review my changes', or 'code-review-local'."
+description: "Actionable code review of the current branch against a base ref — scout, review across requirements/correctness/reliability/patterns/tests, verify, and report only confirmed issues. Use when the user asks to review the current branch or its diff before a PR, or mentions 'code review', 'review my branch', or 'code-review-local'."
 ---
 # Code Review
 
-Review the current branch against `origin/main` — unless the user specifies a different base ref (e.g. `origin/develop`, a tag, a commit SHA, or a comparison range), in which case use that.
+Review the current branch against `origin/main` — unless the user specifies a different base ref (e.g. `origin/develop`, a tag, or a commit SHA), in which case use that.
 
 As the code reviewer: 
 
@@ -15,6 +15,7 @@ As the code reviewer:
 
 ## SCOPE
 
+- Committed changes only: the diff is `$BASE...HEAD`; uncommitted work is not reviewed.
 - Review the diff holistically. Use per-commit context and commit messages to understand intent.
 - Assume all tests pass and code compiles — running them is outside this review.
 - Flag only MEDIUM, HIGH, or CRITICAL severity issues.
@@ -81,7 +82,7 @@ Wait for all scouts to complete. Note the highest-risk areas where blast radius 
 
 ## Step 2: Spawn category review subagents
 
-Spawn one subagent per category in parallel (model per the Subagent models table). Always spawn Correctness, Reliability, Patterns. Spawn Requirements **only if** Step 1 resolved an intent source — pass it (or its path) in the spawn package. Spawn Security **unless** the diff plainly has no attack surface (no input handling, auth, network calls, dependency changes, or agent/skill/prompt files; e.g., docs-only or pure-rename refactors); when in doubt, spawn it. If you skip Security, record it in the Coverage note (Step 4). Spawn Tests **only if** the diff contains test files.
+Spawn one subagent per category in parallel (model per the Subagent models table). Always spawn Correctness, Reliability, Patterns. Spawn Requirements **only if** Step 1 resolved an intent source — pass it (or its path) in the spawn package. Spawn Tests **only if** the diff contains test files.
 
 > **Tool degradation**: if your agentic tool can't spawn parallel subagents, apply the category lenses sequentially in your own context using the framing below, then proceed to Step 3.
 
@@ -127,7 +128,7 @@ Each subagent must return findings with these fields:
 ```
 **Issue 1** - Short name of issue
 **Severity (draft)**: Critical | High | Medium | Low
-**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | Requirements gap
+**Category:** Bug | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | Requirements gap
 **File:** `path:line(s)`
 **Findings:** 
 - Concise statement and list of findings
@@ -174,16 +175,6 @@ Use these as starting points per category, not as exhaustive checklists. The goa
 - Coverage gaps: only flag if you can name a realistic input or flow that hits the uncovered path
 - Test code quality: held to the same bar as production code — extract repeated setup, parameterize similar tests
 
-**Security**
-
-- Injection (SQL/XSS/command), path traversal, unsafe deserialization, XXE
-- AuthN/Z gaps: new endpoint without auth, missing re-auth on destructive ops, IDOR
-- Sessions/JWT: cookie flags (Secure/HttpOnly/SameSite), token regen post-login, algorithm enforced (reject `none`)
-- Secrets in code, insecure defaults, deprecated crypto (MD5, SHA-1, DES, RC4)
-- Information disclosure: PII in logs, stack traces or schema leaking to clients
-- CORS/SSRF/CSRF, missing security headers on new responses
-- Agentic (only if PR touches agents/skills/tools/memory/prompts): prompt injection from user-controlled content, unbounded tool allow-lists, memory poisoning, vague agent instructions — reference OWASP Agentic Top 10
-
 **Reliability**
 
 - Perf antipatterns with measurable impact: N+1, O(n²), unbounded I/O/memory, missing pagination/indexes, long transactions wrapping slow I/O
@@ -229,7 +220,7 @@ Across **all surviving findings**:
 
 4. **Consolidate** — merge findings with the same root cause; reference duplicates as "See issue #N." Cross-reference related findings.
 5. **Normalize severity** — adjust draft Severity from subagents based on the full set.
-6. **Drop what doesn't earn a place** — Low severity findings, nits, and anything below 75 confidence — unless your judgment overrides for functionality, maintainability, or security.
+6. **Drop what doesn't earn a place** — Low severity findings, nits, and anything below 75 confidence — unless your judgment overrides for functionality or maintainability.
 
 Subagents proposed; you rule.
 
@@ -247,11 +238,9 @@ Always include this subsection.
 
 ### Coverage note
 
-Include only if a category subagent failed all attempts or the Security lens was skipped:
+Include only if a category subagent failed all attempts:
 
 > **Coverage note** — {Category} lens did not complete; this report does not cover {category} concerns.
-
-> **Coverage note** — Security lens skipped: no attack surface in the diff (no input handling, auth, network, dependency, or agent/skill/prompt changes).
 
 ### Code Issues
 
@@ -261,7 +250,7 @@ For each surviving finding you must report:
 **Issue 1** - Short name of issue
 **Severity**: Critical | High | Medium
 **Confidence**: {score/100}
-**Category:** Bug | Security | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | Requirements gap
+**Category:** Bug | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | Requirements gap
 **File:** `path:line(s)`
 **Findings:** 
 - Concise statement and list of findings

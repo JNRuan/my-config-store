@@ -78,7 +78,8 @@ plan/draft-<fable|sol>.md               planner drafts, medium|high|xhigh plan_r
 plan/critique-<fable|opus|sol>-r<N>.md  one per critic per round
 tasks/{seq}-{slug}-assignment.md        coordinator to builder
 tasks/{seq}-{slug}-report.md            builder to coordinator
-review/<claude|codex>-review-r<N>.md    one per reviewer per round
+review/<claude|codex>-review-r<N>.md    one per code reviewer per round
+review/security-review-r<N>.md          security reviewer, one per round
 review/synthesis-r<N>.md                deduped findings for the round
 review/qa-findings.md                   high/xhigh runs only
 screenshots/{description}_{sequence}.png
@@ -213,9 +214,9 @@ Any failure here becomes a fix task (fix-task discipline, Phase 5): write an ass
 
 ## Phase 7: Code Review
 
-Set `<CODE_REVIEW_CAP>` from the plan's Review Policy and set both `REVIEW_FIXES_APPLIED=false` and manifest `review_fixes_applied=false`. Boot Claude and Codex reviewer terminals in `<WT>` (recipes: `references/routing.md`), then run rounds 1 through `<CODE_REVIEW_CAP>`, inclusive:
+Set `<CODE_REVIEW_CAP>` from the plan's Review Policy and set both `REVIEW_FIXES_APPLIED=false` and manifest `review_fixes_applied=false`. Boot the Claude and Codex code-reviewer terminals and the security-reviewer terminal in `<WT>` (recipes: `references/routing.md`), then run rounds 1 through `<CODE_REVIEW_CAP>`, inclusive:
 
-1. Set `CODE_CHANGED=false` before dispatch and record `<WT>` HEAD in the round's manifest record. Create fresh reviewer tasks and reports for `<ROUND>`. For rounds after the first, include as context the commit range from the previous round's recorded HEAD to the current HEAD, and the preceding synthesis path. Dispatch each reviewer with:
+1. Set `CODE_CHANGED=false` before dispatch and record `<WT>` HEAD in the round's manifest record. Create fresh reviewer tasks and reports for `<ROUND>`. For rounds after the first, include as context the commit range from the previous round's recorded HEAD to the current HEAD, and the preceding synthesis path. Dispatch each code reviewer with:
 
    ```
    Run /code-review-local (it exists; do not check) and follow the prompt. Review
@@ -224,8 +225,18 @@ Set `<CODE_REVIEW_CAP>` from the plan's Review Policy and set both `REVIEW_FIXES
    <RUNDIR>/review/<claude|codex>-review-r<ROUND>.md — that file is the only file
    you may write; do not edit code. Then report completion.
    ```
-2. Collect both reviewers via the bounded-wait loop with dispatch-id correlation. Mark a failed or reportless reviewer task `failed`, close its terminal, continue with the survivor, and mark the synthesis **single-lens**; boot a fresh terminal for that lens before a later round. Both lenses failing invokes the abort routine. Run the read-only collection check against the recorded HEAD, then commit the reports and manifest.
-3. Synthesize to `<RUNDIR>/review/synthesis-r<ROUND>.md`. Sources are `claude` and `codex`; `both` marks agreement. Apply these mechanics only:
+
+   Dispatch the security reviewer in the same parallel wave with:
+
+   ```
+   Run /security-review-local (it exists; do not check) and follow the prompt. Review
+   the current branch against base commit <BASE_SHA>. Exclude .agents/orca/orchestration/
+   (run bookkeeping, not the implementation). Write your FULL report to
+   <RUNDIR>/review/security-review-r<ROUND>.md — that file is the only file
+   you may write; do not edit code. Then report completion.
+   ```
+2. Collect all three reviewers via the bounded-wait loop with dispatch-id correlation; the round proceeds only once every reviewer dispatch is terminal. Mark a failed or reportless reviewer task `failed` and close its terminal, then **retry that lens once within the round**: boot a fresh terminal per its routing row, create a fresh task with the identical dispatch text, and collect it on the same loop. A lens failing twice in one round is out for the round: continue with the survivors and record the missing lens in the synthesis; boot a fresh terminal for it before a later round. Both code-review lenses out for a round invokes the abort routine; the security lens out alone means the round proceeds with the synthesis recorded as lacking security coverage. Run the read-only collection check against the recorded HEAD, then commit the reports and manifest.
+3. Synthesize to `<RUNDIR>/review/synthesis-r<ROUND>.md`. Sources are `claude`, `codex`, and `security`. Apply these mechanics only:
    - Drop findings whose cited file exists neither at HEAD nor at `BASE_SHA`; deleted files are valid citations. Keep a finding in untouched code only when it traces a causal path to a changed file. Record drops in an appendix.
    - Dedupe by finding identity, not wording.
    - Preserve attribution and every source's severity.
@@ -272,16 +283,17 @@ QA runs once and code review does not reopen; final QA fixes are verified but no
 
 ## Phase 9: PR
 
-1. Finalize `<RUNDIR>/summary.md`: start/end datetimes, what shipped, plan-review tier and cap used, final run complexity and downstream review policy, plan/code-review rounds run with stop reasons, QA run/skip result, decisions and judgment calls with reasoning (accumulated throughout the run), acceptance criteria with evidence, incidents (reset reviewer trees, superseded dispatches), open questions.
+1. Finalize `<RUNDIR>/summary.md`: start/end datetimes, what shipped, plan-review tier and cap used, final run complexity and downstream review policy, plan/code-review rounds run with stop reasons, security-review coverage per round (run, or why it was missing), QA run/skip result, decisions and judgment calls with reasoning (accumulated throughout the run), acceptance criteria with evidence, incidents (reset reviewer trees, superseded dispatches), open questions.
 2. Ensure everything is committed: `git -C <WT-PATH> status --porcelain` must be empty after committing whatever is outstanding (`summary.md`, final `run-state.json`).
 3. Push the run branch — the only branch that ever reaches the remote, and only now.
-4. Open the PR (the `pr-create` flow) against the base *branch*: summary from `plan/plan.md` and `summary.md`; acceptance criteria with evidence; source issue link when there is one; review appendix with rounds run, fixed findings and re-verification evidence, and every finding left unfixed with its reason and attribution; QA result only when run, otherwise its policy skip; screenshot references for UI changes; sign-off line:
+4. Open the PR (the `pr-create` flow) against the base *branch*: summary from `plan/plan.md` and `summary.md`; acceptance criteria with evidence; source issue link when there is one; review appendix with rounds run, security-lens coverage per round, fixed findings and re-verification evidence, and every finding left unfixed with its reason and attribution; QA result only when run, otherwise its policy skip; screenshot references for UI changes; sign-off line:
 
 ```markdown
 ---
 :space_invader: Built with Orca
 Build: {display names of every model that produced or fixed shipped code, deduped; no effort levels}
-Code review: {display names of the reviewer models behind completed lenses, with rounds run; no effort levels}
+Code review: {display names of the code-reviewer models behind completed lenses, with rounds run; no effort levels}
+Security review: {security-reviewer model when its lens completed, with rounds run; otherwise "not run"; no effort levels}
 ```
 
 5. Teardown, verified **against the manifest**: close every terminal handle recorded in `run-state.json`, remove any remaining task/QA worktrees by recorded id, confirm each is gone. Never sweep unfiltered `terminal list` / `worktree list` output — the runtime is shared. Only the integration worktree survives, kept until the PR merges (`orca worktree rm` is the human's post-merge step, not yours).
@@ -290,7 +302,7 @@ Code review: {display names of the reviewer models behind completed lenses, with
 ## Failure handling
 
 - **Retry protocol** (a task exhausts its 3 cycles): reflect — approach or execution? Adjust the assignment or plan, and append a retry briefing to the assignment file: what each cycle attempted, what failed and how (failing checks with output, from the cycle reports), and your diagnosis of why. Then respawn a fresh worker on the same branch and worktree (supersede the old dispatch). If the replacement also exhausts 3 cycles, the task is **permanently failed**: `task-update --id <task> --status failed`, mark owned dependent tasks `failed` (dependency failed), close its terminal, remove its worktree — branch preserved for manual review (verify the branch survives `worktree rm` on first use; if it does not, tag the tip `git tag orca-run/<RUN>/{slug} <sha>` before removal, never pushed) — and record attempts and branch name in `summary.md`. Let independent in-flight tasks finish (collect, verify, merge); dispatch nothing new; then run the abort routine.
-- **Abort routine** (one idempotent path, used for permanent task failure, fix-wave exhaustion, plan rejection, all-critics or both-reviewers failure, and unresolvable critical escalations): mark this run's remaining non-terminal tasks `failed`; close all manifest-owned terminals; remove disposable/task worktrees by recorded id (failure branches preserved; delete the QA branch if one was created); write `summary.md` with `status: failed|blocked`, what was attempted, and what remains; update `run-state.json`; report to the human. The integration worktree and run branch survive for inspection.
+- **Abort routine** (one idempotent path, used for permanent task failure, fix-wave exhaustion, plan rejection, all-critics or both-code-reviewers failure, and unresolvable critical escalations): mark this run's remaining non-terminal tasks `failed`; close all manifest-owned terminals; remove disposable/task worktrees by recorded id (failure branches preserved; delete the QA branch if one was created); write `summary.md` with `status: failed|blocked`, what was attempted, and what remains; update `run-state.json`; report to the human. The integration worktree and run branch survive for inspection.
 - **Infeasibility**: consecutive tasks hitting structurally similar walls, or verification failing on the same criterion regardless of implementation, means the plan or requirements are wrong, not the workers. Stop respawning and run the abort routine, recording what you observed, which assumptions look load-bearing and wrong, and your best read of what is feasible.
 - **Coordinator failure** (context limit, unexpected error): attempt recovery; otherwise execute as much of the abort routine's recording as possible. `run-state.json`, the DAG, the run branch, and `<RUNDIR>` survive. A fresh session resumes from the manifest's `phase`, reconciled against live Orca state and the run branch: merge commits and task branches are authoritative over manifest task status; collect pending `worker_done` messages before dispatching anything; never re-dispatch work already committed on a task branch or re-merge a merged branch. Inside Phase 6-8, the review-round records and fix-wave counts say which round or wave was live and how much of its budget is spent.
 - Orca's dispatch circuit breaker (3 consecutive dispatch failures → task `failed`) is retry-protocol entry, not something to reset and hammer. Never run `orca orchestration reset` — the store is shared with other runs.

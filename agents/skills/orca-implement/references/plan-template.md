@@ -23,9 +23,9 @@ What needs to be built and why, briefly.
 
 ## Review Policy
 
-- **Plan-review cap used**: {1 | 2 | 3, snapshotted before critique}
+- **Plan-review cap used**: {1 | 2 | 3 | 5, snapshotted before critique}
 - **Run-complexity rationale**: {aggregate risk, blast radius, coupling, failure impact, and observability evidence from the reviewed plan}
-- **Code-review cap**: {pending before critique | 1 | 2 | 3 after critique}
+- **Code-review cap**: {pending before critique | 1 | 2 | 3 | 5 after critique}
 - **Adversarial QA**: {pending before critique | skip for low/medium | run after all code review for high/xhigh}
 
 Fill the plan-review fields before critique from `references/routing.md`.
