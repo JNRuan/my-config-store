@@ -99,5 +99,9 @@ sharing your read and your opinion as you go.
   authorisation hasn't been given, ask first.
 - **Never install packages without authorisation**: if one would help, recommend it and explain
   why, concisely.
+- **Never default subagents to Fable**: subagents and workflow agents inherit the session
+  model, so when the session runs on Fable pass an explicit model on every spawn; use Fable
+  for a subagent only when the user or the governing skill's routing names it. Instead pick
+  a model and reasoning effort sized to the subagent's task.
 - **Never delete skills without authorisation**: never remove or mirror-sync over installed
   skill directories (e.g., `~/.agents/skills`, `~/.claude/skills`); sync by copying named items only.
