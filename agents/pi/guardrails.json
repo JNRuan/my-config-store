@@ -1,7 +1,7 @@
 {
-  "$schema": "https://unpkg.com/@aliou/pi-guardrails@0.12.1/schema.json",
+  "$schema": "https://unpkg.com/@aliou/pi-guardrails@0.17.0/schema.json",
   "applyBuiltinDefaults": true,
-  "version": "0.9.0-20260327",
+  "version": "0.16.2",
   "onboarding": {
     "completed": true,
     "completedAt": "2026-05-05T03:17:30.097Z",
@@ -13,22 +13,70 @@
   "pathAccess": {
     "mode": "ask",
     "allowedPaths": [
-      "/dev/null",
-      "/dev/stdin",
-      "/dev/stdout",
-      "/dev/stderr",
-      "/dev/tty",
-      "/dev/zero",
-      "/dev/random",
-      "/dev/urandom",
-      "/tmp/",
-      "/private/tmp/",
-      "/var/folders/",
-      "~/.agents/",
-      "~/.bun/install/global/node_modules/",
-      "~/.claude/",
-      "~/.nvm/versions/node/",
-      "~/.pi/"
+      {
+        "kind": "file",
+        "path": "/dev/null"
+      },
+      {
+        "kind": "file",
+        "path": "/dev/stdin"
+      },
+      {
+        "kind": "file",
+        "path": "/dev/stdout"
+      },
+      {
+        "kind": "file",
+        "path": "/dev/stderr"
+      },
+      {
+        "kind": "file",
+        "path": "/dev/tty"
+      },
+      {
+        "kind": "file",
+        "path": "/dev/zero"
+      },
+      {
+        "kind": "file",
+        "path": "/dev/random"
+      },
+      {
+        "kind": "file",
+        "path": "/dev/urandom"
+      },
+      {
+        "kind": "directory",
+        "path": "/tmp"
+      },
+      {
+        "kind": "directory",
+        "path": "/private/tmp"
+      },
+      {
+        "kind": "directory",
+        "path": "/var/folders"
+      },
+      {
+        "kind": "directory",
+        "path": "~/.agents"
+      },
+      {
+        "kind": "directory",
+        "path": "~/.bun/install/global/node_modules"
+      },
+      {
+        "kind": "directory",
+        "path": "~/.claude"
+      },
+      {
+        "kind": "directory",
+        "path": "~/.nvm/versions/node"
+      },
+      {
+        "kind": "directory",
+        "path": "~/.pi"
+      }
     ]
   },
   "permissionGate": {
@@ -67,11 +115,7 @@
       },
       {
         "pattern": "docker rm",
-        "description": "Docker container removal"
-      },
-      {
-        "pattern": "docker rmi",
-        "description": "Docker image removal"
+        "description": "Docker container or image removal"
       },
       {
         "pattern": "docker system prune",
@@ -115,27 +159,24 @@
     "rules": [
       {
         "id": "certificate-files",
-        "name": "Certificates",
-        "description": "Block certificate and key files",
+        "name": "Private keys",
+        "description": "Block private key files",
         "patterns": [
-          {
-            "pattern": "*.crt"
-          },
           {
             "pattern": "*.key"
           },
           {
             "pattern": "*.p12"
-          }
-        ],
-        "allowedPatterns": [
+          },
           {
-            "pattern": "*.csr"
+            "pattern": "*.pem"
+          },
+          {
+            "pattern": "*.pfx"
           }
         ],
         "protection": "noAccess",
-        "onlyIfExists": true,
-        "enabled": true
+        "onlyIfExists": false
       },
       {
         "id": "database-files",
@@ -153,8 +194,7 @@
           }
         ],
         "protection": "readOnly",
-        "onlyIfExists": true,
-        "enabled": true
+        "onlyIfExists": true
       },
       {
         "id": "home-aws",
@@ -166,8 +206,7 @@
           }
         ],
         "protection": "noAccess",
-        "onlyIfExists": true,
-        "enabled": true
+        "onlyIfExists": true
       },
       {
         "id": "home-ssh",
@@ -184,8 +223,7 @@
           }
         ],
         "protection": "noAccess",
-        "onlyIfExists": true,
-        "enabled": true
+        "onlyIfExists": false
       },
       {
         "id": "log-files",
@@ -200,8 +238,7 @@
           }
         ],
         "protection": "readOnly",
-        "onlyIfExists": true,
-        "enabled": true
+        "onlyIfExists": true
       },
       {
         "id": "pi-agent-auth",
@@ -213,8 +250,7 @@
           }
         ],
         "protection": "noAccess",
-        "onlyIfExists": true,
-        "enabled": true
+        "onlyIfExists": true
       },
       {
         "id": "secret-files",
@@ -229,6 +265,15 @@
           },
           {
             "pattern": ".dev.vars"
+          },
+          {
+            "pattern": ".npmrc"
+          },
+          {
+            "pattern": ".pypirc"
+          },
+          {
+            "pattern": ".netrc"
           }
         ],
         "allowedPatterns": [
@@ -255,8 +300,7 @@
           }
         ],
         "protection": "noAccess",
-        "onlyIfExists": true,
-        "enabled": true
+        "onlyIfExists": false
       }
     ]
   }
