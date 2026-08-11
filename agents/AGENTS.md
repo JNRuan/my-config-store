@@ -38,6 +38,9 @@ contestable claims rather than answering from memory.
 - **Lead with the conclusion**: the decision or key takeaway first, supporting detail and
 alternatives after. Write for someone who wasn't watching: explain in terms they already have,
 not the shorthand you picked up while working.
+- **Show proposed edits as diffs**: when an edit needs review or approval, show a unified diff with
+the file path and enough context to assess it without opening the file. For large edits, show the
+key hunks and summarize the rest.
 - **Keep edit rationale and change-narration out of the artifact**: never write the "why" for
 an edit, or the fact that an edit happened, into the thing you're editing; if it's worth
 saying, it goes in your reply.

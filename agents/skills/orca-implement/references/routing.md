@@ -1,4 +1,4 @@
-# Routing &amp; worker boot recipes
+# Routing & worker boot recipes
 
 **Concurrency cap**: 5 concurrent builders (Orca worker terminals; workers' internal native subagents are not counted).
 
@@ -12,7 +12,7 @@ Resolved by which runtime runs `/orca-implement`.
 | Coordinator          | the invoking session | the invoking session    | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only   |
 | Scouts               | `sonnet` subagent    | `gpt-5.6-luna` subagent | `medium` / `medium`     | read-only; native subagents, not Orca terminals                                            |
 | Plan fact check      | `sonnet` subagent    | `gpt-5.6-luna` subagent | `medium` / `high`       | read-only; verifies the plan's checkable claims only, no content judgment; native subagent |
-| Browser verification | `sonnet` subagent    | `gpt-5.6-luna` subagent | `high` / `xhigh`        | `agent-browser`, headless; native subagent, not an Orca terminal                           |
+| Browser verification | `sonnet` subagent    | `gpt-5.6-luna` subagent | `high` / `xhigh`        | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal                           |
 
 
 ## Pinned roles
@@ -29,7 +29,7 @@ Identical regardless of coordinator.
 | Builder, `high`           | Claude `opus`                                        | `high`          | —                               | many-file or mechanically hard, but fully specified by plan + contracts                                                                                                                                                                                                                          |
 | Builder, `xhigh`          | Claude `fable`                                       | `high`          | `gpt-5.6-sol` `xhigh`           | the remaining reasoning is the risk: see the task complexity rubric                                                                                                                                                                                                                              |
 | Code reviewers            | Claude `fable` + Codex `gpt-5.6-sol`                 | `high` / `high` | Opus `high`                     | both each round; round cap comes from `run_complexity`                                                                                                                                                                                                                                           |
-| Security reviewer         | Codex `gpt-5.6-sol`                                   | `high`          | —                               | one each round, dispatched in the same wave as the code reviewers; runs `/security-review-local`; round cap comes from `run_complexity`                                                                                                                                                          |
+| Security reviewer         | Codex `gpt-5.6-sol`                                   | `high`          | —                               | one each round, dispatched in the same wave as the code reviewers; runs the mapped security-review skill (`references/skill-map.md`); round cap comes from `run_complexity`                                                                                                                                                          |
 | Adversarial QA            | Claude `fable`                                        | `high`          | Opus `high`                     | `high`/`xhigh` runs only; runs once after all code-review rounds and fixes; disposable worktree, branch never merged                                                                                                                                                                             |
 
 
@@ -41,7 +41,7 @@ Every fix is classified with the task-complexity rubric and routed through the m
 
 Review depth uses two separate assessments of aggregate risk (blast radius, coupling, novelty, failure impact, and observability), both independent of per-task builder complexity:
 
-1. After the understanding check, classify the run as `plan_review_tier` from the requirements and scout evidence, and snapshot only the plan-critique cap. The tier selects the plan drafting mode — `medium`/`high`/`xhigh` runs competitive drafting, `low` the coordinator drafts alone — and stays fixed with its cap throughout critique.
+1. After the understanding check, classify the run as `plan_review_tier` from the requirements and scout evidence, and snapshot only the plan-critique cap. The tier selects the plan drafting mode (`medium`/`high`/`xhigh` runs competitive drafting, `low` the coordinator drafts alone) and stays fixed with its cap throughout critique.
 2. After critique ends, assess canonical `run_complexity` from the reviewed plan. It may be higher or lower than `plan_review_tier` and determines code-review depth and QA.
 
 
@@ -63,32 +63,39 @@ Classify each task after the plan is drafted: task complexity is what remains fo
 | Tier     | What remains for the builder        | Typical signals                                                                                                                                                                                                                                                                                                                                                                                       |
 | -------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `low`    | Execute a near-dictated diff        | the solution is simple and already clear, with one or two simple or trivial touchpoints: renames, formatting, config/copy changes, plumbing a field through an existing pipeline, a change spelled out explicitly that needs no interpretation                                                                                                                                                        |
-| `medium` | Local decisions inside one area     | one module or layer, established conventions — more modules only when the changes are simple with a small impact surface: a new endpoint or component following existing shapes, a bugfix needing investigation within one subsystem; changes stay behind existing interfaces — a contract other modules depend on moving means `high` or above                                                       |
-| `high`   | Heavy execution, routine reasoning  | crosses module or layer boundaries with substantial changes on each side, but the plan pins every decision: cross-layer features against pinned contracts, mechanical migrations, specced algorithms — blast radius wide but enumerable; the hard part is volume, sequencing, and consistency, not invention                                                                                          |
-| `xhigh`  | The remaining reasoning is the risk | the plan cannot pin the hard part — correctness hinges on sustained, subtle reasoning during implementation: concurrency and consistency invariants, intricate algorithms or complex state, security-critical logic, contract or schema changes that ripple to consumers, novel abstractions others build on, refactors whose "how" only emerges mid-implementation, ambiguity that survives planning |
+| `medium` | Local decisions inside one area     | one module or layer, established conventions; more modules only when the changes are simple with a small impact surface: a new endpoint or component following existing shapes, a bugfix needing investigation within one subsystem; changes stay behind existing interfaces (a contract other modules depend on moving means `high` or above)                                                       |
+| `high`   | Heavy execution, routine reasoning  | crosses module or layer boundaries with substantial changes on each side, but the plan pins every decision: cross-layer features against pinned contracts, mechanical migrations, specced algorithms (blast radius wide but enumerable); the hard part is volume, sequencing, and consistency, not invention                                                                                          |
+| `xhigh`  | The remaining reasoning is the risk | the plan cannot pin the hard part, because correctness hinges on sustained, subtle reasoning during implementation: concurrency and consistency invariants, intricate algorithms or complex state, security-critical logic, contract or schema changes that ripple to consumers, novel abstractions others build on, refactors whose "how" only emerges mid-implementation, ambiguity that survives planning |
 
 
 Rules:
 
 - The tier is set by the hardest remaining part, not its bulk. Signals trump size: a 30-file mechanical rename is `high`; a one-file lock-ordering change can be `xhigh`.
-- Torn between adjacent tiers up through `high`: take the higher — the cost is only effort. Torn between `high` and `xhigh`: ask whether more planning would make the remaining work routine — pin what can be pinned and route `high`. Nothing should reach a builder undecided; route `xhigh` when the difficulty lives in the reasoning itself, or when complex ambiguity survives planning. Two tests break the tie: would two competent developers produce essentially the same diff (same → `high`), and would a mistake fail loudly in build, tests, or review, or ship silently (silent → `xhigh`)?
+- Torn between adjacent tiers up through `high`: take the higher; the cost is only effort. Torn between `high` and `xhigh`: ask whether more planning would make the remaining work routine: pin what can be pinned and route `high`. Nothing should reach a builder undecided; route `xhigh` when the difficulty lives in the reasoning itself, or when complex ambiguity survives planning. Two tests break the tie: would two competent developers produce essentially the same diff (same → `high`), and would a mistake fail loudly in build, tests, or review, or ship silently (silent → `xhigh`)?
 - Auth/authz, payments, data migration or deletion, and concurrency primitives: never below `high`; `xhigh` when the approach is not pinned.
-- `xhigh` judgment operates within the human-approved plan. A decision the human must own (architectural fork, security decision, destructive data operation) is settled at the understanding check or the plan gate — never delegated to a builder.
+- `xhigh` judgment operates within the human-approved plan. A decision the human must own (architectural fork, security decision, destructive data operation) is settled at the understanding check or the plan gate, never delegated to a builder.
 - A task that reads `xhigh` because it mixes concerns is a decomposition smell: split it so the judgment concentrates in one `xhigh` task and the remainder drops to `high` or below.
 
 ## Boot recipes
 
 - Substitute model and effort from the tables.
 - Confinement comes from the outer nono sandbox (the `nclaude`/`ncodex` aliases, backed by the `my-claude`/`my-codex` profiles), which also governs network access. Codex's own sandbox cannot nest inside nono: every Codex worker passes `--sandbox danger-full-access` in the recipe, never relying on machine config.
-- Codex workers booted outside the integration worktree (builders and fix workers in task worktrees, QA in its disposable worktree) need `<RUNDIR>` for their report/findings paths, which live in the integration worktree. `--add-dir` informs Codex only; the nono grant requires `--allow "<RUNDIR>"`, so these workers boot with the expanded `nono run` command instead of the `ncodex` alias.
-- Workers booted in `<WT>` (reviewers, plan critics) use the `ncodex` alias with no extra grant.
+- Workers booted outside the integration worktree (builders and fix workers in task worktrees, QA in its disposable worktree) need `<RUNDIR>` for their report/findings paths, which live in the integration worktree. The aliases grant only the worktree, so these workers boot with the expanded `nono run` command carrying an explicit `--allow "<RUNDIR>"` grant instead of the `nclaude`/`ncodex` aliases. For Codex, `--add-dir` informs Codex only; the nono grant does the enforcement.
+- Workers booted in `<WT>` (planners, critics, reviewers) use the `nclaude`/`ncodex` aliases with no extra grant.
 - After every `terminal create`, capture `.result.terminal.handle` into the run manifest and `terminal wait --for tui-idle --timeout-ms 120000` before dispatching.
 
-**Claude worker (builder / reviewer / fix)**:
+**Claude worker in `<WT>` (reviewer)**:
 
 ```bash
-orca terminal create --worktree <WT-or-task-worktree> --title "<role>:<slug>" \
+orca terminal create --worktree <WT> --title "<role>:<slug>" \
   --command "nclaude --model <fable|opus> --effort <effort> --permission-mode bypassPermissions" --json
+```
+
+**Claude worker in a task or QA worktree (builder / fix / QA)**:
+
+```bash
+orca terminal create --worktree <task-or-qa-worktree> --title "<role>:<slug>" \
+  --command "nono run --profile my-claude --allow-cwd --allow \"<RUNDIR>\" -- claude --model <fable|opus> --effort <effort> --permission-mode bypassPermissions" --json
 ```
 
 **Codex worker in `<WT>` (reviewer)**:
@@ -98,7 +105,7 @@ orca terminal create --worktree <WT> --title "<role>:<slug>" \
   --command "ncodex --model gpt-5.6-sol -c 'model_reasoning_effort=\"<effort>\"' --sandbox danger-full-access --ask-for-approval never" --json
 ```
 
-**Codex worker in a task or QA worktree (builder / fix / QA)**:
+**Codex worker in a task worktree (builder / fix)**:
 
 ```bash
 orca terminal create --worktree <task-or-qa-worktree> --title "<role>:<slug>" \

@@ -67,12 +67,12 @@ independent of `plan_review_tier` and `run_complexity`.
 | seq | slug | deps | complexity | builder | covers |
 |-----|------|------|------------|---------|--------|
 | 01  | ...  | —    | medium     | codex sol · high | AC-1 |
-| 02  | ...  | 01   | high       | codex sol · xhigh | AC-2 |
+| 02  | ...  | 01   | high       | claude opus · high | AC-2 |
 | 03  | ...  | 02   | xhigh      | claude fable · high | AC-3 |
 
 ### {seq}-{slug}
 
-- **What**: the deliverable that results in commits (the what, not the how —
+- **What**: the deliverable that results in commits (the what, not the how;
   the builder decides implementation).
 - **Why**: what purpose it serves.
 - **Deps / Inputs**: dependency tasks and what from their output feeds in.
@@ -103,7 +103,7 @@ relayed, and why it is a sync point.
 ### Integration Verification
 
 Cross-task boundaries to verify after each merge, guided by the scouted
-blast radius — not just each task's own tests.
+blast radius, not just each task's own tests.
 
 ### Post-Merge Validation
 
@@ -113,7 +113,7 @@ build verification).
 ## Project Tooling
 
 Install / Build / Test / Lint / Typecheck / Format check / Format write
-commands and the repo's commit-message convention, verbatim — passed
+commands and the repo's commit-message convention, verbatim, passed
 unchanged into every assignment file ("none" where a tool doesn't exist).
 Format is two entries: the check form (safe to run during verification) and
 the write form (mutates code).

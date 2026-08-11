@@ -31,11 +31,11 @@ The skill is **not** triggered by a general request to implement, fix, or build 
 2. **Preflight**: confirms Orca is ready, the coordinator is in an Orca-managed terminal, the repository is registered, and the base is clean.
 3. **Scout**: investigates project mechanics, affected code, dependencies, and test coverage.
 4. **Plan**: assigns the draft a `plan_review_tier`, snapshots its critique cap from [`references/routing.md`](./references/routing.md), fact-checks the plan, and runs Claude and Codex critics. After critique, the reviewed plan receives canonical `run_complexity`, which may differ from the draft tier and controls downstream review and QA.
-5. **Plan gate**: stays with the human until explicit message approval or a Crit round completed with zero comments. Human edits never reopen plan critique, and any proposed run-complexity change requires separate approval.
+5. **Plan gate**: stays with the human until explicit message approval or a zero-comment round of the mapped plan-gate skill. Human edits never reopen plan critique, and any proposed run-complexity change requires separate approval.
 6. **Build**: creates an owned task DAG and dispatches workers in parallel Orca worktrees where dependencies allow. Worker routing follows the complexity rubric in [`references/routing.md`](./references/routing.md).
 7. **Verify and integrate**: checks worker commits and reports, runs the required checks, merges valid task branches, and turns failures into worker fix cycles.
 8. **Whole-run verification**: runs the full project checks and headless browser verification for UI changes. Verification failures must be fixed or explicitly recorded as not verified before review.
-9. **Review**: runs the complexity-capped Claude and Codex review loop. Substantive verified review fixes trigger another review round while under the cap, and one post-review verification pass.
+9. **Review**: runs the complexity-capped review loop of Claude and Codex code reviewers plus a Codex security reviewer each round. Substantive verified review fixes trigger another review round while under the cap, and one post-review verification pass.
 10. **Final adversarial QA**: after all code-review rounds and fixes finish, runs adversarial QA once for high/xhigh against the latest post-review HEAD. Low/medium skip it without allocating QA resources. Accepted QA fixes apply to the integration branch and rerun their reproductions plus whole-run verification.
 11. **Ship**: commits the run artifacts, pushes only the run branch, and opens a PR. Failed or blocked runs use the abort routine instead.
 
@@ -49,9 +49,8 @@ The coordinator must run inside an Orca-managed terminal. The expected environme
 - Orca's runtime to report ready from `orca status --json`.
 - `ORCA_TERMINAL_HANDLE` to be set by the current Orca terminal.
 - The repository to be registered with Orca and the base ref to be clean.
-- `code-review-local` and `security-review-local` available in both the Claude and Codex skill directories visible to Orca terminals.
-- `agent-browser` available to the coordinator's runtime for browser verification.
-- For `high`/`xhigh` runs, `adversarial-review` and `agent-browser` available in the Codex skill environment visible to Orca terminals.
+- The worker-invoked skills in [`references/skill-map.md`](./references/skill-map.md) available as skills to Orca worker terminals; the adversarial QA and browser skills are needed there only for `high`/`xhigh` runs.
+- The coordinator-invoked skills in the same map (browser verification, plan gate, PR creation) available to the coordinator's runtime.
 - Claude Code and Codex available through the login-interactive zsh aliases `nclaude` and `ncodex`, backed by the `my-claude` and `my-codex` nono profiles.
 - GitHub tooling available for GitHub intake or PR creation, and a working Linear connection for Linear intake.
 
@@ -107,6 +106,7 @@ The integration worktree and run branch survive until the PR merges. Task and di
 
 - [`SKILL.md`](./SKILL.md), the complete pipeline and safety rules
 - [`references/routing.md`](./references/routing.md), model routing, complexity tiers, and worker boot recipes
+- [`references/skill-map.md`](./references/skill-map.md), the skill each role invokes
 - [`references/plan-template.md`](./references/plan-template.md), the plan format
 - [`references/assignment-context.md`](./references/assignment-context.md), the worker assignment format
 - [Orca on GitHub](https://github.com/stablyai/orca), the external CLI and runtime
