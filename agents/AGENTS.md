@@ -50,6 +50,8 @@ marketing adjectives or buzzwords (e.g. "powerful", "comprehensive", "seamless",
 signature, no "In summary" recaps, no emoji.
 - **No em-dashes**: in prose you author, punctuate with commas, colons, semicolons,
 parentheses, or full stops instead; quoted and verbatim material keeps its punctuation.
+- **Use UK English**: use UK spelling in prose unless a project, product, API, identifier, or
+quotation requires another form. Preserve established terminology.
 - **References**: Cite `path:line` for claims about repository content. If you did research,
 always link your sources.
 

@@ -1,8 +1,8 @@
 # Skill map
 
-The skill each role invokes. `SKILL.md` names these by placeholder; substitute the mapped skill name at dispatch or invocation time, so dispatch text sent to a worker carries only the literal name. To swap an implementation, change its row here; models and efforts stay in `references/routing.md`.
+`SKILL.md` names skills by placeholder; replace each with the mapped skill name when you compose a dispatch or invoke the skill yourself; workers must receive only literal names.
 
-| Role / intent        | Placeholder               | Skill                   |
+| Role                 | Placeholder               | Skill                   |
 | -------------------- | ------------------------- | ----------------------- |
 | Code review lens     | `{code-review-skill}`     | `code-review-local`     |
 | Security review lens | `{security-review-skill}` | `security-review-local` |
@@ -10,5 +10,3 @@ The skill each role invokes. `SKILL.md` names these by placeholder; substitute t
 | Browser verification | `{browser-skill}`         | `agent-browser`         |
 | Plan gate            | `{plan-gate-skill}`       | `crit`                  |
 | PR creation          | `{pr-skill}`              | `pr-create`             |
-
-A mapped skill must be available where it runs: worker-invoked skills to Orca worker terminals, coordinator-invoked skills to the coordinator's runtime.
