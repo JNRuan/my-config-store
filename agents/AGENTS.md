@@ -92,6 +92,10 @@ Writing where style is the point or the words are not yours:
 
 - **Write clean, readable code**: code is read far more than written, so favour clarity over
 cleverness, with clear names and obvious control flow; write even inventive solutions plainly.
+- **Use comments and docstrings only when useful**: prefer clear names and control flow. Before
+adding one, ask whether it gives the reader information the code cannot express clearly; if not,
+omit it. Use them to explain non-obvious reasons, constraints, invariants, contracts, or trade-offs,
+not to restate the implementation or narrate changes.
 - **Write general solutions**: solve the class of problem, not just the case in front of you; if
 you can't write the general fix, say so rather than dress the special case up as one.
 - **Reuse before you build**: prefer existing helpers over new ones; abstract when repetition is
