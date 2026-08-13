@@ -33,10 +33,12 @@ As the code reviewer:
 
 When spawning subagents, set model and effort per this table, choosing the column for the harness you are running in:
 
-| Role                                                   | Claude                                                                              | Codex                               | Other harness   |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------- | ----------------------------------- | --------------- |
-| Scouts: blast radius, patterns, test coverage (Step 1) | Sonnet, high effort                                                                 | gpt-5.6-luna, high reasoning effort | session default |
-| Category reviewers (Step 2)                            | Fable, high effort; if Fable is unavailable (no access or usage left), Opus, high effort | gpt-5.6-sol, high reasoning effort  | session default |
+
+| Role                                                   | Claude              | Codex                               | Other harness   |
+| ------------------------------------------------------ | ------------------- | ----------------------------------- | --------------- |
+| Scouts: blast radius, patterns, test coverage (Step 1) | Sonnet, medium effort | gpt-5.6-luna, medium reasoning effort | session default |
+| Category reviewers (Step 2)                            | Opus, high effort   | gpt-5.6-sol, high reasoning effort  | session default |
+
 
 - If the harness can't set model or effort per subagent call, spawn with defaults; subagents inherit the session model. This table is an upgrade, not a requirement; never fail a review over it.
 - The verify + consolidate pass (Step 3) is your own context: session model, no override.
@@ -75,6 +77,8 @@ Then launch these scouts in parallel as read-only subagents (Explore in Claude C
 
 - For each changed function or module, find its tests: what scenarios they cover, what edge cases are present or missing
 - Return: a map of `{changed symbol → test files, what they cover, gaps noted}`
+
+Beyond these three, launch any additional scouts you judge the diff needs, on the same model row and read-only terms.
 
 Wait for all scouts to complete. Note the highest-risk areas, where blast radius, pattern divergence, and test gaps overlap; this is for your verify pass, not for fanning to subagents.
 
@@ -212,7 +216,7 @@ For **each finding**:
 3. **Score confidence 0-100**:
   - 75-100: Likely real or verified. Concrete triggers, no handling found, verified against call sites.
   - 50-74: Plausible but uncertain. Trigger requires assumptions you couldn't confirm.
-  - <50: Speculative. No trigger that survived scrutiny, or handling likely prevents it, or referenced code doesn't exist.
+  - &lt;50: Speculative. No trigger that survived scrutiny, or handling likely prevents it, or referenced code doesn't exist.
 
 Across **all surviving findings**:
 
@@ -265,7 +269,7 @@ Leave an empty line between findings for readability.
 
 If none survive: **NO CODE ISSUES.**
 
-### Documentation & Artifact Recommendations
+### Documentation &amp; Artifact Recommendations
 
 Advisory only: these are recommendations, **not** Code Issues. Cover:
 
@@ -329,3 +333,4 @@ Your role is to observe and report:
 
 - Your only output is the review report
 - Source code is off-limits: read it, don't change it while you are reviewing
+

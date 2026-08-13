@@ -81,7 +81,7 @@ The run folder holds exactly this:
 run-state.json                          run manifest
 summary.md                              run narrative, finalized at Phase 9
 plan/plan.md                            spec of record
-plan/draft-<fable|sol>.md               planner drafts, medium|high|xhigh plan_review_tier only
+plan/draft-<fable|opus|sol>.md          one per planner on the tier's panel
 plan/critique-<fable|opus|sol>-r<N>.md  one per critic per round
 tasks/{seq}-{slug}-assignment.md        coordinator to builder
 tasks/{seq}-{slug}-report.md            builder to coordinator
@@ -105,6 +105,7 @@ Scout with your own runtime's native subagents (read-only explorers), not Orca t
 - **Discovery scouts**: project mechanics and inventory. Tooling commands (Install, Build, Test, Lint, Typecheck, and Format in both check and write forms), `.env` presence, the repo's commit-message convention, where the relevant code lives.
 - **Comprehension scouts**: blast radius and current behaviour of the code being changed, and dependencies on existing code.
 - **Test coverage scouts**: existing coverage that will need adjusting, and important gaps to close for the implementation goals.
+- **Additional scouts**: any others you judge the task needs, on the same read-only terms and routing.
 
 Require `path:line` evidence for claims. Mark every assumption scouting could not confirm; unresolved assumptions go into the plan for the critics and the human.
 
@@ -118,10 +119,10 @@ Present to the human your understanding of the task: requirements and intended s
 
 **Step 1: Tier.** Classify `plan_review_tier` from the requirements and scout evidence (rubric: `references/routing.md`) and snapshot it with its plan-critique cap in `run-state.json`. The tier selects the drafting mode and stays fixed through critique.
 
-**Step 2: Draft.** On `low`: write `<RUNDIR>/plan/plan.md` yourself, following `references/plan-template.md` exactly. On `medium` | `high` | `xhigh`, competitive drafting:
+**Step 2: Draft.** The tier sets the planner panel (`references/routing.md`): a single planner on `low` | `medium`, competitive drafting across three on `high` | `xhigh`. In both modes:
 
 1. Compose the drafting brief: requirements and acceptance criteria, scouting findings with their evidence, settled answers from the understanding check, open assumptions, project tooling verbatim, and the required plan structure copied from `references/plan-template.md`; drafters cannot read this skill's files, so the brief must stand alone. The brief goes verbatim into each planner's task spec.
-2. Record `git -C <WT-PATH> rev-parse HEAD`. Boot the two planner terminals (models, effort, and commands: `references/routing.md`). Per planner (`<P>` = `fable` | `sol`): wait for terminal readiness, create a task titled `plan-draft-<P>` with the spec below, and dispatch it injected to `<H_PLANNER_P>`; record the dispatch id.
+2. Record `git -C <WT-PATH> rev-parse HEAD`. Boot the tier's planner terminals (panel, models, effort, and commands: `references/routing.md`). Per planner (`<P>` from the panel): wait for terminal readiness, create a task titled `plan-draft-<P>` with the spec below, and dispatch it injected to `<H_PLANNER_P>`; record the dispatch id.
 
    ```text
    Independently write a complete implementation plan to <RUNDIR>/plan/draft-<P>.md following the plan structure given in the brief below. Do not read any other draft-*.md file. Your draft is the only file you may write. Then report completion.
@@ -129,8 +130,8 @@ Present to the human your understanding of the task: requirements and intended s
    BRIEF:
    <the composed brief>
    ```
-3. Collect both with the bounded-wait loop and correlation rules. A failed, overdue, or draftless planner: mark its task `failed`, close its terminal, then **retry that lens once**: boot a fresh terminal for that lens per its routing row (fallback included), create a fresh task with the identical brief, and dispatch. Collect the retry on the same loop. A lens that fails twice is done: one surviving draft continues as the sole base (no grafting source); no surviving drafts means writing the plan yourself as in the `low` mode. Record every retry and any reduction. Run the read-only collection check, then commit the drafts.
-4. Judge the complete drafts on the axes the critics will use: decomposition seams, requirement coverage, correctness against the requirements, verification adequacy, sizing in both directions. Select the stronger draft as the base of the final plan, correcting anything your judgment or the brief contradicts; graft in elements where the other draft is genuinely better, and write `<RUNDIR>/plan/plan.md` yourself following the template; the plan must read as one author's work, never a concatenation. Close the planner terminals.
+3. Collect every panel draft with the bounded-wait loop and correlation rules. A failed, overdue, or draftless planner: mark its task `failed`, close its terminal, then **retry that lens once**: boot a fresh terminal for that lens per its routing row, create a fresh task with the identical brief, and dispatch. Collect the retry on the same loop. A lens that fails twice is done: judge the surviving drafts; a sole surviving draft continues as the base with no grafting source; no surviving drafts means writing `<RUNDIR>/plan/plan.md` yourself, following `references/plan-template.md` exactly. Record every retry and any reduction. Run the read-only collection check, then commit the drafts.
+4. Judge the complete drafts on the axes the critics will use: decomposition seams, requirement coverage, correctness against the requirements, verification adequacy, sizing in both directions. The strongest draft is the base of the final plan. Correct anything your judgment or the brief contradicts, graft in elements where another draft is genuinely better, and write `<RUNDIR>/plan/plan.md` yourself following the template; the plan must read as one author's work, never a concatenation. Close the planner terminals.
 
 Key obligations for `plan/plan.md` in both modes:
 
@@ -145,14 +146,14 @@ Key obligations for `plan/plan.md` in both modes:
 
 **Step 3: Fact check.** Dispatch one read-only native subagent (model: `references/routing.md`) to verify every checkable claim in the plan against the repo: file paths, `path:line` evidence, command names, symbols and interfaces cited in contracts. It does not assess reasoning, decomposition, scope, or the run-complexity judgment; it reports mismatches only. Fix every mismatch in the plan before booting the critics.
 
-**Step 4: Cross-model critique loop.** `<PLAN_REVIEW_CAP>` and `plan_review_tier` were snapshotted at Step 1 and are fixed for this critique loop, even if the plan's risk changes. Boot the three critic terminals: Claude Fable, Claude Opus, and Codex Sol (models, effort, fallback, and worker boot: `references/routing.md`), then run rounds 1 through `<PLAN_REVIEW_CAP>`:
+**Step 4: Cross-model critique loop.** `<PLAN_REVIEW_CAP>` and `plan_review_tier` were snapshotted at Step 1 and are fixed for this critique loop, even if the plan's risk changes. Boot the tier's critic terminals (panel, models, effort, fallback, and worker boot: `references/routing.md`), then run rounds 1 through `<PLAN_REVIEW_CAP>`:
 
-1. Set `PLAN_CHANGED=false` before dispatch. Record `git -C <WT-PATH> rev-parse HEAD`. Per critic (`<M>` = `fable` | `opus` | `sol`): wait for terminal readiness, create a fresh task for this round titled `plan-critique-<M>-r<ROUND>` with the spec below, and dispatch it injected to `<H_CRITIC_M>`; record the dispatch id.
+1. Set `PLAN_CHANGED=false` before dispatch. Record `git -C <WT-PATH> rev-parse HEAD`. Per critic (`<M>` from the panel): wait for terminal readiness, create a fresh task for this round titled `plan-critique-<M>-r<ROUND>` with the spec below, and dispatch it injected to `<H_CRITIC_M>`; record the dispatch id.
 
    ```text
    Read <RUNDIR>/plan/plan.md. Adversarially critique it: you are a critic, not an approver, and your job is to actively try to break this plan. Find the strongest reasons it fails: the weakest assumption, the missed or miscovered requirement, the seam most likely to produce an integration failure, the verification gap a bug would slip through. Judge decomposition seams, coverage of every requirement, correctness against the requirements, verification adequacy, and sizing in both directions (would fewer tasks beat coordination cost; is any single task too complex to land reliably). Out of scope: implementation detail, style, scope expansion. Each finding: plan section, concrete failure scenario, severity BLOCKING|RISKY|NOTE. A round with no genuine findings is a valid outcome, but reach it by failed attack, not benign reading. End with a verdict: proceed|revise|re-plan. Write your full critique to <RUNDIR>/plan/critique-<M>-r<ROUND>.md. That file is the only file you may write. Then report completion.
    ```
-2. Collect all three critiques with the bounded-wait loop and correlation rules below. Mark a failed, overdue, or reportless critic task `failed`, close its terminal, and continue with the surviving lenses; note the failure at the plan gate and boot a fresh terminal for that lens before a later round. If all critics fail in one round, retry all three critic dispatches once on fresh terminals; if the retry also fails, stop the critique loop and carry the failure to the plan gate, where the human decides whether to proceed on the plan as it stands or cancel the run.
+2. Collect every panel critique with the bounded-wait loop and correlation rules below. Mark a failed, overdue, or reportless critic task `failed`, close its terminal, and continue with the surviving lenses; note the failure at the plan gate and boot a fresh terminal for that lens before a later round. If all panel critics fail in one round, retry their dispatches once on fresh terminals; if the retry also fails, stop the critique loop and carry the failure to the plan gate, where the human decides whether to proceed on the plan as it stands or cancel the run.
 3. Evaluate every finding on its merits. Severity labels are evidence, not verdicts. Revise the plan for accepted findings. Set `PLAN_CHANGED=true` only after changing the plan; critic verdicts, critique artifacts, timestamps, discarded findings, and findings accepted but needing no edit do not count.
 4. Run the read-only collection check, then commit the plan and critique artifacts.
 5. If `PLAN_CHANGED=false`, stop immediately. If it is true and the cap is not exhausted, run the next round against the revised plan. At the cap, stop; the final round's revisions are not re-critiqued.

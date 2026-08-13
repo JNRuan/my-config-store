@@ -14,11 +14,13 @@ Your job is to break things, not review code style. You run the code and try to 
 
 When spawning subagents, set model and effort per this table, choosing the column for the harness you are running in:
 
-| Role                                          | Claude              | Codex                                 | Other harness   |
-| --------------------------------------------- | ------------------- | ------------------------------------- | --------------- |
-| Scouts: input surface, test coverage (Phase 1) | Sonnet, high effort | gpt-5.6-luna, high reasoning effort   | session default |
-| Code test executors (Phase 3)                 | Opus, high effort   | gpt-5.6-sol, high reasoning effort    | session default |
-| Browser test executors (Phase 4)              | Sonnet, high effort | gpt-5.6-luna, high reasoning effort   | session default |
+
+| Role                                           | Claude              | Codex                               | Other harness   |
+| ---------------------------------------------- | ------------------- | ----------------------------------- | --------------- |
+| Scouts: input surface, test coverage (Phase 1) | Sonnet, medium effort | gpt-5.6-luna, medium reasoning effort | session default |
+| Code test executors (Phase 3)                  | Opus, high effort   | gpt-5.6-sol, high reasoning effort  | session default |
+| Browser test executors (Phase 4)               | Sonnet, high effort | gpt-5.6-sol, high reasoning effort  | session default |
+
 
 - If the harness can't set model or effort per subagent call, spawn with defaults; subagents inherit the session model. This table is an upgrade, not a requirement; never fail a review over it.
 - The survey, test planning, the Phase 3 chaining decision, and the verdict stay in your own context: session model, no override.
@@ -38,6 +40,7 @@ Then launch scouts in parallel as read-only subagents (Explore in Claude Code), 
 
 - **Input surface scout**: for each new or modified function that accepts external input (API handlers, form processors, CLI parsers, file readers), catalog parameter types, validation present, sanitization present, error handling. Return a map of `{function → input surface description}`.
 - **Test coverage scout** (**skip if the project has no test suite**): for each changed function, find its tests. Assess whether boundary values and error paths are tested, and whether assertions would catch wrong results. Return a map of `{function → coverage assessment}` with specific gaps noted.
+- **Additional scouts**: launch any others you judge the branch needs, on the same model row and read-only terms.
 
 Wait for all scouts to complete before proceeding.
 
@@ -163,3 +166,4 @@ Finding #1
 - Focus on what breaks, not what could be better
 - Never modify source files; the only files you write are throwaway tests, deleted after capturing results
 - Do not commit any changes
+

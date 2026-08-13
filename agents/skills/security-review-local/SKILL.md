@@ -38,7 +38,7 @@ When spawning subagents, set model and effort per this table, choosing the colum
 
 | Role                                                     | Claude                                                                             | Codex                                 | Other harness   |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------- | --------------- |
-| Scouts — Attack surface, Security patterns, Blast radius (Step 1) | Sonnet, high effort                                                       | gpt-5.6-luna, high reasoning effort   | session default |
+| Scouts — Attack surface, Security patterns, Blast radius (Step 1) | Sonnet, medium effort                                                       | gpt-5.6-luna, medium reasoning effort   | session default |
 | Security lens reviewers (Step 2)                          | Fable, high effort; if unavailable and the agent is not running, Opus, high effort | gpt-5.6-sol, high reasoning effort    | session default |
 
 
@@ -113,6 +113,8 @@ Then launch these **Explore subagents in parallel** to scout (model per the Suba
 - For each function, type, or export that was **modified or removed** in the diff, identify upstream callers and dependents
 - Note where a call path crosses a privilege boundary (unauthenticated to authenticated, user to admin, external to internal)
 - Return: a map of `{changed symbol → list of callers/dependents, privilege boundaries crossed}`
+
+Beyond these three, launch any additional scouts you judge the diff needs, on the same model row and read-only terms.
 
 Wait for all scouts to complete. Note where attacker-controlled input, privilege boundaries, and pattern divergence overlap — this is for your verify pass, not for fanning to subagents.
 
