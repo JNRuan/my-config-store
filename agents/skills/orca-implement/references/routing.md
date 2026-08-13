@@ -1,4 +1,4 @@
-# Routing &amp; worker boot
+# Routing & worker boot
 
 **Concurrency cap**: 5 builders; workers' internal native subagents do not count.
 
@@ -22,8 +22,8 @@ Identical regardless of coordinator.
 
 | Role                      | Runtime / model                                      | Effort          | Fable unavailable fallback      | Notes                                                                                                                                                       |
 | ------------------------- | ---------------------------------------------------- | --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan drafter, `low`/`medium` tier    | Claude `fable`                                       | `high`          | Opus `high`                      | single planner; a complete plan from the brief; writes only its own draft file                                                                              |
-| Plan drafters, `high`/`xhigh` tier   | Claude `fable` + Claude `opus` + Codex `gpt-5.6-sol` | `high` all      | continue with surviving drafters | independent complete plans from the brief; each writes only its own draft file                                                                              |
+| Planner, `low`/`medium` tier         | Claude `fable`                                       | `high`          | Opus `high`                      | single planner; a complete plan from the brief; writes only its own draft file                                                                              |
+| Planners, `high`/`xhigh` tier        | Claude `fable` + Claude `opus` + Codex `gpt-5.6-sol` | `high` all      | continue with surviving planners | independent complete plans from the brief; each writes only its own draft file                                                                              |
 | Plan critic, `low`/`medium` tier     | Codex `gpt-5.6-sol`                                  | `high`          | —                                | one critic each round; critique adversarially; read-only by instruction; round cap from `plan_review_tier`                                                  |
 | Plan critics, `high`/`xhigh` tier    | Claude `fable` + Claude `opus` + Codex `gpt-5.6-sol` | `high` all      | continue with surviving critics  | all three each round; critique adversarially; read-only by instruction; round cap from `plan_review_tier`                                                   |
 | Builder, `low` complexity | Codex `gpt-5.6-sol`                                  | `medium`        | —                               |                                                                                                                                                             |
@@ -41,7 +41,7 @@ Classify every fix with the task-complexity rubric and route it through the matc
 
 ## Review tiers and depth
 
-Review depth comes from two assessments of aggregate risk (blast radius, coupling, novelty, failure impact, and observability), both independent of per-task builder complexity. `plan_review_tier`, classified after the understanding check, sets the plan drafting mode and the plan-critique cap. `run_complexity`, assessed from the reviewed plan after critique, sets code-review depth and QA; it can be higher or lower than `plan_review_tier`.
+Review depth comes from two assessments of aggregate risk (blast radius, coupling, novelty, failure impact, and observability), both independent of per-task builder complexity. `plan_review_tier`, classified after the understanding check, sets the plan drafting mode and the plan-review cap. `run_complexity`, assessed from the reviewed plan after critique, sets code-review depth and QA; it can be higher or lower than `plan_review_tier`.
 
 
 | Tier     | Typical run shape                                                                                             | Plan rounds when used as `plan_review_tier` | Code-review rounds when used as `run_complexity` | Adversarial QA from `run_complexity` |

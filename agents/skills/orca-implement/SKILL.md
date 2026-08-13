@@ -78,17 +78,17 @@ mkdir -p "$RUNDIR/plan" "$RUNDIR/tasks" "$RUNDIR/review" "$RUNDIR/screenshots"
 The run folder holds exactly this:
 
 ```text
-run-state.json                          run manifest
-summary.md                              run narrative, finalized at Phase 9
-plan/plan.md                            spec of record
-plan/draft-<fable|opus|sol>.md          one per planner on the tier's panel
-plan/critique-<fable|opus|sol>-r<N>.md  one per critic per round
-tasks/{seq}-{slug}-assignment.md        coordinator to builder
-tasks/{seq}-{slug}-report.md            builder to coordinator
-review/<claude|codex>-review-r<N>.md    one per code reviewer per round
-review/security-review-r<N>.md          security reviewer, one per round
-review/synthesis-r<N>.md                deduped findings for the round
-review/qa-findings.md                   high/xhigh runs only
+run-state.json                             run manifest
+summary.md                                 run narrative, finalized at Phase 9
+plan/plan.md                               spec of record
+plan/draft-<fable|opus|sol>.md             one per planner on the tier's panel
+plan/critique-<fable|opus|sol>-r<ROUND>.md one per critic per round
+tasks/{seq}-{slug}-assignment.md           coordinator to builder
+tasks/{seq}-{slug}-report.md               builder to coordinator
+review/<claude|codex>-review-r<ROUND>.md   one per code reviewer per round
+review/security-review-r<ROUND>.md         security reviewer, one per round
+review/synthesis-r<ROUND>.md               deduped findings for the round
+review/qa-findings.md                      high/xhigh runs only
 screenshots/{description}_{sequence}.png
 ```
 
@@ -117,7 +117,7 @@ Present to the human your understanding of the task: requirements and intended s
 
 ## Phase 3: Plan
 
-**Step 1: Tier.** Classify `plan_review_tier` from the requirements and scout evidence (rubric: `references/routing.md`) and snapshot it with its plan-critique cap in `run-state.json`. The tier selects the drafting mode and stays fixed through critique.
+**Step 1: Tier.** Classify `plan_review_tier` from the requirements and scout evidence (rubric: `references/routing.md`) and snapshot it with its plan-review cap in `run-state.json`. The tier selects the drafting mode and stays fixed through critique.
 
 **Step 2: Draft.** The tier sets the planner panel (`references/routing.md`): a single planner on `low` | `medium`, competitive drafting across three on `high` | `xhigh`. In both modes:
 
@@ -151,14 +151,14 @@ Key obligations for `plan/plan.md` in both modes:
 1. Set `PLAN_CHANGED=false` before dispatch. Record `git -C <WT-PATH> rev-parse HEAD`. Per critic (`<M>` from the panel): wait for terminal readiness, create a fresh task for this round titled `plan-critique-<M>-r<ROUND>` with the spec below, and dispatch it injected to `<H_CRITIC_M>`; record the dispatch id.
 
    ```text
-   Read <RUNDIR>/plan/plan.md. Adversarially critique it: you are a critic, not an approver, and your job is to actively try to break this plan. Find the strongest reasons it fails: the weakest assumption, the missed or miscovered requirement, the seam most likely to produce an integration failure, the verification gap a bug would slip through. Judge decomposition seams, coverage of every requirement, correctness against the requirements, verification adequacy, and sizing in both directions (would fewer tasks beat coordination cost; is any single task too complex to land reliably). Out of scope: implementation detail, style, scope expansion. Each finding: plan section, concrete failure scenario, severity BLOCKING|RISKY|NOTE. A round with no genuine findings is a valid outcome, but reach it by failed attack, not benign reading. End with a verdict: proceed|revise|re-plan. Write your full critique to <RUNDIR>/plan/critique-<M>-r<ROUND>.md. That file is the only file you may write. Then report completion.
+   Read <RUNDIR>/plan/plan.md. Adversarially critique it: you are a critic, not an approver, and your job is to try to break this plan. Find the strongest reasons it fails: the weakest assumption, the missed or miscovered requirement, the seam most likely to produce an integration failure, the verification gap a bug would slip through. Judge decomposition seams, coverage of every requirement, correctness against the requirements, verification adequacy, and sizing in both directions (would fewer tasks beat coordination cost; is any single task too complex to land reliably). Out of scope: implementation detail, style, scope expansion. Each finding: plan section, concrete failure scenario, severity BLOCKING|RISKY|NOTE. A round with no genuine findings is a valid outcome, but reach it by failed attack, not benign reading. End with a verdict: proceed|revise|re-plan. Write your full critique to <RUNDIR>/plan/critique-<M>-r<ROUND>.md. That file is the only file you may write. Then report completion.
    ```
 2. Collect every panel critique with the bounded-wait loop and correlation rules below. Mark a failed, overdue, or reportless critic task `failed`, close its terminal, and continue with the surviving lenses; note the failure at the plan gate and boot a fresh terminal for that lens before a later round. If all panel critics fail in one round, retry their dispatches once on fresh terminals; if the retry also fails, stop the critique loop and carry the failure to the plan gate, where the human decides whether to proceed on the plan as it stands or cancel the run.
 3. Evaluate every finding on its merits. Severity labels are evidence, not verdicts. Revise the plan for accepted findings. Set `PLAN_CHANGED=true` only after changing the plan; critic verdicts, critique artifacts, timestamps, discarded findings, and findings accepted but needing no edit do not count.
 4. Run the read-only collection check, then commit the plan and critique artifacts.
 5. If `PLAN_CHANGED=false`, stop immediately. If it is true and the cap is not exhausted, run the next round against the revised plan. At the cap, stop; the final round's revisions are not re-critiqued.
 
-Close the critic terminals when the loop stops. Assess canonical `run_complexity` from the reviewed plan; it may be higher or lower than `plan_review_tier`. Fill the downstream Review Policy from `references/routing.md`, then update plan frontmatter and `run-state.json`. Preserve `plan_review_tier`, `<PLAN_REVIEW_CAP>`, rounds run, and the stop reason as historical inputs. Commit these updates before Phase 4.
+Close the critic terminals when the loop stops. Assess `run_complexity` from the reviewed plan; it may be higher or lower than `plan_review_tier`. Fill the downstream Review Policy from `references/routing.md`, then update plan frontmatter and `run-state.json`. Preserve `plan_review_tier`, `<PLAN_REVIEW_CAP>`, rounds run, and the stop reason as historical inputs. Commit these updates before Phase 4.
 
 ## Phase 4: Plan gate
 
@@ -337,8 +337,8 @@ Security review: {security-reviewer model when its lens completed, with rounds r
 
 ## Safety constraints
 
-- Code reaches main exclusively through a human-approved PR; approving and merging it is always the human's.
+- Code reaches main only through a human-approved PR; approving and merging it is always the human's.
 - Only the run branch reaches the remote, and only at Phase 9.
 - Workers write code only in their assigned worktree; `<RUNDIR>` writes are limited to each worker's designated files.
-- Planners, reviewers, and the plan critics are read-only by instruction, enforced at collection: clean tree outside the run folder and unchanged HEAD in `<WT>` after each reports, or the tree is reset and the incident recorded. On a `high`/`xhigh` run, the final adversarial QA worker writes only in its disposable worktree, `qa-findings.md`, and `<RUNDIR>/screenshots/`; its branch never merges.
+- Planners, reviewers, and the plan critics are read-only by instruction, enforced at collection: clean tree outside the run folder and unchanged HEAD in `<WT>` after each reports, or you reset the tree and record the incident. On a `high`/`xhigh` run, the final adversarial QA worker writes only in its disposable worktree, `qa-findings.md`, and `<RUNDIR>/screenshots/`; its branch never merges.
 - Never act on unfiltered runtime-global state: the manifest defines what this run owns.

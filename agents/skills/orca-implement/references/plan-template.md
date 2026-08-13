@@ -29,7 +29,7 @@ What needs to be built and why, briefly.
 - **Adversarial QA**: {pending before critique | skip for low/medium | run after all code review for high/xhigh}
 
 Fill the plan-review fields before critique from `references/routing.md`.
-After critique, replace every pending downstream field from canonical
+After critique, replace every pending downstream field from
 `run_complexity`. Keep all recorded values synchronized with `run-state.json`.
 
 ## Requirements & Acceptance Criteria
@@ -61,7 +61,7 @@ change goes through the coordinator (re-pin), never through a worker.
 ## Tasks
 
 Each task's complexity is `low` | `medium` | `high` | `xhigh`, classified with
-the task rubric in `references/routing.md`. It routes that task's builder and is
+the task-complexity rubric in `references/routing.md`. It routes that task's builder and is
 independent of `plan_review_tier` and `run_complexity`.
 
 | seq | slug | deps | complexity | builder | covers |
@@ -80,7 +80,7 @@ independent of `plan_review_tier` and `run_complexity`.
 - **Constraints & Context**: patterns to follow, invariants to preserve,
   background the builder must know.
 - **Relevant existing code**: files the builder should read first, and why.
-- **Verification requirements**: behaviors and scenarios, not test code:
+- **Verification requirements**: behaviours and scenarios, not test code:
   1. Existing coverage to run (must stay green)
   2. Tests to add or update
   3. Edge cases that must be covered

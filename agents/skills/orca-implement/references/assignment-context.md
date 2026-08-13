@@ -1,8 +1,8 @@
 # Assignment file
 
-Written by the coordinator to `<RUNDIR>/tasks/{seq}-{slug}-assignment.md` immediately before dispatch, once its contents exist (worktree created, dependency outputs known). The Orca task spec is only a pointer to this file. Fill every section; give fully resolved absolute paths, captured branch names, and verbatim commands, never placeholders the worker must guess.
+You write this file to `<RUNDIR>/tasks/{seq}-{slug}-assignment.md` immediately before dispatch, once its contents exist (worktree created, dependency outputs known). The Orca task spec is only a pointer to this file. Fill every section; give fully resolved absolute paths, captured branch names, and verbatim commands, never placeholders the worker must guess.
 
-Fix cycles append to this file (see the final section); the worker re-reads it on every dispatch. A new fix task gets a new assignment file; the Fix cycles section covers only a task's own verify→fix re-dispatches.
+You append each fix cycle to this file (see the final section); the worker re-reads it on every dispatch. A new fix task gets a new assignment file; the Fix cycles section covers only a task's own verify→fix re-dispatches.
 
 Fix tasks (Phase 6 failures, review fixes, QA fixes, conflict resolution) use the same template with three substitutions: Objective & scope states the findings to fix, each with its reproduction or failing check output; The plan carries only the excerpts relevant to the fix (a fix task has no task-table section); Verification requirements are each finding's own reproduction plus the applicable project checks. A conflict-resolution objective names the branch to merge and requires a true `git merge` producing a merge commit; never rebase, cherry-pick, or reimplement.
 
