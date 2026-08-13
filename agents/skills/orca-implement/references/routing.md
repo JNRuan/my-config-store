@@ -11,7 +11,7 @@ These roles follow the runtime that runs `/orca-implement`.
 | -------------------- | -------------------- | ----------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
 | Coordinator          | the invoking session | the invoking session    | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only   |
 | Scouts               | `sonnet` subagent    | `gpt-5.6-luna` subagent | `medium` / `medium`     | read-only; native subagents, not Orca terminals                                            |
-| Plan fact check      | `sonnet` subagent    | `gpt-5.6-luna` subagent | `medium` / `high`       | read-only; verifies the plan's checkable claims only, no content judgment; native subagent |
+| Plan fact check      | `sonnet` subagent    | `gpt-5.6-luna` subagent | `medium` / `medium`     | read-only; verifies the plan's checkable claims only, no content judgment; native subagent |
 | Browser verification | `sonnet` subagent    | `gpt-5.6-luna` subagent | `high` / `xhigh`        | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal                           |
 
 
