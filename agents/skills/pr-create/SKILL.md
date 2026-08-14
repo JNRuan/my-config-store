@@ -7,6 +7,21 @@ description: Draft a PR description and open the pull request via `gh`. Use when
 
 Draft a pull request description from the current branch's changes and open the PR. If the user asks for a "summary only", "description only", or "don't open the PR", stop after producing the text (see [Summary-only mode](#summary-only-mode)).
 
+## Delegation
+
+Do not draft the PR in the session model: dispatch one subagent to run the whole skill, and relay its result. Set model and effort per this table, choosing the column for the harness you are running in:
+
+
+| Role                         | Claude                | Codex                                 | Other harness                                               |
+| ---------------------------- | --------------------- | ------------------------------------- | ----------------------------------------------------------- |
+| PR worker (everything below) | Sonnet, medium effort | gpt-5.6-luna, medium reasoning effort | gpt-5.6-luna, medium reasoning effort; else session default |
+
+
+- Give the subagent the user's parameters (base ref if given, create or summary-only mode) and any intent from the session the description should reflect.
+- The subagent runs every step below, including the git and `gh` commands. It reports the PR URL, or the title and body file path in summary-only mode.
+- Where a step below says stop and ask the user, the subagent reports back instead; resolve with the user and dispatch again.
+- If the harness can't spawn subagents or set model and effort per call, run the steps below yourself. The table is an upgrade, not a requirement; never fail the task over it.
+
 ## How to gather context
 
 ### Repository safety check

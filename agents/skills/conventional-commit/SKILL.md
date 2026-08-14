@@ -3,6 +3,20 @@ name: conventional-commit
 description: "Format git commit messages using the Conventional Commits standard: type prefixes like feat/fix/chore, with optional scope. Use when drafting, rewriting, or suggesting commit messages in projects whose git log uses type prefixes. Counterpart to scoped-commit: if the project's log shows bare scopes with no types, use that skill instead."
 ---
 
+## Delegation
+
+Do not write the commit in the session model: dispatch one subagent to run the whole skill, and relay its result. Set model and effort per this table, choosing the column for the harness you are running in:
+
+
+| Role                             | Claude                | Codex                                 | Other harness                                               |
+| -------------------------------- | --------------------- | ------------------------------------- | ----------------------------------------------------------- |
+| Commit worker (everything below) | Sonnet, medium effort | gpt-5.6-luna, medium reasoning effort | gpt-5.6-luna, medium reasoning effort; else session default |
+
+
+- Resolve commit-scope ambiguity with the user before dispatching. Give the subagent exactly what to stage and commit, plus any intent from the session the message should carry.
+- The subagent runs every step below, including staging and the commit. It reports the final message from `git log -1`.
+- If the harness can't spawn subagents or set model and effort per call, run the steps below yourself. The table is an upgrade, not a requirement; never fail the task over it.
+
 ## Workflow
 
 **Commit exactly what the user staged or asked to commit.** When scope is ambiguous

@@ -36,10 +36,10 @@ As the security reviewer:
 When spawning subagents, set model and effort per this table, choosing the column for the harness you are running in:
 
 
-| Role                                                     | Claude                                                                             | Codex                                 | Other harness   |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------- | --------------- |
-| Scouts — Attack surface, Security patterns, Blast radius (Step 1) | Sonnet, medium effort                                                       | gpt-5.6-luna, medium reasoning effort   | session default |
-| Security lens reviewers (Step 2)                          | Fable, high effort; if unavailable and the agent is not running, Opus, high effort | gpt-5.6-sol, high reasoning effort    | session default |
+| Role                                                              | Claude                        | Codex                                | Other harness   |
+| ----------------------------------------------------------------- | ----------------------------- | ------------------------------------ | --------------- |
+| Scouts — Attack surface, Security patterns, Blast radius (Step 1) | Opus, high effort             | gpt-5.6-sol, high reasoning effort   | session default |
+| Security lens reviewers (Step 2)                                  | Opus, xhigh effort            | gpt-5.6-sol, xhigh reasoning effort  | session default |
 
 
 - If the harness can't set model or effort per subagent call, spawn with defaults — subagents inherit the session model. This table is an upgrade, not a requirement; never fail a review over it.
@@ -120,7 +120,7 @@ Wait for all scouts to complete. Note where attacker-controlled input, privilege
 
 ## Step 2: Spawn security lens subagents
 
-Spawn one subagent per lens in parallel (model per the Subagent models table). Always spawn Injection & Code Execution, AuthN/Z & Sessions, Crypto & Secrets, and Data Exposure. Spawn Web Boundary **only if** the diff touches HTTP handlers, responses, CORS or header config, or outbound requests. Spawn Agentic **only if** the diff touches agents, skills, tools, memory, or prompt files. Record skipped lenses in the Coverage note (Step 4).
+Spawn one subagent per lens in parallel (model per the Subagent models table). Always spawn Injection &amp; Code Execution, AuthN/Z &amp; Sessions, Crypto &amp; Secrets, and Data Exposure. Spawn Web Boundary **only if** the diff touches HTTP handlers, responses, CORS or header config, or outbound requests. Spawn Agentic **only if** the diff touches agents, skills, tools, memory, or prompt files. Record skipped lenses in the Coverage note (Step 4).
 
 > **Tool degradation**: if your agentic tool can't spawn parallel subagents, apply the lenses sequentially in your own context using the framing below, then proceed to Step 3.
 
@@ -191,7 +191,7 @@ If a subagent fails or returns garbage, restart it with the same package — up 
 
 Use these as starting points per lens, not as exhaustive checklists. The goal is real vulnerabilities, not bullet coverage. Flag anything concrete you find, on or off the list.
 
-**Injection & Code Execution**
+**Injection &amp; Code Execution**
 
 - SQL and NoSQL injection via string-built queries; ORM escape hatches (`.raw()`, `.extra()`, `RawSQL`) with interpolation
 - Command injection in system calls and subprocesses; `shell=True` with untrusted input
@@ -201,7 +201,7 @@ Use these as starting points per lens, not as exhaustive checklists. The goal is
 - `eval`/`exec`/`Function` on dynamic input
 - XSS — reflected, stored, DOM-based — through unsafe sinks per the Trust model
 
-**AuthN/Z & Sessions**
+**AuthN/Z &amp; Sessions**
 
 - New endpoints or handlers without authentication; authorization checks missing, bypassable, or on the wrong boundary
 - IDOR: object access keyed on user-supplied IDs without ownership checks
@@ -209,7 +209,7 @@ Use these as starting points per lens, not as exhaustive checklists. The goal is
 - Session management: fixation, missing token regeneration post-login, cookie flags (Secure/HttpOnly/SameSite)
 - JWT: algorithm enforcement (reject `none`), signature verification, expiry/audience/issuer validation
 
-**Crypto & Secrets**
+**Crypto &amp; Secrets**
 
 - Hardcoded API keys, passwords, tokens, private keys
 - Weak or deprecated algorithms (MD5, SHA-1, DES, RC4) used for security purposes
@@ -349,3 +349,4 @@ Your role is to observe and report:
 
 - Your only output is the review report
 - Source code is off-limits — read it, don't change it while you are reviewing
+

@@ -68,7 +68,7 @@ independent of `plan_review_tier` and `run_complexity`.
 |-----|------|------|------------|---------|--------|
 | 01  | ...  | —    | medium     | codex sol · high | AC-1 |
 | 02  | ...  | 01   | high       | claude opus · high | AC-2 |
-| 03  | ...  | 02   | xhigh      | claude fable · high | AC-3 |
+| 03  | ...  | 02   | xhigh      | claude fable · xhigh | AC-3 |
 
 ### {seq}-{slug}
 
