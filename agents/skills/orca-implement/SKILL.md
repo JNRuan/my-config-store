@@ -220,7 +220,7 @@ Any failure here becomes a fix task (fix-task discipline, Phase 5): write an ass
 
 ## Phase 7: Code Review
 
-Set `<CODE_REVIEW_CAP>` from the plan's Review Policy and set both `REVIEW_FIXES_APPLIED=false` and manifest `review_fixes_applied=false`. Boot the Claude and Codex code-reviewer terminals and the security-reviewer terminal in `<WT>` (worker boot: `references/routing.md`), then run rounds 1 through `<CODE_REVIEW_CAP>`:
+Set `<CODE_REVIEW_CAP>` from the plan's Review Policy and set both `REVIEW_FIXES_APPLIED=false` and manifest `review_fixes_applied=false`. Boot the Claude and Codex code-reviewer terminals and the security-reviewer terminal in `<WT>` (worker boot: `references/routing.md`), wait for each to reach readiness, then run rounds 1 through `<CODE_REVIEW_CAP>`:
 
 1. Set `CODE_CHANGED=false` before dispatch and record `<WT>` HEAD in the round's manifest record. Create fresh reviewer tasks and reports for `<ROUND>`. For rounds after the first, include as context the commit range from the previous round's recorded HEAD to the current HEAD, and the preceding synthesis path. Dispatch each code reviewer with:
 
@@ -265,7 +265,7 @@ Adversarial QA begins only after code review and post-review verification comple
 
 1. Record `QA_HEAD=$(git -C <WT-PATH> rev-parse HEAD)`.
 2. Create the disposable worktree named `<RUN>-qa` from the current `<RUN-BRANCH>` with parent worktree `<WT>`. Capture its id, path, and actual QA branch; close the auto-spawned terminal after confirming it is an unused shell; verify its HEAD equals `QA_HEAD`.
-3. Boot the routed QA worker there (worker boot: `references/routing.md`) and dispatch:
+3. Boot the routed QA worker there (worker boot: `references/routing.md`), wait for terminal readiness, then dispatch:
 
    ```
    Run /{adversarial-qa-skill} (it exists; do not check) against the current branch
@@ -330,7 +330,7 @@ Security review: {security-reviewer model when its lens completed, with rounds r
 - A valid `worker_done` completes its task and dispatch in Orca automatically; never follow it with a manual completion. Manual `task-update` is recovery only: `ready` for fix cycles, `failed` for failures. Orca task status is the worker's signal; the manifest is the run's truth for verified and merged.
 - Release a dispatch once you accept its `worker_done` and will not reuse its terminal; a fix cycle reuses the terminal, so release only at task completion or permanent failure.
 - **Read-only collection check** (planners, critics, reviewers; `<H>` = the recorded HEAD): `git -C <WT-PATH> status --porcelain -- ':!.agents/orca/orchestration'` must be empty and HEAD must equal `<H>`. Any failure: `git -C <WT-PATH> reset --mixed <H> && git -C <WT-PATH> restore --worktree -- . ':!.agents/orca/orchestration' && git -C <WT-PATH> clean -fd -- ':!.agents/orca/orchestration'`, re-run the check (it must pass before any artifact commit), and record the incident.
-- An Orca CLI call that fails or a readiness wait that times out: read the terminal and retry once. A second failure follows the current phase's failure path; builders enter fix/retry handling. Never dispatch into a terminal that has not reached readiness (tui-idle).
+- Never dispatch into a terminal that has not reached readiness (tui-idle); a terminal mid-startup drops injected input. This applies to every boot, including retried lenses and respawned workers. After every dispatch, read the terminal and confirm the worker has received the instruction; a terminal still starting up, or idle with no trace of the dispatch, means wait for readiness again and inject the same dispatch once more. An Orca CLI call that fails or a readiness wait that times out: read the terminal and retry once. A second failure of any of these three (a dispatch still unconfirmed after reinjection, a failed Orca CLI call, or a timed-out readiness wait) follows the current phase's failure path; builders enter fix/retry handling.
 - Prefer structured `worker_done` payloads and report files over parsing terminal output; the bounded `terminal read` buffer is for status, not results.
 - `worktree create` controls the worktree name only (capture the Orca-derived branch) and may auto-spawn a first terminal: close it after confirming it is an unused shell; a configured default tab stays recorded in the manifest and closes at teardown.
 - Close terminals when their phase no longer reuses them: builders at task completion or permanent failure (the fix cycle re-dispatches into the same terminal), QA after collection, planners after plan selection, critics and reviewers after their round loop. Remove task worktrees once merged. The concurrency cap applies to builders; planner, critic, reviewer, and QA terminals are additional and phase-bound.
