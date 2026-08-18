@@ -119,22 +119,28 @@ Handle each message:
 
 - `worker_done`: Orca marks the task and dispatch completed automatically; do not run
   `task-update`. Confirm the worker's report file under `<REVIEWDIR>` exists and is non-empty,
-  then release the worker so no review agents linger:
-  `orca orchestration worker-release --dispatch <its dispatch id> --json`. Release after a
-  failed report too; never substitute `orca terminal close`.
+  then release the worker and close its tab so no review agents linger:
+  `orca orchestration worker-release --dispatch <its dispatch id> --json`, then
+  `orca terminal close --terminal <its handle> --tab --json`. Do both after a failed report
+  too. Always release before closing: release settles the ledger and archives the worker's
+  output so `worker-read` still works, but it closes only terminals spawned by `worker-start`;
+  these tabs came from `terminal create`, so release reports `retained` and the explicit
+  `terminal close --tab` removes them.
 - `question`: answer it with `orca orchestration reply --id <msg_id> --body "<answer>" --json`,
   then keep waiting.
 - `escalation`, a timed-out `check`, or a missing/empty report: `orca terminal read --terminal
   <handle> --json` to see what the tab is doing (stuck, prompting, crashed). A worker that is
   still producing output just needs more time; keep waiting. If it is dead, stop it with
-  `orca orchestration worker-stop --dispatch <its dispatch id> --json`.
+  `orca orchestration worker-stop --dispatch <its dispatch id> --json`, then release and
+  close it as above.
 
 Record which lenses completed. A stream that lost one worker continues **single-lens**: the
 cross-model signal for that stream is gone, and the synthesis must say so. A stream that lost
 both workers is reported as missing, never fabricated. If all four workers failed, stop and
 report the errors.
 
-Synthesis reads the report files, not the tabs, so releasing the workers now is safe.
+Synthesis reads the report files, not the tabs, so releasing the workers and closing their
+tabs now is safe.
 
 ## Phase 4: Synthesize
 
