@@ -19,7 +19,7 @@ When spawning subagents, set model and effort per this table, choosing the colum
 | ---------------------------------------------- | --------------------- | ------------------------------------- | --------------- |
 | Scouts: input surface, test coverage (Phase 1) | Sonnet, medium effort | gpt-5.6-luna, medium reasoning effort | session default |
 | Code test executors (Phase 3)                  | Opus, high effort     | gpt-5.6-sol, high reasoning effort    | session default |
-| Browser test executors (Phase 4)               | Sonnet, medium effort | gpt-5.6-sol, medium reasoning effort  | session default |
+| Browser test executors (Phase 4)               | Sonnet, high effort   | gpt-5.6-terra, high reasoning effort  | session default |
 
 
 - If the harness can't set model or effort per subagent call, spawn with defaults; subagents inherit the session model. This table is an upgrade, not a requirement; never fail a review over it.

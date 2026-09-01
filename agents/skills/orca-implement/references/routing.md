@@ -7,32 +7,34 @@
 These roles follow the runtime that runs `/orca-implement`.
 
 
-| Role                 | Claude coordinator   | Codex coordinator       | Effort (Claude / Codex) | Notes                                                                                             |
-| -------------------- | -------------------- | ----------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
-| Coordinator          | the invoking session | the invoking session    | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only          |
-| Scouts               | `sonnet` subagent    | `gpt-5.6-luna` subagent | `medium` / `medium`     | read-only; native subagents, not Orca terminals                                                   |
-| Plan fact check      | `sonnet` subagent    | `gpt-5.6-luna` subagent | `medium` / `medium`     | read-only; verifies the plan's checkable claims only, no content judgment; native subagent        |
-| Browser verification | `sonnet` subagent    | `gpt-5.6-sol` subagent  | `medium` / `medium`     | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal |
+| Role                 | Claude coordinator   | Codex coordinator        | Effort (Claude / Codex) | Notes                                                                                             |
+| -------------------- | -------------------- | ------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------- |
+| Coordinator          | the invoking session | the invoking session     | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only          |
+| Browser verification | `sonnet` subagent    | `gpt-5.6-terra` subagent | `high` / `high`         | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal |
 
+
+This browser row governs Phase 6 verification. Worker-invoked skills own the routing of any subagents they spawn internally.
 
 ## Pinned roles
 
 Identical regardless of coordinator.
 
 
-| Role                              | Runtime / model                                                                                               | Effort          | Fable unavailable fallback       | Notes                                                                                                                                                       |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Planner, `low`/`medium` tier      | Claude `opus`                                                                                                 | `high`          | —                                | single planner; a complete plan from the brief; writes only its own draft file                                                                              |
-| Planners, `high`/`xhigh` tier     | Claude `fable` + Claude `opus` + Codex `gpt-5.6-sol`                                                          | `high` all      | continue with surviving planners | independent complete plans from the brief; each writes only its own draft file                                                                              |
-| Plan critic, `low`/`medium` tier  | Codex `gpt-5.6-sol`                                                                                           | `high`          | —                                | one critic each round; critique adversarially; read-only by instruction; round cap from `plan_review_tier`                                                  |
-| Plan critics, `high`/`xhigh` tier | Claude `fable` + Claude `opus` + Codex `gpt-5.6-sol`                                                          | `high` all      | continue with surviving critics  | all three each round; critique adversarially; read-only by instruction; round cap from `plan_review_tier`                                                   |
-| Builder, `low` complexity         | Codex `gpt-5.6-sol`                                                                                           | `medium`        | —                                |                                                                                                                                                             |
-| Builder, `medium`                 | Codex `gpt-5.6-sol`                                                                                           | `high`          | —                                | default builder                                                                                                                                             |
-| Builder, `high`                   | Claude `opus`                                                                                                 | `high`          | —                                | many-file or mechanically hard, but fully specified by plan + contracts                                                                                     |
-| Builder, `xhigh`                  | Claude `fable`                                                                                                | `xhigh`         | `gpt-5.6-sol` `xhigh`            | the remaining reasoning is the risk: see the task complexity rubric                                                                                         |
-| Code reviewers                    | Claude `fable` + Codex `gpt-5.6-sol`                                                                          | `high` / `high` | Opus `high`                      | both each round; round cap from `run_complexity`                                                                                                            |
-| Security reviewer                 | Codex `gpt-5.6-sol`                                                                                           | `high`          | —                                | one each round, dispatched alongside the code reviewers; runs the mapped security-review skill (`references/skill-map.md`); round cap from `run_complexity` |
-| Adversarial QA                    | Cross-model to the main builders: Claude `opus`/`fable` → Codex `gpt-5.6-sol`; `gpt-5.6-sol` → Claude `fable` | `high`          | Opus `high`                      | `high`/`xhigh` runs only; runs once after all code-review rounds and fixes; disposable worktree, branch never merged                                        |
+| Role                              | Runtime / model                                                                                               | Effort          | Fable unavailable fallback          | Notes                                                                                                                                                       |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scouts                            | Codex `gpt-5.6-luna`                                                                                          | `medium`        | —                                   | read-only; Orca terminals in `<WT>`; one report per lens                                                                                                    |
+| Plan fact check                   | Codex `gpt-5.6-luna`                                                                                          | `high`          | —                                   | read-only; Orca terminal in `<WT>`; verifies checkable plan claims only                                                                                     |
+| Planner, `low`/`medium` tier      | Claude `opus`                                                                                                 | `high`          | —                                   | single planner; a complete plan from the brief; writes only its own draft file                                                                              |
+| Planners, `high`/`xhigh` tier     | Claude `fable` + Codex `gpt-5.6-sol`                                                                          | `high` all      | continue with the surviving planner | independent complete plans from the brief; each writes only its own draft file                                                                              |
+| Plan critic, `low`/`medium` tier  | Codex `gpt-5.6-sol`                                                                                           | `high`          | —                                   | one critic each round; critique adversarially; read-only by instruction; round cap from `plan_review_tier`                                                  |
+| Plan critics, `high`/`xhigh` tier | Claude `fable` + Codex `gpt-5.6-sol`                                                                          | `high` all      | continue with the surviving critic  | both each round; critique adversarially; read-only by instruction; round cap from `plan_review_tier`                                                        |
+| Builder, `low` complexity         | Codex `gpt-5.6-sol`                                                                                           | `medium`        | —                                   |                                                                                                                                                             |
+| Builder, `medium`                 | Codex `gpt-5.6-sol`                                                                                           | `high`          | —                                   | default builder                                                                                                                                             |
+| Builder, `high`                   | Codex `gpt-5.6-sol`                                                                                           | `xhigh`         | —                                   | many-file or mechanically hard, but fully specified by plan + contracts                                                                                     |
+| Builder, `xhigh`                  | Claude `fable`                                                                                                | `xhigh`         | `Codex gpt-5.6-sol`                 | the remaining reasoning is the risk: see the task complexity rubric                                                                                         |
+| Code reviewers                    | Claude `fable` + Codex `gpt-5.6-sol`                                                                          | `high` / `high` | `Claude opus`                       | both each round; round cap from `run_complexity`                                                                                                            |
+| Security reviewer                 | Codex `gpt-5.6-sol`                                                                                           | `high`          | —                                   | one each round, dispatched alongside the code reviewers; runs the mapped security-review skill (`references/skill-map.md`); round cap from `run_complexity` |
+| Adversarial QA                    | Cross-model to the main builders: Claude `opus`/`fable` → Codex `gpt-5.6-sol`; `gpt-5.6-sol` → Claude `fable` | `high`          | Opus `high`                         | `high`/`xhigh` runs only; runs once after all code-review rounds and fixes; disposable worktree, branch never merged                                        |
 
 
 If a Fable worker fails to boot or run, use the listed fallback model.
@@ -47,7 +49,7 @@ Review depth comes from two assessments of aggregate risk (blast radius, couplin
 | Tier     | Typical run shape                                                                                             | Plan rounds when used as `plan_review_tier` | Code-review rounds when used as `run_complexity` | Adversarial QA from `run_complexity` |
 | -------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------ | ------------------------------------ |
 | `low`    | narrow, localized, established pattern, low-impact failure, strong existing coverage                          | 1                                           | 1                                                | no                                   |
-| `medium` | several files or one subsystem, ordinary cross-layer interaction, moderate blast radius                       | 2                                           | 2                                                | no                                   |
+| `medium` | several files or one subsystem, ordinary cross-layer interaction, moderate blast radius                       | 2                                           | 2                                                | yes, after code review               |
 | `high`   | broad or highly coupled change, important state or user-flow risk, weak observability, or high failure impact | 3                                           | 3                                                | yes, after code review               |
 | `xhigh`  | systemic or novel change with subtle invariants, architectural consequences, or severe failure impact         | 5                                           | 5                                                | yes, after code review               |
 
@@ -81,7 +83,7 @@ Boot workers with `terminal create` and an explicit `--command`, never `worker-s
 
 - Substitute model and effort from the tables. Title each terminal `<role>:<slug>`.
 - The outer nono sandbox (aliases `nclaude`/`ncodex`, backed by the `my-claude`/`my-codex` profiles) confines every worker and governs its network access. Codex's own sandbox cannot nest inside nono: every Codex worker passes `--sandbox danger-full-access` in its command, never through machine config.
-- Workers in `<WT>` (planners, critics, reviewers) use the aliases. Workers in task or QA worktrees write reports and findings to `<RUNDIR>` in the integration worktree, which the aliases do not grant: boot them with `nono run` and `--allow "<RUNDIR>"`. For Codex, `--add-dir` only tells Codex the directory exists; the nono grant enforces access.
+- Workers in `<WT>` (scouts, the plan fact check, planners, critics, reviewers) use the aliases. Workers in task or QA worktrees write reports and findings to `<RUNDIR>` in the integration worktree, which the aliases do not grant: boot them with `nono run` and `--allow "<RUNDIR>"`. For Codex, `--add-dir` only tells Codex the directory exists; the nono grant enforces access.
 
 **Claude in `<WT>`** (planner, critic, reviewer):
 
@@ -95,10 +97,10 @@ nclaude --model <fable|opus> --effort <effort> --permission-mode bypassPermissio
 nono run --profile my-claude --allow-cwd --allow "<RUNDIR>" -- claude --model <fable|opus> --effort <effort> --permission-mode bypassPermissions
 ```
 
-**Codex in `<WT>`** (planner, critic, reviewer):
+**Codex in `<WT>`** (scout, plan fact check, planner, critic, reviewer):
 
 ```bash
-ncodex --model gpt-5.6-sol -c 'model_reasoning_effort="<effort>"' --sandbox danger-full-access --ask-for-approval never
+ncodex --model <gpt-5.6-luna|gpt-5.6-sol> -c 'model_reasoning_effort="<effort>"' --sandbox danger-full-access --ask-for-approval never
 ```
 
 **Codex in a task worktree** (builder, fix):

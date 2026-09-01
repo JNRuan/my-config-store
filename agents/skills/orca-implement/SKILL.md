@@ -24,7 +24,7 @@ Rules that hold for the whole run:
   - plan-review tier and snapshotted cap, current run complexity, and the downstream review/QA policy;
   - integration worktree (id, path, branch);
   - per-task records: seq, slug, kind (`build` | `fix`, with originating phase and round for fixes), task id, worktree id/path, branch, starting commit, terminal handle and title, routed model and effort, active dispatch id, superseded dispatch ids, verify→fix and resolve→verify cycle counts, assignment/report paths, and status (`ready` | `dispatched` | `completed` | `failed`);
-  - planner/critic/review/QA dispatch records, including skipped QA;
+  - scout/fact-check/planner/critic/review/QA dispatch records, including skipped QA;
   - review-round records (start HEAD, synthesis path) and fix-wave counts per phase and round;
   - cleanup state.
 - **Orca state is runtime-global**: Other runs and repos share the task store and terminal list. Act only on ids, handles, and paths recorded in your manifest; never dispatch, complete, close, or remove anything the run doesn't own. The recorded run id namespaces this run's tasks and messages.
@@ -81,6 +81,8 @@ The run folder holds exactly this:
 run-state.json                             run manifest
 summary.md                                 run narrative, finalized at Phase 9
 plan/plan.md                               spec of record
+plan/scout-<slug>.md                       one per scouting lens
+plan/fact-check.md                         plan claim verification
 plan/draft-<fable|opus|sol>.md             one per planner on the tier's panel
 plan/critique-<fable|opus|sol>-r<ROUND>.md one per critic per round
 tasks/{seq}-{slug}-assignment.md           coordinator to builder
@@ -100,16 +102,22 @@ Initialize `run-state.json` immediately, before creating or closing anything fur
 
 ## Phase 1: Scout
 
-Scout with your own runtime's native subagents (read-only explorers), not Orca terminals. Dispatch in parallel (models: `references/routing.md`):
+Scout through Orca-managed Codex terminals in `<WT>`, using the pinned model and effort in `references/routing.md` regardless of the coordinator runtime. Run these read-only lenses in parallel:
 
-- **Discovery scouts**: project mechanics and inventory. Tooling commands (Install, Build, Test, Lint, Typecheck, and Format in both check and write forms), `.env` presence, the repo's commit-message convention, where the relevant code lives.
-- **Comprehension scouts**: blast radius and current behaviour of the code being changed, and dependencies on existing code.
-- **Test coverage scouts**: existing coverage that will need adjusting, and important gaps to close for the implementation goals.
-- **Additional scouts**: any others you judge the task needs, on the same read-only terms and routing.
+- **Discovery**: project mechanics and inventory. Tooling commands (Install, Build, Test, Lint, Typecheck, and Format in both check and write forms), `.env` presence, the repo's commit-message convention, where the relevant code lives.
+- **Comprehension**: blast radius and current behaviour of the code being changed, and dependencies on existing code.
+- **Test coverage**: existing coverage that will need adjusting, and important gaps to close for the implementation goals.
+- **Additional lenses**: any others you judge the task needs, on the same read-only terms and routing.
 
-Require `path:line` evidence for claims. Mark every assumption scouting could not confirm; unresolved assumptions go into the plan for the critics and the human.
+Compose one self-contained brief per lens from the intake requirements. Require `path:line` evidence for claims and require every unconfirmed assumption to be named. Record `<WT>` HEAD, then for each lens create a task titled `scout-<slug>` under this run, boot its routed terminal, wait for readiness, and dispatch:
 
-Scouts return their findings in their final message; what survives scouting goes into `plan/plan.md`.
+```text
+Read-only scouting lens: <lens and brief>. Investigate the repository without changing implementation files. Require path:line evidence for every repository claim and list every assumption you could not confirm. Write your full findings to <RUNDIR>/plan/scout-<slug>.md. That report is the only file you may write. Then report completion.
+```
+
+Collect every scout through the bounded-wait loop with dispatch-id correlation. Require a non-empty report. A failed, overdue, or reportless lens gets one retry on a fresh routed terminal with the identical brief. If it fails twice, record the missing lens and carry its unknowns as open assumptions; continue only when the surviving reports still cover project mechanics, current behaviour, and tests. Otherwise run the abort routine. Run the read-only collection check against the recorded HEAD, commit the reports and manifest, then close all scout terminals.
+
+Read every report. What survives scouting goes into `plan/plan.md`; unresolved assumptions go to the critics and the human.
 
 ## Phase 2: Understanding check
 
@@ -119,7 +127,7 @@ Present to the human your understanding of the task: requirements and intended s
 
 **Step 1: Tier.** Classify `plan_review_tier` from the requirements and scout evidence (rubric: `references/routing.md`) and snapshot it with its plan-review cap in `run-state.json`. The tier selects the drafting mode and stays fixed through critique.
 
-**Step 2: Draft.** The tier sets the planner panel (`references/routing.md`): a single planner on `low` | `medium`, competitive drafting across three on `high` | `xhigh`. In both modes:
+**Step 2: Draft.** The tier sets the planner panel (`references/routing.md`): a single planner on `low` | `medium`, competitive drafting across Fable and Sol on `high` | `xhigh`. In both modes:
 
 1. Compose the drafting brief: requirements and acceptance criteria, scouting findings with their evidence, settled answers from the understanding check, open assumptions, project tooling verbatim, and the required plan structure copied from `references/plan-template.md`; drafters cannot read this skill's files, so the brief must stand alone. The brief goes verbatim into each planner's task spec.
 2. Record `git -C <WT-PATH> rev-parse HEAD`. Boot the tier's planner terminals (panel, models, effort, and commands: `references/routing.md`). Per planner (`<P>` from the panel): wait for terminal readiness, create a task titled `plan-draft-<P>` with the spec below, and dispatch it injected to `<H_PLANNER_P>`; record the dispatch id.
@@ -144,7 +152,13 @@ Key obligations for `plan/plan.md` in both modes:
 - Project tooling verbatim, including Build and separate Format check / Format write.
 - Verification requirements target behaviour on critical paths; the goal is to cover the important behaviours and edge cases, not every line.
 
-**Step 3: Fact check.** Dispatch one read-only native subagent (model: `references/routing.md`) to verify every checkable claim in the plan against the repo: file paths, `path:line` evidence, command names, symbols and interfaces cited in contracts. It does not assess reasoning, decomposition, scope, or the run-complexity judgment; it reports mismatches only. Fix every mismatch in the plan before booting the critics.
+**Step 3: Fact check.** Record `<WT>` HEAD, then create a `plan-fact-check` task under this run and boot the pinned Orca worker from `references/routing.md`, regardless of the coordinator runtime. Wait for readiness and dispatch:
+
+```text
+Read <RUNDIR>/plan/plan.md and verify every checkable claim against the repository: file paths, path:line evidence, command names, symbols, and interfaces cited in contracts. Report mismatches only. Do not assess reasoning, decomposition, scope, or the run-complexity judgment. Write the full report to <RUNDIR>/plan/fact-check.md. That report is the only file you may write. Then report completion.
+```
+
+Collect it through the bounded-wait loop with dispatch-id correlation and require a non-empty report. A failed, overdue, or reportless fact check gets one retry on a fresh routed terminal with the identical task. If the retry fails, run the abort routine; do not substitute another model. Run the read-only collection check against the recorded HEAD, commit the report and manifest, close the terminal, then fix every reported mismatch in the plan before booting the critics.
 
 **Step 4: Cross-model critique loop.** `<PLAN_REVIEW_CAP>` and `plan_review_tier` were snapshotted at Step 1 and are fixed for this critique loop, even if the plan's risk changes. Boot the tier's critic terminals (panel, models, effort, fallback, and worker boot: `references/routing.md`), then run rounds 1 through `<PLAN_REVIEW_CAP>`:
 
@@ -176,9 +190,9 @@ Register the DAG with **thin pointer specs** (task specs are immutable after cre
 Run <RUN> assignment {seq}-{slug}. Read your full assignment first: <RUNDIR>/tasks/{seq}-{slug}-assignment.md (absolute path).
 ```
 
-Record every returned task id in `run-state.json`: the run's owned set.
+Record every returned task id in `run-state.json` as the run's **build-owned set**. This set contains build and fix tasks only; scout, fact-check, planner, critic, reviewer, and QA task IDs stay in their phase dispatch records and never enter the build DAG.
 
-**Dispatch loop**: launch every ready task *from the owned set* (never from raw `task-list --ready`; it is runtime-global), up to the concurrency cap (`references/routing.md`). Per task:
+**Dispatch loop**: launch every ready task *from the build-owned set* (never from raw `task-list --ready`; it is runtime-global), up to the concurrency cap (`references/routing.md`). Per task:
 
 1. **Create the task worktree** named `<RUN>-{seq}-{slug}` from `<RUN-BRANCH>` with parent worktree `<WT>`. Capture id, path, and actual branch (`git -C <path> branch --show-current`); close the auto-spawned terminal after confirming it is an unused shell, recording a configured default tab instead; record the starting commit (`git -C <path> rev-parse HEAD`).
 2. **Write the assignment file** `<RUNDIR>/tasks/{seq}-{slug}-assignment.md` from `references/assignment-context.md`, now that its contents exist: the worktree path and branch just captured, inputs and sync artifacts from completed dependencies, contracts, tooling verbatim, report path. Resolved context goes in this file, never inline into a shell argument.
@@ -187,8 +201,8 @@ Record every returned task id in `run-state.json`: the run's owned set.
 **Collect loop**: wait on `worker_done`, `escalation`, and `question` in bounded slices of at most 540000 ms. Process every message in a delivery, then acknowledge it and keep waiting. For each message:
 
 - Correlate `payload.taskId` + `payload.dispatchId` against the manifest's **active** dispatches. Messages for other runs' tasks or superseded dispatches: log and ignore. `question` and `escalation`: handle them yourself. Answer with an orchestration reply, never via files, or adjust the assignment; one you cannot resolve goes to the abort routine, not to the human. Neither is a completion.
-- On a correlated `worker_done`: run the per-task verify+merge below, then dispatch owned ready tasks up to the cap, then loop.
-- Loop until every owned dispatch is terminal. If a worker is overdue (two consecutive empty waits with no new commits on its branch), `orca terminal read` it: actively working means keep waiting; stuck, prompting, or crashed means stop it, close its terminal, inspect its committed work, boot a fresh terminal on the same branch and worktree, set the task back to `ready`, and re-dispatch with that work as context; record the old dispatch id as superseded. This counts toward the verify→fix limit.
+- On a correlated `worker_done`: run the per-task verify+merge below, then dispatch ready tasks from the build-owned set up to the cap, then loop.
+- Loop until every build-owned dispatch is terminal. If a worker is overdue (two consecutive empty waits with no new commits on its branch), `orca terminal read` it: actively working means keep waiting; stuck, prompting, or crashed means stop it, close its terminal, inspect its committed work, boot a fresh terminal on the same branch and worktree, set the task back to `ready`, and re-dispatch with that work as context; record the old dispatch id as superseded. This counts toward the verify→fix limit.
 
 **Per completed task: verify, then merge immediately** (never batch merges):
 
@@ -196,7 +210,7 @@ Record every returned task id in `run-state.json`: the run's owned set.
 2. Read the report (`<RUNDIR>/tasks/{seq}-{slug}-report.md`) and check its claims by running the checks it says passed: Build first, then Lint, Typecheck, Tests, Format check.
 3. Requirements met against the plan. If not, run a **fix cycle**: append your findings to the assignment file, set the task back to `ready`, re-dispatch injected to the same terminal, record the fresh dispatch id and supersede the old one, increment the cycle counter. **Max 3 verify→fix cycles per task**, then the retry protocol.
 4. **Merge the task branch into `<RUN-BRANCH>`** in `<WT>`. Trivial textual conflicts (imports, adjacent independent hunks) resolve yourself under the trivial-fix exception; semantic conflicts: abort the merge and register and dispatch a conflict-resolution fix task (fix-task discipline below) whose deliverable is the conflicted task branch merged into its fix branch with conflicts resolved, so the resolving commit is attributable. The original task stays `dispatched` in the manifest; collect the conflict task through the normal loop, and after its own verify, merge, and step 5, run the original task's step 5. Run integration checks in `<WT>` guided by the scouted blast radius. **Max 3 resolve→verify cycles per original task**, then the retry protocol.
-5. The accepted `worker_done` already completed the task and dispatch in Orca; that is the worker's signal, not the run's truth. Mark the task merged in the manifest now; a dependent dispatches only when the manifest shows every dependency merged. Release the dispatch, close the builder terminal, remove the task worktree by recorded id (check `.ok`), delete the merged task branch (`git -C <WT-PATH> branch -d <task-branch>`; `-d` refuses if it is unmerged; already gone after worktree removal is fine), update and commit the manifest, dispatch owned ready tasks up to the cap.
+5. The accepted `worker_done` already completed the task and dispatch in Orca; that is the worker's signal, not the run's truth. Mark the task merged in the manifest now; a dependent dispatches only when the manifest shows every dependency merged. Release the dispatch, close the builder terminal, remove the task worktree by recorded id (check `.ok`), delete the merged task branch (`git -C <WT-PATH> branch -d <task-branch>`; `-d` refuses if it is unmerged; already gone after worktree removal is fine), update and commit the manifest, then dispatch ready tasks from the build-owned set up to the cap.
 
 **Contract watch**: when two parallel tasks keep reshaping a shared interface to fit their own side, neither is stuck but the work is cycling. Freeze the contract yourself and dispatch explicit conform-to-contract fixes.
 
@@ -326,19 +340,19 @@ Security review: {security-reviewer model when its lens completed, with rounds r
 - Capture handles, ids, paths, branch names, and dispatch ids at creation into `run-state.json`; none can be recomputed. If Orca restarts mid-run, handles go stale: re-acquire from the terminal list, matching recorded title and worktree against the manifest, before continuing.
 - Command syntax comes from the preflight-loaded guides; never guess flags from memory. Where a guide's generic pattern conflicts with this skill's process, ownership, or safety rules, this skill wins.
 - `check --wait` returns one delivery at a time; run it in ≤ 540000 ms slices in a loop; a killed or empty wait means loop again. Process every message in a delivery, then acknowledge it.
-- Correlate every message by `taskId` + `dispatchId` against active dispatches; inspect the dispatch (`dispatch-show`) when state is uncertain. The collection, correlation, and overdue rules apply to every bounded-wait loop: critics, builders, reviewers, QA. Mark a collected task completed in the manifest only after confirming its report is non-empty.
+- Correlate every message by `taskId` + `dispatchId` against active dispatches; inspect the dispatch (`dispatch-show`) when state is uncertain. The collection, correlation, and overdue rules apply to every bounded-wait loop: scouts, plan fact check, critics, builders, reviewers, QA. Mark a collected task completed in the manifest only after confirming its report is non-empty.
 - A valid `worker_done` completes its task and dispatch in Orca automatically; never follow it with a manual completion. Manual `task-update` is recovery only: `ready` for fix cycles, `failed` for failures. Orca task status is the worker's signal; the manifest is the run's truth for verified and merged.
 - Release a dispatch once you accept its `worker_done` and will not reuse its terminal; a fix cycle reuses the terminal, so release only at task completion or permanent failure.
-- **Read-only collection check** (planners, critics, reviewers; `<H>` = the recorded HEAD): `git -C <WT-PATH> status --porcelain -- ':!.agents/orca/orchestration'` must be empty and HEAD must equal `<H>`. Any failure: `git -C <WT-PATH> reset --mixed <H> && git -C <WT-PATH> restore --worktree -- . ':!.agents/orca/orchestration' && git -C <WT-PATH> clean -fd -- ':!.agents/orca/orchestration'`, re-run the check (it must pass before any artifact commit), and record the incident.
+- **Read-only collection check** (scouts, plan fact check, planners, critics, reviewers; `<H>` = the recorded HEAD): `git -C <WT-PATH> status --porcelain -- ':!.agents/orca/orchestration'` must be empty and HEAD must equal `<H>`. Any failure: `git -C <WT-PATH> reset --mixed <H> && git -C <WT-PATH> restore --worktree -- . ':!.agents/orca/orchestration' && git -C <WT-PATH> clean -fd -- ':!.agents/orca/orchestration'`, re-run the check (it must pass before any artifact commit), and record the incident.
 - Never dispatch into a terminal that has not reached readiness (tui-idle); a terminal mid-startup drops injected input. This applies to every boot, including retried lenses and respawned workers. After every dispatch, read the terminal and confirm the worker has received the instruction; a terminal still starting up, or idle with no trace of the dispatch, means wait for readiness again and inject the same dispatch once more. An Orca CLI call that fails or a readiness wait that times out: read the terminal and retry once. A second failure of any of these three (a dispatch still unconfirmed after reinjection, a failed Orca CLI call, or a timed-out readiness wait) follows the current phase's failure path; builders enter fix/retry handling.
 - Prefer structured `worker_done` payloads and report files over parsing terminal output; the bounded `terminal read` buffer is for status, not results.
 - `worktree create` controls the worktree name only (capture the Orca-derived branch) and may auto-spawn a first terminal: close it after confirming it is an unused shell; a configured default tab stays recorded in the manifest and closes at teardown.
-- Close terminals when their phase no longer reuses them: builders at task completion or permanent failure (the fix cycle re-dispatches into the same terminal), QA after collection, planners after plan selection, critics and reviewers after their round loop. Remove task worktrees once merged. The concurrency cap applies to builders; planner, critic, reviewer, and QA terminals are additional and phase-bound.
+- Close terminals when their phase no longer reuses them: scouts and the plan fact check after collection, builders at task completion or permanent failure (the fix cycle re-dispatches into the same terminal), QA after collection, planners after plan selection, critics and reviewers after their round loop. Remove task worktrees once merged. The concurrency cap applies to builders; scout, fact-check, planner, critic, reviewer, and QA terminals are additional and phase-bound.
 
 ## Safety constraints
 
 - Code reaches main only through a human-approved PR; approving and merging it is always the human's.
 - Only the run branch reaches the remote, and only at Phase 9.
 - Workers write code only in their assigned worktree; `<RUNDIR>` writes are limited to each worker's designated files.
-- Planners, reviewers, and the plan critics are read-only by instruction, enforced at collection: clean tree outside the run folder and unchanged HEAD in `<WT>` after each reports, or you reset the tree and record the incident. On a `high`/`xhigh` run, the final adversarial QA worker writes only in its disposable worktree, `qa-findings.md`, and `<RUNDIR>/screenshots/`; its branch never merges.
+- Scouts, the plan fact check, planners, reviewers, and plan critics are read-only by instruction, enforced at collection: clean tree outside the run folder and unchanged HEAD in `<WT>` after each reports, or you reset the tree and record the incident. On a `high`/`xhigh` run, the final adversarial QA worker writes only in its disposable worktree, `qa-findings.md`, and `<RUNDIR>/screenshots/`; its branch never merges.
 - Never act on unfiltered runtime-global state: the manifest defines what this run owns.

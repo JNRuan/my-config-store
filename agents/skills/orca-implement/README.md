@@ -29,8 +29,8 @@ The skill is **not** triggered by a general request to implement, fix, or build 
 
 1. **Intake**: resolves a GitHub issue, Linear issue, markdown doc or spec, or ad-hoc prompt into requirements.
 2. **Preflight**: confirms Orca is ready, the coordinator is in an Orca-managed terminal, the repository is registered, and the base is clean.
-3. **Scout**: investigates project mechanics, affected code, dependencies, and test coverage.
-4. **Plan**: assigns the draft a `plan_review_tier`, snapshots its critique cap from [`references/routing.md`](./references/routing.md), fact-checks the plan, and runs Claude and Codex critics. After critique, the reviewed plan receives canonical `run_complexity`, which may differ from the draft tier and controls downstream review and QA.
+3. **Scout**: sends read-only Luna/high workers through Orca to investigate project mechanics, affected code, dependencies, and test coverage, regardless of the coordinator runtime.
+4. **Plan**: assigns the draft a `plan_review_tier`, snapshots its critique cap from [`references/routing.md`](./references/routing.md), uses a Luna/high Orca worker to fact-check the plan, and runs Claude and Codex critics. After critique, the reviewed plan receives canonical `run_complexity`, which may differ from the draft tier and controls downstream review and QA.
 5. **Plan gate**: stays with the human until explicit message approval or a zero-comment round of the mapped plan-gate skill. Human edits never reopen plan critique, and any proposed run-complexity change requires separate approval.
 6. **Build**: creates an owned task DAG and dispatches workers in parallel Orca worktrees where dependencies allow. Worker routing follows the complexity rubric in [`references/routing.md`](./references/routing.md).
 7. **Verify and integrate**: checks worker commits and reports, runs the required checks, merges valid task branches, and turns failures into worker fix cycles.
@@ -92,13 +92,13 @@ The run folder is committed to the run branch as artifacts land, including at ph
 The artifact set is closed; a run writes these and nothing else:
 
 - `run-state.json`, the run manifest for state transitions and recovery
-- `plan/`, the specification of record and critic reports for every round run
+- `plan/`, scout and fact-check reports, the specification of record, and critic reports for every round run
 - `tasks/`, worker assignments and reports
 - `review/`, cross-model review and synthesis for every round run, plus QA findings for high/xhigh runs
 - `summary.md`, acceptance evidence, decisions, incidents, and final status
 - `screenshots/`, browser-verification evidence when applicable
 
-Scouting, the plan fact check, and browser verification report in context. Source material is cited by path or URL, and the plan distills it into requirements.
+Scouting and plan fact-check reports persist under `plan/`. Browser verification reports in context and stores screenshots when applicable. Source material is cited by path or URL, and the plan distills it into requirements.
 
 The integration worktree and run branch survive until the PR merges. Task and disposable QA worktrees are removed using only the IDs recorded in the run manifest.
 
