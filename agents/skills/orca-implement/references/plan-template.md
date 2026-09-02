@@ -26,21 +26,29 @@ What needs to be built and why, briefly.
 - **Plan-review cap used**: {1 | 2 | 3 | 5, snapshotted before critique}
 - **Run-complexity rationale**: {aggregate risk, blast radius, coupling, failure impact, and observability evidence from the reviewed plan}
 - **Code-review cap**: {pending before critique | 1 | 2 | 3 | 5 after critique}
-- **Adversarial QA**: {pending before critique | skip for low/medium | run after all code review for high/xhigh}
+- **Adversarial QA**: {pending before critique | skip for low | run after all code review for medium/high/xhigh}
 
 Fill the plan-review fields before critique from `references/routing.md`.
 After critique, replace every pending downstream field from
-`run_complexity`. Keep all recorded values synchronized with `run-state.json`.
+`run_complexity`. Keep all recorded values synchronised with `run-state.json`.
 
 ## Requirements & Acceptance Criteria
 
-Distilled from the task source at intake, or drafted from the prompt, citing
-the source: `path@<BASE_SHA>` for a repo document, URL or ref for an issue.
-Quote only the lines that carry a requirement or constraint; never paste the
-source in whole. State each requirement fully enough to build and verify
-against without opening the source. Each criterion gets an ID (`AC-1`, `AC-2`,
-...) so tasks, verification, and the PR can reference it. Every criterion must
-be covered by at least one task.
+Distil the requirements from the intake source. Cite:
+
+- `path@<BASE_SHA>` for a repository document;
+- the URL or reference for an issue;
+- `ad-hoc` for a prompt.
+
+Quote only text that carries a requirement or constraint. Do not copy the source in full.
+
+Write each requirement so a worker can build and verify it without opening the source.
+
+Give every acceptance criterion an id: `AC-1`, `AC-2`, and so on. Every criterion must:
+
+- state observable behaviour;
+- be covered by at least one task;
+- have a verification method.
 
 ## Out of Scope
 
@@ -48,15 +56,16 @@ What this run deliberately does not touch.
 
 ## Assumptions
 
-- **Validated**: confirmed during scouting, with `path:line` evidence.
-- **Open**: unconfirmed; flagged to the critics and the human at the plan
-  gate, and assigned to the task that must verify them before implementing.
+- **Validated**: state the confirmed assumption and cite `path:line` evidence.
+- **Open**: name the task that must verify it before relying on it.
+
+Do not leave a known human-owned decision as an open assumption.
 
 ## Contracts
 
 Interfaces shared across tasks, pinned before dispatch: signatures, schemas,
-routes, types. Parallel tasks build against these as written; a contract
-change goes through the coordinator (re-pin), never through a worker.
+routes, types. Parallel tasks build against these as written. Only the
+coordinator changes a contract, by re-pinning it.
 
 ## Tasks
 
@@ -67,13 +76,12 @@ independent of `plan_review_tier` and `run_complexity`.
 | seq | slug | deps | complexity | builder | covers |
 |-----|------|------|------------|---------|--------|
 | 01  | ...  | —    | medium     | codex sol · high | AC-1 |
-| 02  | ...  | 01   | high       | claude opus · high | AC-2 |
+| 02  | ...  | 01   | high       | claude fable · high | AC-2 |
 | 03  | ...  | 02   | xhigh      | claude fable · xhigh | AC-3 |
 
 ### {seq}-{slug}
 
-- **What**: the deliverable that results in commits (the what, not the how;
-  the builder decides implementation).
+- **What**: the required result and its boundaries. Prescribe an implementation detail only when correctness depends on it. The builder may make local choices within the approved contracts and constraints.
 - **Why**: what purpose it serves.
 - **Deps / Inputs**: dependency tasks and what from their output feeds in.
 - **Contracts**: which pinned contracts this task obeys or produces.
@@ -102,8 +110,7 @@ relayed, and why it is a sync point.
 
 ### Integration Verification
 
-Cross-task boundaries to verify after each merge, guided by the scouted
-blast radius, not just each task's own tests.
+List the cross-task boundaries to verify after each merge. Use the affected area found during scouting, not only each task's own tests.
 
 ### Post-Merge Validation
 
@@ -112,9 +119,20 @@ build verification).
 
 ## Project Tooling
 
-Install / Build / Test / Lint / Typecheck / Format check / Format write
-commands and the repo's commit-message convention, verbatim, passed
-unchanged into every assignment file ("none" where a tool doesn't exist).
-Format is two entries: the check form (safe to run during verification) and
-the write form (mutates code).
+Record these commands verbatim:
+
+- Install;
+- Build;
+- Test;
+- Lint;
+- Typecheck;
+- Format check;
+- Format write;
+- Dev server, with its port.
+
+Write `none` when the repository has no command.
+
+Keep Format check and Format write separate. Verification may run the check form. The write form changes files.
+
+Record the repository's commit-message convention.
 ```

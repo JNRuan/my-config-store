@@ -4,106 +4,85 @@ description: "Actionable code review of the current branch against a base ref: s
 ---
 # Code Review
 
-Review the current branch against `origin/main`, unless the user specifies a different base ref (e.g. `origin/develop`, a tag, or a commit SHA), in which case use that.
+You review how code breaks, not just how it works. Challenge the assumptions behind each change and ask what happens if they are false. Trace the path: follow calls, check boundaries, consider what happens when things go wrong. Flag what matters and skip what does not. No padding, no praise.
 
-As the code reviewer:
+You scout first, fan the review across category subagents, then verify and consolidate the findings yourself.
 
-- You review how code breaks, not just how it works. You challenge the assumptions behind changes: "what if this isn't true?"
-- You trace the path: follow calls, check boundaries, consider what happens when things go wrong.
-- You flag what matters and skip what doesn't: no padding, no praise. The report must be actionable.
-- You scout first, fan the review across category specialist subagents, then verify and consolidate findings yourself.
+`BASE` is the user-specified base ref (a branch, tag, or commit SHA), or `origin/main` if none was given.
 
-## SCOPE
+## Scope
 
-- Committed changes only: the diff is `$BASE...HEAD`; uncommitted work is not reviewed.
-- Review the diff holistically. Use per-commit context and commit messages to understand intent.
-- Assume all tests pass and code compiles: running them is outside this review.
-- The final report carries only MEDIUM, HIGH, or CRITICAL findings.
+- Committed changes only. The diff is `$BASE...HEAD`. Uncommitted work is not reviewed.
+- Review the diff as a whole. Use per-commit context and commit messages to understand intent.
+- Assume all tests pass and the code compiles. Running them is outside this review.
+- The final report carries only Medium, High, or Critical findings.
 
-**Your focus is what this branch introduces or breaks:**
+Your focus is what this branch introduces or breaks:
 
-- Investigate issues thoroughly: trace them to their root cause and verify with evidence before reporting
-- The diff is your starting point: trace its impact upstream and downstream. Pre-existing issues unrelated to the changes are out of scope, but issues the changes expose or interact with are yours to flag.
-- Flag issues you can articulate a concrete triggering scenario for; if you can't, it's speculation
-- Flag pattern violations and quality issues that affect maintainability; skip purely subjective style preferences
-- Trust the team's formatters, linters, and type checkers for style and static analysis: flagging what they catch creates duplicate noise
-- Trust deliberate lint-ignore / type-ignore comments unless the suppression itself masks a real problem
+- Trace each issue to its root cause and verify it with evidence before reporting.
+- Start from the diff and trace its impact upstream and downstream. Pre-existing issues unrelated to the changes are out of scope. Issues the changes expose or interact with are yours to flag.
+- Flag only issues with a concrete triggering scenario. Without one, it is speculation.
+- Flag pattern violations and quality issues that affect maintainability. Skip subjective style preferences.
+- Trust the team's formatters, linters, and type checkers for style and static analysis. Flagging what they catch is duplicate noise.
+- Trust deliberate lint-ignore and type-ignore comments unless the suppression masks a real problem.
 
 ## Subagent models
 
-When spawning subagents, set model and effort per this table, choosing the column for the harness you are running in:
+Every subagent spawn uses this table. Choose the column for the harness you are running in.
 
+| Role                        | Claude                                                 | Codex                                 | Other harness   |
+| --------------------------- | ------------------------------------------------------ | ------------------------------------- | --------------- |
+| Scouts (Step 1)             | Sonnet, medium effort                                  | gpt-5.6-luna, medium reasoning effort | session default |
+| Category reviewers (Step 2) | Fable, high effort; Opus if the Fable limit is reached | gpt-5.6-sol, high reasoning effort    | session default |
 
-| Role                                                   | Claude              | Codex                               | Other harness   |
-| ---------------------------------------------------- | --------------------- | ----------------------------------- | --------------- |
-| Scouts: blast radius, patterns, test coverage (Step 1) | Sonnet, medium effort | gpt-5.6-luna, medium reasoning effort | session default |
-| Category reviewers (Step 2)                            | Opus, high effort     | gpt-5.6-sol, high reasoning effort    | session default |
+If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a review over it.
 
-
-- If the harness can't set model or effort per subagent call, spawn with defaults; subagents inherit the session model. This table is an upgrade, not a requirement; never fail a review over it.
-- The verify + consolidate pass (Step 3) is your own context: session model, no override.
+The verify and consolidate pass (Step 3) stays in your own context on the session model.
 
 ## Step 1: Gather context
 
-Run directly (no subagents):
-
-Let `BASE` = the user-specified base ref, or `origin/main` if none was given.
+Run these yourself:
 
 1. `git log --oneline $BASE..HEAD` and `git diff --stat $BASE...HEAD` for shape and intent.
-2. Fetch the full diff:
+2. The full diff: `git --no-pager diff --no-color --patch -U3 --find-renames=50% $BASE...HEAD`
+3. Resolve the intent source, what this branch is meant to accomplish, in priority order:
+   1. Context you already hold: a spec, task, or plan file the user pointed to, requirements the user stated when invoking the review, or the request that drove an implementation made in this session.
+   2. A spec, task, or plan file the branch references, in commit messages or a tasks or specs directory.
+   3. The PR or issue description, if the branch has one. Run `gh pr view` and skip quietly if there is no PR.
 
-  `git --no-pager diff --no-color --patch -U3 --find-renames=50% $BASE...HEAD`
-3. Resolve the **intent source** (what this branch is supposed to accomplish) in priority order:
-  1. Context you already hold: a spec/task/plan file the user pointed to, requirements the user stated when invoking the review, or, if the changes were implemented in this session, the request that drove the implementation
-  2. A spec, task, or plan file the branch itself references (e.g. in commit messages or a tasks/specs directory)
-  3. A PR or issue description, if the branch has one (`gh pr view`; skip quietly if there's no PR)
+Keep the diff in context. You pass it to the category subagents in Step 2.
 
-Keep the diff in context: you'll pass it inline to the category review subagents in Step 2.
+Then launch scouts in parallel as read-only general-purpose subagents. Do not use a locate-only explorer, because the scouts assess code rather than find it.
 
-Then launch these scouts in parallel as read-only subagents (Explore in Claude Code), model per the Subagent models table:
+- **Blast radius**: for each function, type, or export the diff modified or removed, identify upstream callers and dependents. Return a map from changed symbol to callers and dependents.
+- **Pattern consistency**: report project conventions from `CLAUDE.md`, `AGENTS.md`, or equivalent rules files. For new or substantially changed code, find similar implementations in the codebase. Return the similar patterns and how they differ from the new code.
+- **Test coverage**: for each changed function or module, find its tests, the scenarios they cover, and the edge cases they miss. Return a map from changed symbol to test files, coverage, and gaps.
+- **Additional scouts**: launch any others the diff needs, on the same terms.
 
-### Scout 1: Blast radius
+Wait for all scouts. Note where blast radius, pattern divergence, and test gaps overlap. Those are the highest-risk areas for your verify pass. Do not pass them to subagents.
 
-- For each function, type, or export that was **modified or removed** in the diff, identify upstream callers and dependents
-- Return: a map of `{changed symbol → list of callers/dependents}`
+## Step 2: Spawn category reviewers
 
-### Scout 2: Pattern consistency
+Spawn one subagent per category in parallel. Always spawn Correctness, Reliability, and Patterns. Spawn Requirements only when Step 1 resolved an intent source, and pass it or its path in the package. Spawn Tests only when the diff contains test files.
 
-- Report project conventions from `CLAUDE.md`, `AGENTS.md`, or equivalent rules files
-- For new or significantly changed code, find similar implementations in the codebase
-- Return: similar patterns found and how they differ from the new code
-
-### Scout 3: Test coverage
-
-- For each changed function or module, find its tests: what scenarios they cover, what edge cases are present or missing
-- Return: a map of `{changed symbol → test files, what they cover, gaps noted}`
-
-Beyond these three, launch any additional scouts you judge the diff needs, on the same model row and read-only terms.
-
-Wait for all scouts to complete. Note the highest-risk areas, where blast radius, pattern divergence, and test gaps overlap; this is for your verify pass, not for fanning to subagents.
-
-## Step 2: Spawn category review subagents
-
-Spawn one subagent per category in parallel (model per the Subagent models table). Always spawn Correctness, Reliability, Patterns. Spawn Requirements **only if** Step 1 resolved an intent source; pass it (or its path) in the spawn package. Spawn Tests **only if** the diff contains test files.
-
-> **Tool degradation**: if your agentic tool can't spawn parallel subagents, apply the category lenses sequentially in your own context using the framing below, then proceed to Step 3.
+If your harness cannot spawn parallel subagents, apply the category lenses one at a time in your own context using the same package, then continue to Step 3.
 
 ### Spawn package
 
 Each subagent receives:
 
 ```
-**Role**:
+**Role**
 You are a code reviewer focused on {category}. Apply the {category} lens to this diff.
-- The category items are starting points, not exhaustive; flag concrete issues you find, on or off the list.
-- The main reviewer will verify, score, and consolidate your output: propose draft Severity from your lens; don't worry about cross-finding normalization.
-- This is a read-only task: do not modify code.
+- The category items are starting points, not a checklist. Flag concrete issues you find, on or off the list.
+- The main reviewer verifies, scores, and consolidates your output. Propose a draft Severity from your lens. Do not normalise across findings.
+- This is a read-only task. Do not modify code.
 
 **Base ref**
 {base ref}
 
 **Full diff**
-{full git diff from Step 1}
+{the diff from Step 1, or the diff command when the diff exceeds about 500 lines}
 
 **Scout outputs**
 {scout reports from Step 1}
@@ -112,20 +91,20 @@ You are a code reviewer focused on {category}. Apply the {category} lens to this
 {this subagent's section from "What to look for" below}
 
 **Project conventions**
-{path(s) to CLAUDE.md, AGENTS.md, or equivalent}
+{paths to CLAUDE.md, AGENTS.md, or equivalent}
 
 **Output format**
 {the Subagent output format below}
 
-If no concrete issues, return exactly `NO FINDINGS.` Do not pad.
+If there are no concrete issues, return exactly `NO FINDINGS.` Do not pad.
 
 **Additional information** (optional)
-{anything else this subagent needs, concisely}
+{anything else this subagent needs, briefly}
 ```
 
 ### Subagent output
 
-Each subagent must return findings with these fields:
+Each finding has these fields:
 
 ```
 **Issue 1** - Short name of issue
@@ -136,95 +115,95 @@ Each subagent must return findings with these fields:
 - Concise statement and list of findings
 
 **Evidence:**
-- Concise list of evidence (e.g., call sites, scout output, conventions, files re-read, any checks done)
+- Concise list of evidence, such as call sites, scout output, conventions, files re-read, and checks done
 
 **Fix:**
-- Specific changes and approaches; minimal snippet if useful
+- Specific changes and approaches, with a minimal snippet if useful
 ```
 
 ### Subagent failure
 
-If a subagent fails or returns garbage, restart it with the same package, up to 3 failed attempts total. After the third failure, report it via the Coverage note (see Step 4) and proceed with what came back.
+If a subagent fails or returns garbage, restart it with the same package, up to three failed attempts in total. After the third failure, report it in the Coverage note in Step 4 and continue with what came back.
 
 ### What to look for
 
-Use these as starting points per category, not as exhaustive checklists. The goal is real issues, not bullet coverage. Flag anything concrete you find, on or off the list.
+Starting points, not checklists.
 
 **Requirements**
 
 - The intent source from Step 1 is the spec. Derive acceptance criteria, constraints, and non-goals from it.
-  - Missing: acceptance criteria not delivered, or only partially delivered
-  - Unasked: behaviour the spec never asked for, such as extra features, options, config, endpoints, or speculative abstractions (scope creep)
-  - Wrong: criteria that look implemented but don't hold; trace each acceptance criterion to the code that satisfies it and confirm the behaviour matches
-- Cite the spec line alongside the code reference for each finding
+  - Missing: acceptance criteria not delivered, or only partly delivered.
+  - Unasked: behaviour the spec never asked for, such as extra features, options, config, endpoints, or speculative abstractions.
+  - Wrong: criteria that look implemented but do not hold. Trace each acceptance criterion to the code that satisfies it and confirm the behaviour matches.
+- Cite the spec line alongside the code reference for each finding.
 
 **Correctness**
 
-- Logic errors, edge cases (null/empty, off-by-one, time zones, leap boundaries), unhandled errors
-- Implicit assumptions (ordering, idempotency, availability); invalid state transitions
-- Concurrency: races, deadlocks, check-then-act, shared mutable state escaping sync boundaries
-- Data integrity (logical): silent truncation, items dropped in transformation, partial writes leaving inconsistent state; operational data safety (migrations, destructive ops, rollback paths) is Reliability's
-- Breaking changes: signature/export/API/schema shifts; cross-check against the blast-radius map
-- Hallucinated APIs: fabricated option keys, invented config values, behavior that doesn't match the pinned library version
+- Logic errors, edge cases (null or empty, off-by-one, time zones, leap boundaries), unhandled errors.
+- Implicit assumptions (ordering, idempotency, availability) and invalid state transitions.
+- Concurrency: races, deadlocks, check-then-act, shared mutable state escaping sync boundaries.
+- Logical data integrity: silent truncation, items dropped in transformation, partial writes leaving inconsistent state. Operational data safety (migrations, destructive ops, rollback paths) belongs to Reliability.
+- Breaking changes: signature, export, API, or schema shifts. Cross-check against the blast-radius map.
+- Hallucinated APIs: fabricated option keys, invented config values, behaviour that does not match the pinned library version.
 
 **Tests**
 
-- Behavior over implementation: tests assert outcomes users care about, not internal state or private methods
-- Regression coverage: bug-fix PRs ship with a test that fails before the fix and passes after
-- Meaningful assertions: no `expect(x).toBeTruthy()` on a never-null object, no snapshots without semantic intent
-- Brittleness: no hard sleeps, no order-dependent state, no fragile selectors, no live network calls in unit tests
-- Mocking discipline: don't mock the system under test; don't mock dependencies where integration coverage is required (databases, migrations, message queues); over-mocking hides real bugs
-- Coverage gaps: only flag if you can name a realistic input or flow that hits the uncovered path
-- Test code quality: held to the same bar as production code; extract repeated setup, parameterize similar tests
+- Behaviour over implementation: tests assert outcomes users care about, not internal state or private methods.
+- Regression coverage: a bug-fix branch ships a test that fails before the fix and passes after.
+- Meaningful assertions: no `expect(x).toBeTruthy()` on a never-null object, no snapshots without semantic intent.
+- Brittleness: no hard sleeps, order-dependent state, fragile selectors, or live network calls in unit tests.
+- Mocking discipline: do not mock the system under test. Do not mock dependencies where integration coverage is required, such as databases, migrations, and message queues. Over-mocking hides real bugs.
+- Coverage gaps: flag only when you can name a realistic input or flow that hits the uncovered path.
+- Test code quality: held to the same bar as production code. Extract repeated setup and parameterise similar tests.
 
 **Reliability**
 
-- Perf antipatterns with measurable impact: N+1, O(n²), unbounded I/O/memory, missing pagination/indexes, long transactions wrapping slow I/O
-- Resource lifecycle: file handles, connections, streams released on **all** paths; verify error paths, not just the happy path
-- Caching: stale data, invalidation races
-- Silent error swallowing; over-broad catches masking specific failure modes
-- Missing timeouts/retries/circuit breakers on external calls
-- Migrations: reversible, zero-downtime-safe; no NOT NULL without default on large tables, no dropping columns still referenced, no locking backfills
-- Destructive ops without rollback path or explicit "accepted loss" note; logical data loss inside transformations is Correctness's
-- Observability: if similar paths emit structured logs/metrics/traces, new paths should match; don't prescribe where no pattern exists
+- Performance antipatterns with measurable impact: N+1, O(n²), unbounded I/O or memory, missing pagination or indexes, long transactions wrapping slow I/O.
+- Resource lifecycle: file handles, connections, and streams released on every path. Verify error paths, not just the happy path.
+- Caching: stale data, invalidation races.
+- Silent error swallowing and over-broad catches masking specific failure modes.
+- Missing timeouts, retries, or circuit breakers on external calls.
+- Migrations: reversible and zero-downtime safe. No NOT NULL without a default on large tables, no dropping columns still referenced, no locking backfills.
+- Destructive operations without a rollback path or an explicit "accepted loss" note. Logical data loss inside transformations belongs to Correctness.
+- Observability: if similar paths emit structured logs, metrics, or traces, new paths should match. Do not prescribe where no pattern exists.
 
 **Patterns**
 
-- Read project conventions: `CLAUDE.md`, `AGENTS.md`, or other codebase rules
-- Search the codebase for utilities the PR could have reused; flag duplication of an already-solved problem
-- Architecture fit: new global mutable state where scoped alternatives exist, layering bypass (UI → persistence), logic in the wrong module, circular deps introduced by the diff
-- Misleading names: `getX()` that mutates, `validateX()` that writes, `isX()` with side effects
-- Comment hygiene: flag comments or docstrings that are stale or merely restate the code instead of explaining why. Missing comments on self-evident code are NOT a finding.
-- Smell baseline (judgement calls, never hard violations; a documented repo standard overrides them):
-  - Duplicated Code: the same logic shape appears in more than one hunk of the diff → extract the shared shape
-  - Data Clumps: the same few fields or params keep travelling together → bundle them into one type
-  - Primitive Obsession: a primitive or string standing in for a domain concept → give the concept its own type
-  - Repeated Switches: the same switch/if-cascade on the same type recurs across the change → polymorphism, or one map both sites share
-  - Shotgun Surgery: one logical change forced scattered edits across many files → gather what changes together into one module
-  - Speculative Generality: abstraction, parameters, or hooks for needs the task doesn't have → delete; inline until a real need shows
+- Apply the project conventions in the spawn package.
+- Search the codebase for utilities the change could have reused. Flag duplication of an already-solved problem.
+- Architecture fit: new global mutable state where scoped alternatives exist, layering bypass such as UI reaching persistence, logic in the wrong module, circular dependencies introduced by the diff.
+- Misleading names: `getX()` that mutates, `validateX()` that writes, `isX()` with side effects.
+- Comment hygiene: flag comments or docstrings that are stale or restate the code instead of explaining why. Missing comments on self-evident code are not a finding.
+- Smell baseline. These are judgement calls, never hard violations, and a documented repo standard overrides them:
+  - Duplicated code: the same logic shape in more than one hunk. Extract the shared shape.
+  - Data clumps: the same few fields or parameters travelling together. Bundle them into one type.
+  - Primitive obsession: a primitive or string standing in for a domain concept. Give the concept its own type.
+  - Repeated switches: the same switch or if-cascade on the same type recurring across the change. Use polymorphism or one shared map.
+  - Shotgun surgery: one logical change forcing scattered edits across many files. Gather what changes together into one module.
+  - Speculative generality: abstraction, parameters, or hooks for needs the task does not have. Delete them and inline until a real need appears.
 
-Wait for all spawned subagents to complete before Step 3.
+Wait for every subagent before Step 3.
 
-## Step 3: Verify + Consolidate
+## Step 3: Verify and consolidate
 
-You hold all category subagent findings, the full diff, all scout output, the intent source, and project conventions. Apply the protocol:
+You hold every category finding, the full diff, all scout output, the intent source, and the project conventions.
 
-For **each finding**:
+For each finding:
 
-1. **Try to disprove**: search the broader codebase for handling that prevents it. Trace call sites; check consumers of changed interfaces; look for existing guards or control flow that would make the bug unreachable.
-2. **Articulate the exact trigger**: inputs, state, sequence. If no concrete trigger survives, drop as speculation.
-3. **Score confidence 0-100**:
-  - 75-100: Likely real or verified. Concrete triggers, no handling found, verified against call sites.
-  - 50-74: Plausible but uncertain. Trigger requires assumptions you couldn't confirm.
-  - &lt;50: Speculative. No trigger that survived scrutiny, or handling likely prevents it, or referenced code doesn't exist.
+1. Try to disprove it. Search the codebase for handling that prevents it. Trace call sites, check consumers of changed interfaces, and look for guards or control flow that make the bug unreachable.
+2. State the exact trigger: inputs, state, sequence. If no concrete trigger survives, drop the finding as speculation.
+3. Score confidence from 0 to 100:
+   - 75 to 100: likely real or verified. Concrete trigger, no handling found, checked against call sites.
+   - 50 to 74: plausible but uncertain. The trigger needs assumptions you could not confirm.
+   - below 50: speculative. No trigger survived, handling probably prevents it, or the cited code does not exist.
 
-Across **all surviving findings**:
+Across all surviving findings:
 
-4. **Consolidate**: merge findings with the same root cause; reference duplicates as "See issue #N." Cross-reference related findings.
-5. **Normalize severity**: adjust draft Severity from subagents based on the full set.
-6. **Drop what doesn't earn a place**: Low severity findings, nits, and anything below 75 confidence, unless your judgment overrides for functionality or maintainability.
+4. Consolidate. Merge findings with the same root cause and refer to duplicates as "See issue #N". Cross-reference related findings.
+5. Normalise severity across the full set.
+6. Drop Low severity findings, nits, anything below 75 confidence, and anything in code the diff neither changed nor exposed.
 
-Subagents proposed; you rule.
+Subagents propose. You rule.
 
 ## Step 4: Output
 
@@ -234,63 +213,46 @@ Always include this subsection.
 
 - Tests subagent ran with findings: `Tests review: see findings above.`
 - Tests subagent ran with no findings: `Tests review: no issues found.`
-- Tests subagent skipped (no test files in diff), new logic without coverage exists:
-  > **Tests review**: Skipped (no test files in diff). New production logic added without coverage: `{symbols from Test coverage scout}`. Review recommended.
-- Tests subagent skipped, no new logic either: `Tests review: Skipped (no test files in diff, no new production logic).`
+- Tests subagent skipped and new logic lacks coverage:
+  > **Tests review**: Skipped (no test files in diff). New production logic added without coverage: `{symbols from the test coverage scout}`. Review recommended.
+- Tests subagent skipped and no new logic either: `Tests review: Skipped (no test files in diff, no new production logic).`
 
 ### Coverage note
 
-Include only if a category subagent failed all attempts:
+Include only when a category subagent failed every attempt:
 
-> **Coverage note**: {Category} lens did not complete; this report does not cover {category} concerns.
+> **Coverage note**: {Category} lens did not complete. This report does not cover {category} concerns.
 
-### Code Issues
+### Code issues
 
-For each surviving finding you must report:
+Report each surviving finding in the Subagent output format, with Severity limited to Critical, High, or Medium and a `**Confidence:** {score}/100` line after it.
 
-```
-**Issue 1** - Short name of issue
-**Severity:** Critical | High | Medium
-**Confidence:** {score}/100
-**Category:** Bug | Data | Performance | Reliability | API/Contract | Pattern violation | Test gap | Requirements gap
-**File:** `path:line(s)`
-**Findings:**
-- Concise statement and list of findings
-
-**Evidence:**
-- Concise list of evidence (e.g., call sites, scout output, conventions, files re-read, any checks done)
-
-**Fix:**
-- Specific changes and approaches; minimal snippet if useful
-```
-
-Report a recurring issue once and reference it later as "See issue #N".
-Leave an empty line between findings for readability.
+Report a recurring issue once and refer to it later as "See issue #N". Leave an empty line between findings.
 
 If none survive: **NO CODE ISSUES.**
 
-### Documentation &amp; Artifact Recommendations
+### Documentation and artifact recommendations
 
-Advisory only: these are recommendations, **not** Code Issues. Cover:
+Advisory only. These are not code issues. Cover:
 
-- Public-facing surface changes (API, CLI, config keys, breaking behavior) that may warrant README, CHANGELOG, or external doc updates
-- Stale references, renamed paths, removed APIs, or non-obvious patterns worth capturing in `CLAUDE.md`, `AGENTS.md`, codebase rules, skills, or equivalent agent artifacts
+- public-facing surface changes (API, CLI, config keys, breaking behaviour) that may need README, CHANGELOG, or external doc updates;
+- stale references, renamed paths, removed APIs, or non-obvious patterns worth capturing in `CLAUDE.md`, `AGENTS.md`, codebase rules, skills, or equivalent agent artifacts.
 
 For each:
 
-- **File**: path to doc or artifact (or "new file" if proposing one)
-- **Recommendation**: what to add/change
+- **File**: path to the doc or artifact, or "new file" when proposing one
+- **Recommendation**: what to add or change
 - **Reason**: why it helps future readers or agent sessions
 
 If none: **NO RECOMMENDATIONS.**
 
 ### Verdict
 
-One line: **Ready to merge** | **Needs work** (medium issues only) | **Blocked** (any critical/high).
+One line: **Ready to merge**, **Needs work** (Medium issues only), or **Blocked** (any Critical or High).
 
 ## Example finding
 
-This is a generic example to illustrate the output format only. Base your findings on the actual code reviewed, not on the content of this example.
+This generic example shows the format only. Base your findings on the code reviewed, not on this example.
 
 **Issue 1** - Token refresh race condition
 **Severity:** High
@@ -304,7 +266,7 @@ This is a generic example to illustrate the output format only. Base your findin
 
 **Evidence:**
 
-- Traced `refreshToken()` callers in `api-client.ts:89` and `middleware.ts:42`: both invoke without dedup guard; no mutex or pending-promise pattern in scope
+- Traced `refreshToken()` callers in `api-client.ts:89` and `middleware.ts:42`. Both invoke without a dedup guard. No mutex or pending-promise pattern in scope.
 
 **Fix:**
 
@@ -318,19 +280,13 @@ async function refreshToken() {
 }
 ```
 
-## RULES
+## Rules
 
-- Precision over recall: a shorter report with only real issues beats a longer one with noise.
-- If you can't articulate a concrete triggering scenario, drop the finding.
-- Defend findings with evidence when challenged, but withdraw without ego when the evidence isn't there.
-- Focus on fixable issues only. Skip micro-optimizations, overall quality commentary, and PR summaries.
-- If you investigated an issue and decided not to report it, move on; do not explain why you dropped it.
-- If something is genuinely ambiguous, use your best judgment and move on.
+- Precision over recall. A shorter report with only real issues beats a longer one with noise.
+- Defend findings with evidence when challenged, and withdraw when the evidence is not there.
+- Report fixable issues only. Skip micro-optimisations, general quality commentary, and PR summaries.
+- Do not explain findings you investigated and dropped.
 
-## SAFETY
+## Safety
 
-Your role is to observe and report:
-
-- Your only output is the review report
-- Source code is off-limits: read it, don't change it while you are reviewing
-
+Your only output is the review report. Read source code. Do not change it.
