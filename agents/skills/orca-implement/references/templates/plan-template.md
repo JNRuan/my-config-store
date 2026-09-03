@@ -23,7 +23,7 @@ What to build and why, briefly.
 
 ## Review Policy
 
-- **Plan-review cap used**: {1 | 2 | 3 | 5, snapshotted before critique}
+- **Plan-review cap used**: {1 | 2 | 3 | 5, recorded before critique}
 - **Run-complexity rationale**: {aggregate risk, blast radius, coupling, failure impact, and observability evidence from the reviewed plan}
 - **Code-review cap**: {pending before critique | 1 | 2 | 3 | 5 after critique}
 - **Adversarial QA**: {pending before critique | skip for low | run after all code review for medium/high/xhigh}
@@ -41,7 +41,7 @@ Write each requirement so a worker can build and verify it without opening the s
 Give every acceptance criterion an id: `AC-1`, `AC-2`, and so on. Every criterion must:
 
 - state observable behaviour;
-- be covered by at least one task;
+- have at least one task that covers it;
 - have a verification method.
 
 ## Out of Scope
@@ -77,15 +77,15 @@ independent of `plan_review_tier` and `run_complexity`.
 
 - **What**: the required result and its boundaries. Prescribe an implementation detail only when correctness depends on it. The builder may make local choices within the approved contracts and constraints.
 - **Why**: what purpose it serves.
-- **Deps / Inputs**: dependency tasks and what from their output feeds in.
+- **Deps / Inputs**: dependency tasks and what their output feeds into this task.
 - **Contracts**: which pinned contracts this task obeys or produces.
 - **Constraints & Context**: patterns to follow, invariants to preserve,
   background the builder must know.
 - **Relevant existing code**: files the builder should read first, and why.
 - **Verification requirements**: behaviours and scenarios, not test code:
-  1. Existing coverage to run (must stay green)
+  1. Existing coverage to run (must still pass)
   2. Tests to add or update
-  3. Edge cases that must be covered
+  3. Edge cases to cover
   4. Manual/visual checks (if applicable)
 - **Covers**: acceptance criteria this task satisfies.
 
@@ -95,12 +95,12 @@ Coordinator's execution guide; workers see only their agent task.
 
 ### Waves
 
-What runs in parallel and what serializes, derived from the deps column.
+What runs in parallel and what runs in sequence, from the deps column.
 
 ### Sync Points
 
-Where one task's output feeds a later task's context package: what gets
-relayed, and why it is a sync point.
+Where one task's output feeds a later task's context package: what to
+relay, and why it is a sync point.
 
 ### Integration Verification
 
@@ -108,8 +108,8 @@ List the cross-task boundaries to verify after each merge. Use the affected area
 
 ### Post-Merge Validation
 
-Exact commands to run once everything is merged (full suite, E2E scenarios,
-build verification).
+Exact commands to run after the final merge: full suite, end-to-end
+scenarios, build verification.
 
 ## Project Tooling
 

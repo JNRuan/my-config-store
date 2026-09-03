@@ -11,7 +11,7 @@ This repository contains the skill. [Orca](https://github.com/stablyai/orca) is 
 Invoke the skill with:
 
 ```text
-/orca-implement {TASK-REF | prompt}
+/orca-implement {TASK-REF | prompt | resume <RUN | RUNDIR>}
 ```
 
 Examples:
@@ -36,7 +36,7 @@ A general request to implement, fix, or build something does **not** trigger the
 4. **Understanding check**: presents the task contract and all known questions through the mapped human review interface.
 5. **Plan**: drafts, fact-checks, and critiques the implementation plan, then fact-checks the revised plan.
 6. **Plan gate**: repeats human review until the plan has no unresolved comments.
-7. **Build**: creates the task DAG and dispatches workers where dependencies allow.
+7. **Build**: registers the build tasks and their dependencies, then dispatches workers as dependencies merge.
 8. **Verify and integrate**: checks, fixes, and merges each task before releasing its dependants.
 9. **Whole-run verification**: runs the project checks, sends a routed read-only worker to verify every acceptance criterion, turns unmet criteria into fix tasks, and records any remaining gaps.
 10. **Review**: runs the routed code and security review lenses up to the approved cap. Later rounds confirm the previous round's fixes and report only new findings.
@@ -76,7 +76,7 @@ Each run keeps its artifacts inside the integration worktree at:
 <WT-PATH>/.agents/orca/orchestration/<RUN>/
 ```
 
-The coordinator commits the run folder to the run branch as each artifact appears and at every phase boundary. Worker reports and the coordinator's working files go under `scratch/`. Add it to the repository's ignore rules to keep it off the run branch.
+The coordinator commits the run folder to the run branch as each artifact appears and at every phase boundary. Worker reports and the coordinator's working files go under `scratch/`.
 
 The artifact set is closed. A run writes these and nothing else:
 

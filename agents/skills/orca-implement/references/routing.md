@@ -13,7 +13,7 @@ These roles follow the runtime that runs `/orca-implement`.
 | Browser verification | `sonnet` subagent    | `gpt-5.6-terra` subagent | `medium` / `medium`     | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal |
 
 
-This browser row governs Phase 6 verification. Worker-invoked skills own the routing of any subagents they spawn internally.
+This browser row governs Phase 6 verification. Worker-invoked skills own the routing of any subagents they spawn.
 
 ## Pinned roles
 
@@ -45,9 +45,9 @@ Classify every fix with the task-complexity rubric and route it through the matc
 
 Review depth uses two assessments of aggregate risk. Consider affected area, coupling, novelty, failure impact, and observability.
 
-`plan_review_tier` is classified after the understanding check. It controls the drafting mode and plan-review cap.
+Classify `plan_review_tier` after the understanding check. It controls the drafting mode and plan-review cap.
 
-`run_complexity` is classified from the reviewed plan. It controls code-review depth and QA. It may be higher or lower than `plan_review_tier`.
+Classify `run_complexity` from the reviewed plan. It controls code-review depth and QA. It may be higher or lower than `plan_review_tier`.
 
 Both are independent of per-task builder complexity.
 
@@ -64,14 +64,14 @@ This table is the sole tier-to-policy mapping. Auth/authz, payments, destructive
 
 ## Task complexity and builder routing
 
-Classify each task after the plan is drafted: task complexity is what remains for the builder once contracts, constraints, and relevant-code pointers are pinned. If planning removed the judgement, the tier drops.
+Classify each task after drafting the plan: task complexity is what remains for the builder once the plan pins contracts, constraints, and relevant-code pointers. If planning removed the judgement, the tier drops.
 
 
 | Tier     | What remains for the builder        | Typical signals                                                                                                                                                                                                                                                                                                                                                                                                  |
 | -------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `low`    | Execute a near-dictated diff        | the solution is already clear, with one or two trivial touchpoints: renames, formatting, config/copy changes, plumbing a field through an existing pipeline, a change spelled out that needs no interpretation                                                                                                                                                                                                   |
 | `medium` | Local decisions inside one area     | one module or layer, established conventions; more modules only when the changes are simple with a small impact surface: a new endpoint or component following existing shapes, a bugfix needing investigation within one subsystem; changes stay behind existing interfaces; moving a contract other modules depend on means `high` or above                                                                    |
-| `high`   | Heavy execution, routine reasoning  | crosses module or layer boundaries with substantial changes on each side, but the plan pins every decision: cross-layer features against pinned contracts, mechanical migrations, specced algorithms with a wide but enumerable blast radius; the hard part is volume, sequencing, and consistency, not invention                                                                                                |
+| `high`   | Heavy execution, routine reasoning  | crosses module or layer boundaries with substantial changes on each side, but the plan pins every decision: cross-layer features against pinned contracts, mechanical migrations, specified algorithms with a wide but enumerable blast radius; the hard part is volume, sequencing, and consistency, not invention                                                                                                |
 | `xhigh`  | The remaining reasoning is the risk | the plan cannot pin the hard part, because correctness depends on sustained, subtle reasoning during implementation: concurrency and consistency invariants, intricate algorithms or complex state, security-critical logic, contract or schema changes that propagate to consumers, novel abstractions others build on, refactors whose "how" only emerges mid-implementation, ambiguity that survives planning |
 
 
@@ -86,7 +86,7 @@ Rules:
   2. Would a mistake fail loudly in build, tests, or review, or could it reach the PR silently? A silent failure points to `xhigh`.
 - Auth/authz, payments, data migration or deletion, and concurrency primitives: never below `high`; use `xhigh` when the approach is not pinned.
 - `xhigh` judgement operates within the human-approved plan. Settle a decision the human must own, such as an architectural fork, a security decision, or a destructive data operation, at the understanding check or the plan gate. Never delegate it to a builder.
-- A task that reads `xhigh` because it mixes concerns needs splitting. Concentrate the judgement in one `xhigh` task so the remainder drops to `high` or below.
+- Split a task that reads `xhigh` because it mixes concerns. Concentrate the judgement in one `xhigh` task so the remainder drops to `high` or below.
 
 ## Worker boot
 

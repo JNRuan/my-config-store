@@ -8,7 +8,7 @@ Update it after every state transition and before the next Orca mutation. Commit
 
 | Phase | Enter when |
 |---|---|
-| `setup` | The manifest is initialised in Phase 0 |
+| `setup` | Phase 0 initialises the manifest |
 | `scout` | Phase 1 starts |
 | `understanding` | Phase 2 starts |
 | `plan` | Phase 3 starts |
@@ -75,7 +75,7 @@ Build and fix tasks use:
 | `pending` | Registered, but at least one dependency is not merged |
 | `ready` | Every dependency is merged and the task can dispatch |
 | `dispatched` | An active dispatch owns the task |
-| `completed` | `worker_done` was accepted; coordinator verification is pending |
+| `completed` | The coordinator accepted `worker_done` and has not yet verified the task |
 | `merged` | Verification passed and the task branch merged |
 | `failed` | The task cannot continue |
 

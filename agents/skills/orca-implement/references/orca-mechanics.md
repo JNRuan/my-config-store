@@ -50,7 +50,7 @@ Phase workers are scouts, fact checks, planners, critics, the acceptance check, 
 For every worker, including builders:
 
 - If readiness times out, inspect the terminal before deciding whether the worker failed.
-- If an Orca CLI command returns an error or loses its response, inspect its structured result and live Orca state, determine whether the command had an effect, and retry only when the live guide permits it or state proves that no effect occurred.
+- If an Orca CLI command returns an error or loses its response, inspect its structured result and live Orca state to determine whether the command had an effect. Retry only when the live guide permits it or state proves that no effect occurred.
 - After one confirmed recovery failure, follow the current phase's failure path. Builders enter fix or retry handling.
 
 Prefer structured `worker_done` payloads and report files. Use bounded terminal output for status, not as the result.

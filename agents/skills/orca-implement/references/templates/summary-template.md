@@ -16,7 +16,7 @@ finished: {ISO 8601 UTC, or pending}
 
 For an open PR: the PR URL and what the PR contains.
 
-For a failed or blocked run: the status, what was attempted, the observed failures, and every preserved branch.
+For a failed or blocked run: the status, what the run attempted, the observed failures, and every preserved branch.
 
 ## Decisions
 

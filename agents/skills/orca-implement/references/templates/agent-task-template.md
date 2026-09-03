@@ -51,9 +51,9 @@ Build against these as written. Do not reshape a contract to fit your implementa
 
 {From this task's plan section, plus every Integration Verification boundary in the plan's Orchestration section that this task touches.}
 
-1. Existing coverage to run (must stay green): {test files or commands}
+1. Existing coverage to run (must still pass): {test files or commands}
 2. Tests to add or update: {behaviours and scenarios, not test code}
-3. Edge cases that must be covered: {behaviours}
+3. Edge cases to cover: {behaviours}
 4. Manual/visual checks: {steps, or `none`}
 
 {For a fix task: replace the four items with each finding's exact reproduction, then the applicable project checks.}
@@ -122,6 +122,6 @@ On re-dispatch, address the latest cycle first.
 - What the replacement must do differently: {...}
 ```
 
-Append each verify-to-fix cycle under Fix cycles and update `modified`. The worker rereads the file on every dispatch.
+Append each verify-to-fix cycle under Fix cycles and update `modified`.
 
-A fix task gets its own agent task. Its Fix cycles section holds only its own redispatch history.
+A fix task gets its own agent task. Its Fix cycles section holds only its own re-dispatch history.
