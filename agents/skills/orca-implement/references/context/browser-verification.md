@@ -18,7 +18,7 @@ Resolve:
 
 ## Context rules
 
-Run headlessly. Require screenshots for passing and failing checks. Undo interactions that change real data. Stop every dev server started during verification.
+Run headlessly. Require screenshots for passing and failing checks. Undo interactions that change real data. Stop every dev server you start.
 
 If the dev server does not start, try at most three times. Use another port, confirm that `.env` exists, and run the project's recorded install command when needed. After the third failure, report `not verified: dev server unavailable` with every startup error.
 

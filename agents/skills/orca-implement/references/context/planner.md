@@ -2,7 +2,7 @@
 
 ## Load when
 
-Read this file in Phase 3 before composing the planner brief or dispatching planners. Keep it loaded through draft selection and synthesis.
+Read this file in Phase 3 before composing the planner brief or dispatching planners. Keep it loaded until you write the final plan.
 
 ## Required values
 
@@ -13,20 +13,20 @@ Resolve:
 
 ## Prepare the planner brief
 
-Write one standalone brief to `<RUNDIR>/plan/planner-brief.md` containing:
+Write the planner brief to `<RUNDIR>/scratch/planner-brief.md`. It stands alone and contains:
 
 - the approved `plan/brief.md`;
 - confirmed scout evidence;
 - open assumptions;
 - project tooling verbatim;
-- the required structure from `references/plan-template.md`.
+- the required structure from `references/templates/plan-template.md`.
 
-Planners cannot read the coordinator's skill files. Include every instruction they need in the brief. Every planner reads the same file.
+Planners cannot read the coordinator's skill files. Include every instruction they need in the planner brief. Every planner reads the same file.
 
 ## Dispatch template
 
 ```text
-Read <RUNDIR>/plan/planner-brief.md. Independently write a complete implementation plan to <RUNDIR>/plan/draft-<P>.md following the plan structure given in the brief. Do not read any other draft-*.md file. Your draft is the only file you may write. Then report completion.
+Read <RUNDIR>/scratch/planner-brief.md. Independently write a complete implementation plan to <RUNDIR>/scratch/draft-<P>.md following the plan structure given in that file. Do not read any other draft-*.md file. Your draft is the only file you may write. Then report completion.
 ```
 
 ## Assess drafts
@@ -42,7 +42,7 @@ Assess each complete draft against:
 
 Select the strongest draft as the base. Correct claims that conflict with the approved brief or repository evidence. Use stronger parts from another draft where they improve the plan.
 
-Write `<RUNDIR>/plan/plan.md` as one coherent document that follows `references/plan-template.md`. Do not concatenate drafts.
+Write `<RUNDIR>/plan/plan.md` as one coherent document that follows `references/templates/plan-template.md`. Do not concatenate drafts.
 
 ## Required final-plan content
 
@@ -54,7 +54,7 @@ The final plan must contain:
 - requirements and acceptance criteria with `AC-n` ids;
 - at least one task covering every acceptance criterion;
 - a task table with explicit dependencies, complexity, and builder routing;
-- the smallest viable task set;
+- the smallest workable task set;
 - every interface shared across tasks as a pinned contract;
 - validated assumptions with evidence;
 - open assumptions assigned to the task that must verify them;

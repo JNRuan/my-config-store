@@ -8,7 +8,7 @@ This repository contains the skill. [Orca](https://github.com/stablyai/orca) is 
 
 ## Invoke the skill
 
-The skill is explicitly invoked with:
+Invoke the skill with:
 
 ```text
 /orca-implement {TASK-REF | prompt}
@@ -23,16 +23,16 @@ Examples:
 /orca-implement Add CSV export to the reports page
 ```
 
-The skill is **not** triggered by a general request to implement, fix, or build something. Use `/orca-implement` when you want this full Orca-backed pipeline.
+A general request to implement, fix, or build something does **not** trigger the skill. Use `/orca-implement` when you want this full Orca-backed pipeline.
 
 ## What it does
 
 [`references/routing.md`](./references/routing.md) is the only source for model and effort assignments. This README describes roles and phases without repeating them.
 
-1. **Intake**: loads the Orca guidance and turns the task source into requirements.
+1. **Intake**: loads the Orca guides and reads the task source.
 2. **Setup**: pins the base, creates the run and integration worktree, and initialises the manifest.
 3. **Scout**: sends routed read-only workers to inspect the affected code and project practices.
-4. **Understanding review**: presents the task contract and all known questions through the mapped human review interface.
+4. **Understanding check**: presents the task contract and all known questions through the mapped human review interface.
 5. **Plan**: drafts, fact-checks, and critiques the implementation plan.
 6. **Plan gate**: repeats human review until the plan has no unresolved comments.
 7. **Build**: creates the task DAG and dispatches workers where dependencies allow.
@@ -69,33 +69,34 @@ This README does not duplicate CLI syntax. See [`references/orca-mechanics.md`](
 
 ## Run artifacts
 
-Each run keeps its audit trail inside the integration worktree at:
+Each run keeps its artifacts inside the integration worktree at:
 
 ```text
 <WT-PATH>/.agents/orca/orchestration/<RUN>/
 ```
 
-The run folder is committed to the run branch as artifacts land, including at phase boundaries.
+The coordinator commits the run folder to the run branch as each artifact appears and at every phase boundary. Worker reports and the coordinator's working files go under `scratch/`. Add it to the repository's ignore rules to keep it off the run branch.
 
 The artifact set is closed. A run writes these and nothing else:
 
 - `run-state.json`, the run manifest for state transitions and recovery
-- `plan/`, the approved brief, scout and fact-check reports, the planner brief and drafts, the specification of record, and critic reports for every round run
-- `tasks/`, worker assignments and reports
-- `review/`, cross-model review and synthesis for every round run, plus QA findings and triage when QA runs
+- `plan/`, the approved brief and the specification of record
+- `tasks/`, worker agent tasks and reports
+- `review/`, the review of record for every round run, and the QA review when QA runs
 - `summary.md`, acceptance evidence, decisions, incidents, and final status
 - `screenshots/`, browser-verification evidence when applicable
+- `scratch/`, scout, fact-check, planner, critic, review-lens, and QA reports
 
-Browser verification stores screenshots when applicable. Its report stays in coordinator context. The plan cites source material by path or URL and distils it into requirements.
+Browser verification stores screenshots when applicable. Its report stays in coordinator context. The brief records the request and distils it into requirements. The plan turns the approved brief into acceptance criteria and tasks.
 
-The integration worktree and run branch survive until the PR merges. Task and disposable QA worktrees are removed using only the IDs recorded in the run manifest.
+The integration worktree and run branch survive until the PR merges. The coordinator removes task and QA worktrees using only the ids recorded in the manifest.
 
 ## References
 
 - [`SKILL.md`](./SKILL.md), the complete pipeline and safety rules
 - [`references/routing.md`](./references/routing.md), model routing, complexity tiers, and worker boot recipes
 - [`references/skill-map.md`](./references/skill-map.md), the skill each role invokes
-- [`references/plan-template.md`](./references/plan-template.md), the plan format
+- [`references/templates/`](./references/templates/), the brief, plan, and agent-task formats
 - [`references/context/`](./references/context/), role contexts and dispatch templates loaded by phase
 - [`references/run-state.md`](./references/run-state.md), the manifest schema and lifecycle states
 - [`references/orca-mechanics.md`](./references/orca-mechanics.md), shared Orca dispatch, collection, recovery, and resource rules

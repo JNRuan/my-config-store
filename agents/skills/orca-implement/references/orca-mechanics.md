@@ -60,7 +60,7 @@ Prefer structured `worker_done` payloads and report files. Use bounded terminal 
 1. Wait through 3.0 until the dispatch is terminal. A worker is overdue after two consecutive slices with no message for it. Read its terminal. If it is active, keep waiting. Otherwise treat it as failed.
 2. Require a non-empty report.
 3. For a worker in `<WT>`, run the read-only check.
-4. Commit the report and manifest.
+4. Commit the run folder.
 5. Close the terminal unless the phase keeps it across rounds.
 
 ### Read-only check
@@ -101,7 +101,7 @@ Retry each worker once. The phase says what happens when the retry also fails.
 
 - `worktree create` controls the requested worktree name. Record the actual branch returned by Orca.
 - Inspect any terminal that worktree creation starts. Close it only when it is an unused shell. Record any terminal you keep.
-- Keep a configured default tab of the integration worktree in the manifest until teardown. Close every terminal recorded for a task or QA worktree before removing that worktree.
+- Record the integration worktree's default terminal in the manifest and keep it until teardown. Close every terminal recorded for a task or QA worktree before removing that worktree.
 - After accepting `worker_done`, follow the live guide's release or reuse procedure. Keep a terminal only for reuse. A builder keeps its terminal through fix cycles. Critics and reviewers keep theirs through their round loop.
 - Remove task worktrees after their branches merge.
 - Before removing a failed task's worktree, confirm that removal preserves its branch. If it does not, create the local tag `orca-run/<RUN>/{slug}` at the branch tip first. Never push the tag.
@@ -112,11 +112,11 @@ Retry each worker once. The phase says what happens when the retry also fails.
 - Code reaches the target branch only through a human-approved PR. The human owns approval and merge.
 - Only `<RUN-BRANCH>` may reach the remote, and only in Phase 9.
 - Workers write code only in their assigned worktree.
-- Worker writes under `<RUNDIR>` are limited to their designated files.
+- Workers write under `<RUNDIR>` only to their designated files.
 - Enforce read-only workers through the collection check above.
 - When `qa_policy` is `run`, QA may write only:
   - its disposable worktree;
-  - `<RUNDIR>/review/qa-findings.md`;
+  - `<RUNDIR>/scratch/qa-findings.md`;
   - `<RUNDIR>/screenshots/`.
 - Never merge the QA branch.
 - Act only on runtime-global state that the manifest assigns to this run.

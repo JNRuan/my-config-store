@@ -14,7 +14,7 @@ Resolve:
 - `<ROUND>`;
 - `<CODE_REVIEWER>`: the stable code-reviewer label;
 - `<SECURITY_REVIEWER>`: the stable security-reviewer label;
-- `<ROUND_CONTEXT>`: empty in round 1. After round 1, one line: `Commits since the previous round: <PREVIOUS_COMMIT_RANGE>. Previous synthesis: <PREVIOUS_SYNTHESIS>.` The range runs from the previous round's recorded HEAD to the current HEAD.
+- `<ROUND_CONTEXT>`: empty in round 1. After round 1, one line: `Commits since the previous round: <PREVIOUS_COMMIT_RANGE>. Previous round review: <PREVIOUS_REVIEW>.` The range runs from the previous round's recorded HEAD to the current HEAD.
 
 ## Context rules
 
@@ -33,7 +33,7 @@ Context:
 
 Inspect the repository and diff independently. Report implementation defects, and plan defects when they affect the PR result. Do not expand the task because an unrelated improvement is possible.
 
-Exclude .agents/orca/orchestration/ because it contains run bookkeeping, not the implementation. Write the full report to <RUNDIR>/review/<CODE_REVIEWER>-review-r<ROUND>.md. That report is the only file you may write. Do not edit code. Then report completion.
+Exclude .agents/orca/orchestration/ because it contains run bookkeeping, not the implementation. Write the full report to <RUNDIR>/scratch/<CODE_REVIEWER>-review-r<ROUND>.md. That report is the only file you may write. Do not edit code. Then report completion.
 ```
 
 ## Security-review dispatch template
@@ -49,5 +49,5 @@ Context:
 
 Inspect the repository and diff independently. Report implementation defects, and plan defects when they affect the PR result. Do not expand the task because an unrelated improvement is possible.
 
-Exclude .agents/orca/orchestration/ because it contains run bookkeeping, not the implementation. Write the full report to <RUNDIR>/review/security-<SECURITY_REVIEWER>-review-r<ROUND>.md. That report is the only file you may write. Do not edit code. Then report completion.
+Exclude .agents/orca/orchestration/ because it contains run bookkeeping, not the implementation. Write the full report to <RUNDIR>/scratch/security-<SECURITY_REVIEWER>-review-r<ROUND>.md. That report is the only file you may write. Do not edit code. Then report completion.
 ```

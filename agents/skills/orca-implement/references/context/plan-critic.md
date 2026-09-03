@@ -31,5 +31,5 @@ For each finding, report the plan section, a concrete failure scenario, and seve
 
 A no-finding report is valid only after you have examined the relevant plan and repository evidence and found no credible failure scenario. End with verdict `proceed`, `revise`, or `re-plan`.
 
-Write the full critique to <RUNDIR>/plan/critique-<M>-r<ROUND>.md. Write no other file. Then report completion.
+Write the full critique to <RUNDIR>/scratch/critique-<M>-r<ROUND>.md. Write no other file. Then report completion.
 ```

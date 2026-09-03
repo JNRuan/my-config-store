@@ -9,7 +9,7 @@ Read this file in Phase 1 after selecting scout lenses and before composing scou
 Resolve:
 
 - `<LENS>`: the lens name and scope;
-- `<BRIEF>`: a self-contained brief derived from intake requirements;
+- `<TASK_CONTEXT>`: the task's requirements, self-contained, from intake;
 - `<RUNDIR>`;
 - `<SLUG>`: the stable lens slug used by the task and report.
 
@@ -18,7 +18,7 @@ Resolve:
 ```text
 Read-only scouting lens: <LENS>.
 
-<BRIEF>
+<TASK_CONTEXT>
 
-Investigate the repository without changing implementation files. Cite path:line evidence for every repository claim and list every assumption you could not confirm. Write your full findings to <RUNDIR>/plan/scout-<SLUG>.md. That report is the only file you may write. Then report completion.
+Investigate the repository without changing implementation files. Cite path:line evidence for every repository claim and list every assumption you could not confirm. Write your full findings to <RUNDIR>/scratch/scout-<SLUG>.md. That report is the only file you may write. Then report completion.
 ```

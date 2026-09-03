@@ -20,7 +20,7 @@ This browser row governs Phase 6 verification. Worker-invoked skills own the rou
 Identical regardless of coordinator.
 
 
-| Role                          | Runtime / model                                                                                                                              | Effort          | Fable unavailable fallback / Model failure fallback | Notes                                                                                                                                                             |
+| Role                          | Runtime / model                                                                                                                              | Effort          | Fallback                                            | Notes                                                                                                                                                             |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Scouts                        | Codex `gpt-5.6-luna`                                                                                                                         | `medium`        | —                                                   | read-only; Orca terminals in `<WT>`; one report per lens                                                                                                          |
 | Plan fact check               | Codex `gpt-5.6-luna`                                                                                                                         | `high`          | —                                                   | read-only; Orca terminal in `<WT>`; verifies checkable plan claims only                                                                                           |
@@ -53,7 +53,7 @@ Both are independent of per-task builder complexity.
 
 | Tier     | Typical run shape                                                                                             | Plan rounds when used as `plan_review_tier` | Code-review rounds when used as `run_complexity` | Adversarial QA from `run_complexity` |
 | -------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------ | ------------------------------------ |
-| `low`    | narrow, localized, established pattern, low-impact failure, strong existing coverage                          | 1                                           | 1                                                | no                                   |
+| `low`    | narrow, localised, established pattern, low-impact failure, strong existing coverage                          | 1                                           | 1                                                | no                                   |
 | `medium` | several files or one subsystem, ordinary cross-layer interaction, moderate blast radius                       | 2                                           | 2                                                | yes, after code review               |
 | `high`   | broad or highly coupled change, important state or user-flow risk, weak observability, or high failure impact | 3                                           | 3                                                | yes, after code review               |
 | `xhigh`  | systemic or novel change with subtle invariants, architectural consequences, or severe failure impact         | 5                                           | 5                                                | yes, after code review               |
@@ -81,7 +81,7 @@ Rules:
 - Between `high` and `xhigh`, ask whether more planning would make the work routine. If so, pin the decision and use `high`.
 - Use `xhigh` when difficult reasoning or ambiguity remains during implementation. Nothing should reach a builder with its key decisions unresolved.
 - Apply two tie-break tests:
-  1. Would two competent developers produce essentially the same diff? If yes, use `high`.
+  1. Would two competent developers produce much the same diff? If yes, use `high`.
   2. Would a mistake fail loudly in build, tests, or review, or could it reach the PR silently? A silent failure points to `xhigh`.
 - Auth/authz, payments, data migration or deletion, and concurrency primitives: never below `high`; use `xhigh` when the approach is not pinned.
 - `xhigh` judgement operates within the human-approved plan. Settle a decision the human must own, such as an architectural fork, a security decision, or a destructive data operation, at the understanding check or the plan gate. Never delegate it to a builder.
@@ -89,7 +89,7 @@ Rules:
 
 ## Worker boot
 
-Boot workers with `terminal create` and an explicit `--command`, never `worker-start`. Orca command syntax comes from the guides loaded at preflight via the `orchestration` skill.
+Boot workers with `terminal create` and an explicit `--command`, never `worker-start`. Orca command syntax comes from the guides loaded at intake through the `orchestration` skill.
 
 - Substitute model and effort from the tables. Title each terminal `<role>:<slug>`.
 - The `nclaude` and `ncodex` aliases run workers through the `my-claude` and `my-codex` nono profiles. The outer nono sandbox controls network and filesystem access.

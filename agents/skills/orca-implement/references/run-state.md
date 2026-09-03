@@ -108,7 +108,7 @@ Scout, fact-check, planner, critic, reviewer, and security-reviewer dispatch rec
 - `failed`;
 - `superseded`.
 
-A completed phase dispatch requires its designated report to exist and be non-empty. QA policy skips are recorded in the QA record, not as fake dispatches.
+A completed phase dispatch requires its designated report to exist and be non-empty. Record a QA policy skip in the QA record, not as a fake dispatch.
 
 ## Initial manifest
 
@@ -169,6 +169,7 @@ Phase 0 creates the manifest with these top-level fields:
     "terminal_handle": null,
     "dispatch_id": null,
     "report_path": null,
+    "review_path": null,
     "fix_waves": 0
   },
   "resources": {
@@ -227,7 +228,7 @@ Each entry in `tasks` contains:
   "superseded_dispatch_ids": [],
   "verify_fix_cycles": 0,
   "resolve_verify_cycles": 0,
-  "assignment_path": null,
+  "agent_task_path": null,
   "report_path": null,
   "status": "ready"
 }
@@ -294,7 +295,7 @@ Each entry in `review_rounds` contains:
   "code_reviewer_reports": [],
   "security_reviewer_reports": [],
   "missing_lenses": [],
-  "synthesis_path": null,
+  "review_path": null,
   "fix_waves": 0,
   "code_changed": false,
   "stop_reason": null
@@ -325,7 +326,7 @@ For a policy skip:
 }
 ```
 
-For a QA run, record `head`, task, worktree, branch, terminal, dispatch, report, and fix-wave count as each becomes known. `qa.dispatch_status` uses the phase-dispatch statuses and tracks the worker dispatch separately from the QA outcome.
+For a QA run, record `head`, task, worktree, branch, terminal, dispatch, report, review, and fix-wave count as each becomes known. `qa.dispatch_status` uses the phase-dispatch statuses and tracks the worker dispatch separately from the QA outcome.
 
 Set `completed` only after report collection, triage, accepted fixes, and required verification finish.
 
@@ -427,5 +428,5 @@ During recovery:
 - merge commits and task branches override stale task status;
 - live Orca dispatch state overrides stale dispatch status;
 - recorded round and fix-wave counts preserve spent limits;
-- pending `worker_done` deliveries must be collected before new dispatches;
+- collect pending `worker_done` deliveries before any new dispatch;
 - work already committed or merged must not run again.

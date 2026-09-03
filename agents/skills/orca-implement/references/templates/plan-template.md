@@ -5,7 +5,7 @@ Write `<RUNDIR>/plan/plan.md` in exactly this shape. The plan is the run's spec 
 ```markdown
 ---
 run: {RUN}                 # the run name; matches <RUNDIR>
-source: {ref | "ad-hoc"}   # gh-123, lin-abc-123, a file path, or ad-hoc
+source: {gh-123 | lin-abc-123 | path@<BASE_SHA> | "ad-hoc"}
 base: {base ref}           # the PR's target branch
 base_sha: {pinned SHA}     # what the run branch was created from; all diffs use this
 branch: {captured run branch}   # Orca-derived; captured from the integration worktree
@@ -19,7 +19,7 @@ modified: {ISO 8601 UTC}
 
 ## Overview
 
-What needs to be built and why, briefly.
+What to build and why, briefly.
 
 ## Review Policy
 
@@ -34,13 +34,7 @@ After critique, replace every pending downstream field from
 
 ## Requirements & Acceptance Criteria
 
-Distil the requirements from the intake source. Cite:
-
-- `path@<BASE_SHA>` for a repository document;
-- the URL or reference for an issue;
-- `ad-hoc` for a prompt.
-
-Quote only text that carries a requirement or constraint. Do not copy the source in full.
+Take the requirements from the approved brief. Cite each by its `R-n` id, and cite the intake source as the brief does.
 
 Write each requirement so a worker can build and verify it without opening the source.
 
@@ -97,7 +91,7 @@ independent of `plan_review_tier` and `run_complexity`.
 
 ## Orchestration
 
-Coordinator's execution guide; workers see only their assignment context.
+Coordinator's execution guide; workers see only their agent task.
 
 ### Waves
 

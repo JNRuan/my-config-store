@@ -1,6 +1,6 @@
 # Skill map
 
-`SKILL.md` and the role-context files name skills by placeholder; replace each with the mapped skill name when you compose a dispatch or invoke the skill yourself; workers must receive only literal names.
+`SKILL.md` and the role-context files name skills by placeholder. Replace each with the mapped skill name when you compose a dispatch or invoke the skill yourself. Workers must receive only literal names.
 
 | Role                   | Placeholder               | Skill                   |
 | ---------------------- | ------------------------- | ----------------------- |
