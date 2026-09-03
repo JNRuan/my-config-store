@@ -14,7 +14,12 @@ Resolve:
 - `<ROUND>`;
 - `<CODE_REVIEWER>`: the stable code-reviewer label;
 - `<SECURITY_REVIEWER>`: the stable security-reviewer label;
-- `<ROUND_CONTEXT>`: empty in round 1. After round 1, one line: `Commits since the previous round: <PREVIOUS_COMMIT_RANGE>. Previous round review: <PREVIOUS_REVIEW>.` The range runs from the previous round's recorded HEAD to the current HEAD.
+- `<PREVIOUS_HEAD>`: the previous round's recorded HEAD;
+- `<ROUND_CONTEXT>`: empty in round 1. After round 1:
+
+  ```text
+  The previous round's review of record, with its triage and fix commits, is <PREVIOUS_REVIEW>. First confirm that every finding it records as fixed is fixed at this HEAD, and report each that is not. Then review the whole branch and report only findings that review did not triage. The commits since the previous round are <PREVIOUS_HEAD>..HEAD.
+  ```
 
 ## Context rules
 

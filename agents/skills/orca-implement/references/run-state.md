@@ -100,7 +100,7 @@ A dependant becomes `ready` only when every dependency is `merged` in the manife
 
 ## Phase-dispatch statuses
 
-Scout, fact-check, planner, critic, reviewer, and security-reviewer dispatch records, and `qa.dispatch_status`, use:
+Scout, fact-check, planner, critic, acceptance-check, reviewer, and security-reviewer dispatch records, and `qa.dispatch_status`, use:
 
 - `pending`;
 - `dispatched`;
@@ -151,6 +151,7 @@ Phase 0 creates the manifest with these top-level fields:
   "phase_dispatches": {
     "scouts": [],
     "fact_checks": [],
+    "acceptance_checks": [],
     "planners": [],
     "critics": [],
     "code_reviewers": [],
@@ -262,7 +263,7 @@ Each entry in `phase_dispatches` contains:
 }
 ```
 
-Use `round` for critic and reviewer rounds. Leave it `null` for unrounded roles.
+Use `round` for critic and reviewer rounds. Leave it `null` for unrounded roles. Record a fact check's `role` as `plan-fact-check` or `plan-fact-check-final`, and an acceptance check's `role` as `acceptance-check-<PASS>`.
 
 ## Plan-review record
 

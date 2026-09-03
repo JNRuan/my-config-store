@@ -37,7 +37,7 @@ Orca task state records the worker signal. The manifest records whether the coor
 
 ## 4.0 Dispatch a phase worker
 
-Phase workers are scouts, the fact check, planners, critics, reviewers, and QA. Builders follow Phase 5 and the rules for every worker below.
+Phase workers are scouts, fact checks, planners, critics, the acceptance check, reviewers, and QA. Builders follow Phase 5 and the rules for every worker below.
 
 1. For a worker in `<WT>`, record `<WT>` HEAD as `<H>`.
 2. Create the task under this run.
@@ -105,7 +105,7 @@ Retry each worker once. The phase says what happens when the retry also fails.
 - After accepting `worker_done`, follow the live guide's release or reuse procedure. Keep a terminal only for reuse. A builder keeps its terminal through fix cycles. Critics and reviewers keep theirs through their round loop.
 - Remove task worktrees after their branches merge.
 - Before removing a failed task's worktree, confirm that removal preserves its branch. If it does not, create the local tag `orca-run/<RUN>/{slug}` at the branch tip first. Never push the tag.
-- Apply the concurrency cap only to builders. Scout, fact-check, planner, critic, reviewer, and QA terminals are additional phase-bound resources.
+- Apply the concurrency cap only to builders. Scout, fact-check, planner, critic, acceptance-check, reviewer, and QA terminals are additional phase-bound resources.
 
 ## 8.0 Operational safety
 

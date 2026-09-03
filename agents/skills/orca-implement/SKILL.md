@@ -18,12 +18,12 @@ You are the coordinator. You take one task from intake to an open, reviewed PR: 
 
 You coordinate the run. Delegate implementation code to workers.
 
-You may make only:
+You may only:
 
-- typo, comment, or docstring corrections;
-- unused-import removal;
-- formatting fixes by hand or through the recorded Format write command;
-- resolutions of trivial text merge conflicts.
+- fix typos, comments, and docstrings;
+- remove unused imports;
+- format code by hand or with the recorded Format write command;
+- resolve trivial text merge conflicts.
 
 Put coordinator changes in a separate commit. Dispatch every other code change to a worker.
 
@@ -59,11 +59,11 @@ Act only on ids, handles, and paths recorded in this run's manifest. The recorde
 - `references/routing.md` owns role routing, effort, and worker boot commands.
 - `references/skill-map.md` owns the skill assigned to each role.
 - `references/context/` holds one file per role. Read it completely when its phase starts, and not before.
-- `references/orca-mechanics.md` owns how to dispatch, collect, and retry phase workers. Phase instructions name the task and the phase's deviations.
+- `references/orca-mechanics.md` owns how to dispatch, collect, and retry phase workers. Phase instructions name the task and where the phase differs.
 
 ## Intake
 
-`/orca-implement {TASK-REF | prompt}`
+`/orca-implement {TASK-REF | prompt | resume <RUN | RUNDIR>}`
 
 Load the `orchestration` skill. Resolve the Orca executable and load the guides it serves for `orchestration` and `orca-cli`.
 
@@ -74,6 +74,7 @@ Resolve the argument:
 - **GitHub issue** (`#123` or issue URL): `gh issue view <n> --json title,body,comments`
 - **Linear issue** (`ABC-123` or Linear URL): `orca linear issue <ref> --full --json`
 - **File path** (markdown docs, specs): read it directly.
+- **Resume** (`resume` followed by a run name or a run folder path): a fresh coordinator session takes over an existing run. Follow [Resume a run](#resume-a-run) instead of Phase 0.
 - **Anything else**: an ad-hoc prompt. Draft the requirements in the brief and the acceptance criteria in the plan. The human vets them at the understanding check and the plan gate.
 
 Stop before creating anything when an intake read fails or returns empty, such as a missing Linear connection, an unresolvable issue, or an unreadable file.
@@ -82,7 +83,7 @@ The brief distils what intake read into requirements and cites the source, in th
 
 ## Phase 0: Setup
 
-Complete every step in order. Do not start Phase 1 until all steps finish.
+Complete every step in order before Phase 1.
 
 1. **Load the run mechanics.**
 
@@ -96,7 +97,7 @@ Complete every step in order. Do not start Phase 1 until all steps finish.
    BASE_SHA=$(git rev-parse <base-ref>)
    ```
 
-   Every diff, review, and changed-file computation from here on uses `BASE_SHA`, never the symbolic ref. The ref serves twice more: as the worktree's starting point in step 5, and as the PR's target branch.
+   From here on, every diff, review, and changed-file list uses `BASE_SHA`, never the symbolic ref. The ref serves twice more: as the worktree's starting point in step 5, and as the PR's target branch.
 
 3. **Name the run.**
 
@@ -166,8 +167,10 @@ Complete every step in order. Do not start Phase 1 until all steps finish.
    scratch/scout-<slug>.md                    one per scouting lens
    scratch/planner-brief.md                   standalone brief every planner reads
    scratch/draft-<planner>.md                 one per planner on the tier's panel
-   scratch/fact-check.md                      plan claim verification
+   scratch/fact-check.md                      plan claim verification before critique
+   scratch/fact-check-final.md                plan claim verification after critique
    scratch/critique-<critic>-r<ROUND>.md      one per critic per round
+   scratch/acceptance-check-<PASS>.md         acceptance-criteria check, one per pass
    scratch/<claude|codex>-review-r<ROUND>.md  one per code reviewer per round
    scratch/security-<reviewer>-review-r<ROUND>.md one per security reviewer per round
    scratch/qa-findings.md                     QA worker report, when qa_policy is run
@@ -185,7 +188,7 @@ Complete every step in order. Do not start Phase 1 until all steps finish.
 
 8. **Start the summary and commit Phase 0 state.**
 
-   Start `summary.md` with the run name, source, and start datetime. Commit the run folder before Phase 1.
+   Start `summary.md` in the shape of `references/templates/summary-template.md`. Commit the run folder before Phase 1.
 
 ## Phase 1: Scout
 
@@ -267,21 +270,22 @@ For each `<ROUND>` from 1 through `<PLAN_REVIEW_CAP>`:
 
 1. Add the round to the plan-review record with `plan_changed=false` and the current `<WT>` HEAD.
 2. Dispatch `plan-critique-<M>-r<ROUND>` to every critic, collect, and retry a failed lens once within the round.
-3. When a retry also fails, record the lens in the round's `missing_lenses`, continue with the surviving critics, and start a fresh routed terminal for that lens before the next round. If every critic fails, stop the loop with stop reason `all critics failed` and carry the failure to the plan gate, where the human decides whether to approve the uncritiqued plan or cancel the run.
+3. When a retry also fails, record the lens in the round's `missing_lenses`, continue with the surviving critics, and start a fresh routed terminal for that lens before the next round. If every critic fails, stop the loop with stop reason `all critics failed`. Carry the failure to the plan gate, where the human approves the plan without critique or cancels the run.
 4. Assess every finding on its merits. Severity and verdict are evidence, not decisions. Revise `plan/plan.md` for each accepted finding. Set `plan_changed=true` only when plan content changes.
 5. Commit the revised plan and manifest.
-6. If `plan_changed=false`, stop with stop reason `no plan change`. If rounds remain, start the next round. If the cap is reached, stop with stop reason `cap reached` and record that no critic reviewed the final edits.
+6. If `plan_changed=false`, stop with stop reason `no plan change`. If rounds remain, start the next round. At the cap, stop with stop reason `cap reached` and record that no critic reviewed the final edits.
 
 Record the stop reason in the plan-review record.
 
 #### Finish plan critique
 
 1. Close every critic terminal.
-2. Assess `run_complexity` from the reviewed plan. It may be higher or lower than `plan_review_tier`.
-3. Read the downstream review and QA policy from `references/routing.md`.
-4. Update plan frontmatter, the plan's Review Policy, and `run-state.json`, including `code_review_cap` and `qa_policy`.
-5. Keep the original plan-review tier, cap, rounds run, and stop reason in the manifest.
-6. Commit the updates before Phase 4.
+2. When any round set `plan_changed=true`, repeat Step 3 against the revised plan as `plan-fact-check-final`, correct every reported mismatch, and commit.
+3. Assess `run_complexity` from the reviewed plan. It may be higher or lower than `plan_review_tier`.
+4. Read the downstream review and QA policy from `references/routing.md`.
+5. Update plan frontmatter, the plan's Review Policy, and `run-state.json`, including `code_review_cap` and `qa_policy`.
+6. Keep the original plan-review tier, cap, rounds run, and stop reason in the manifest.
+7. Commit the updates before Phase 4.
 
 ## Phase 4: Plan gate
 
@@ -320,19 +324,19 @@ Phase 6 may still raise the tier if implementation reveals more risk.
 
 After approval, commit the plan and manifest before Phase 5. An explicit rejection or cancellation runs the abort routine.
 
-## Phase 5: Build (parallel where deps allow)
+## Phase 5: Build
 
 Read `references/context/builder.md`.
 
-Register the build DAG. Orca task specs are immutable, and the worktree path and dependency outputs are unknown until a task becomes ready, so each task spec holds only the agent-task pointer from the builder context.
+Register the build tasks and their dependencies. Orca task specs are immutable, and a task's worktree path and dependency outputs are unknown until it becomes ready. Each task spec therefore holds only the agent-task pointer from the builder context.
 
 For each planned task, use title `{seq}-{slug}`, set dependencies by owned build-task id, resolve the builder context's required task-spec values, and use its Orca task spec.
 
-Record every returned task id in `run-state.json` as the build-owned set. This set contains build and fix tasks only. Keep scout, fact-check, planner, critic, and reviewer task ids in their phase dispatch records, and the QA task id in the QA record.
+Record every returned task id in `run-state.json` as the build-owned set. This set contains build and fix tasks only. Keep scout, fact-check, planner, critic, acceptance-check, and reviewer task ids in their phase dispatch records, and the QA task id in the QA record.
 
 ### Dispatch ready tasks
 
-Select ready tasks only from the build-owned set. Never dispatch directly from the runtime-global `task-list --ready` result. Run at most the builder concurrency cap from `references/routing.md`.
+Select ready tasks only from the build-owned set. Never dispatch directly from the runtime-global `task-list --ready` result. Run no more builders than the concurrency cap in `references/routing.md`.
 
 For each ready task:
 
@@ -377,7 +381,7 @@ Read its terminal before taking action.
   6. Record the previous dispatch id as superseded.
   7. Increment the task's verify-to-fix cycle count.
 
-This re-dispatch counts towards the task's verify-to-fix limit. It is not the retry protocol's replacement.
+This re-dispatch counts towards the task's verify-to-fix limit. It does not use the retry protocol's replacement attempt.
 
 ### Verify a completed task
 
@@ -395,7 +399,7 @@ A valid `worker_done` makes Orca mark the task and dispatch complete. It does no
    git -C <task-worktree> status --porcelain
    ```
 
-3. Accept no commits only when the worker reported an explicit no-change outcome and the worktree is clean.
+3. Accept a branch with no new commits only when the worker reported an explicit no-change outcome and the worktree is clean.
 4. Read `<RUNDIR>/tasks/{seq}-{slug}-report.md`.
 5. Rerun every applicable project check in the task worktree, whatever the report claims. Run them in this order: Build, Lint, Typecheck, Tests, Format check.
 6. Compare the result with the task requirements in the approved plan.
@@ -412,7 +416,7 @@ After three verify-to-fix cycles, use the retry protocol.
 
 ### Merge a verified task
 
-Merge each verified task immediately. Do not batch task merges.
+Merge each verified task immediately.
 
 1. Merge the task branch into `<RUN-BRANCH>` in `<WT>`.
 2. Resolve a trivial text conflict yourself only under the coordinator's exceptions in the run-wide rules.
@@ -451,12 +455,12 @@ Only after merge and integration verification pass:
 
 ### Stop contract drift
 
-Contract drift is parallel tasks repeatedly making incompatible changes to one shared interface while both workers stay active.
+Contract drift occurs when two active workers repeatedly make incompatible changes to one shared interface.
 
 When you detect contract drift:
 
 1. Compare both implementations with the contract approved in the plan.
-2. Fix the contract to one explicit definition within the approved plan.
+2. Pin the contract to one explicit definition within the approved plan.
 3. Update each affected agent task with that definition.
 4. Dispatch conform-to-contract fix tasks.
 5. Reject further worker-specific changes to the contract.
@@ -501,9 +505,13 @@ Run the commands recorded in the plan:
 5. Format check.
 6. Every command in the plan's Post-Merge Validation section.
 
-Record the result of every applicable command.
+Record the result of every applicable command. Verify every boundary in the plan's Integration Verification section. Record the evidence for `summary.md`.
 
-Verify each acceptance criterion separately. Verify every boundary in the plan's Integration Verification section. Record the evidence for `summary.md`.
+### Check acceptance criteria
+
+Read `references/context/acceptance-check.md`. Dispatch the `acceptance-check-<PASS>` task to the routed worker in `<WT>`, collect, and retry once. If the retry fails, verify each criterion yourself and record the missing check in `summary.md`.
+
+Read the report. Confirm each `not met` and `not verifiable` entry against the code before acting on it. Treat each confirmed `not met` criterion as a verification failure. Record the evidence for every criterion in `summary.md`.
 
 ### Verify UI changes
 
@@ -528,13 +536,14 @@ If the implementation has greater aggregate risk:
 
 ### Fix verification failures
 
-Turn each failure into a fix task through the Phase 5 fix-task procedure. Put the failing command, its output, and the expected result in the agent task.
+Turn each failure into a fix task through the Phase 5 fix-task procedure. Put the failing command, its output, and the expected result in the agent task. For an unmet criterion, put the criterion, the report's evidence, and the expected behaviour in the agent task.
 
 After each fix merge:
 
 1. Rerun the failed check.
 2. Rerun any checks affected by the fix.
-3. Start another fix wave if a check still fails.
+3. Rerun the acceptance check.
+4. Start another fix wave if a check still fails or a criterion is still unmet.
 
 Record each wave in `verification.fix_waves`. Allow at most three verification fix waves. Run the abort routine after the third failed wave.
 
@@ -560,9 +569,9 @@ Each round gives independent code and security lenses the same committed HEAD. T
 For each `<ROUND>` from 1 through `<CODE_REVIEW_CAP>`:
 
 1. Add the round to `review_rounds` with `code_changed=false` and the current `<WT>` HEAD.
-2. Resolve every required value in `references/context/review.md`, including the round context after round 1.
+2. Resolve every required value in `references/context/review.md`. Every round reviews the whole branch against `<BASE_SHA>`. Each later round first confirms the previous round's fixes, then reports only findings the previous review did not triage.
 3. Dispatch a fresh task with a unique report path to every code reviewer and security reviewer, collect, and retry a failed lens once within the round.
-4. When a retry also fails, record the lens in the round's `missing_lenses` and in the round review, and start a fresh terminal for it before any later round. Run the abort routine if both code-review lenses are unavailable. Continue with the surviving lenses only when every missing security lens is recorded.
+4. When a retry also fails, record the lens in the round's `missing_lenses` and in the round review, and start a fresh terminal for it before any later round. Run the abort routine if both code-review lenses are unavailable. Record every missing security lens, then continue with the surviving lenses.
 
 ### Write the round review
 
@@ -598,7 +607,7 @@ Assess each surviving finding against the code and its reproduction.
   - it needs a decision owned by the human; or
   - the approved plan explicitly excludes the work.
 
-Record an excluded finding in the PR with the reason it remains.
+Record an excluded finding under Remaining in `summary.md` with the reason it remains.
 
 Append a Triage section to `review/review-r<ROUND>.md`. For each finding, record the outcome, the evidence you checked, and the reason. Commit the round review and manifest before starting a fix wave.
 
@@ -621,7 +630,7 @@ For each fix:
 
 Allow at most three fix waves in one review round. After the third failed wave, run the abort routine and attach the round review.
 
-Set `code_changed=true` only after a substantive code or test change is merged and verified in `<WT>`. Report files, bookkeeping changes, and findings that need no implementation change do not count.
+Set `code_changed=true` only after you merge and verify a substantive code or test change in `<WT>`. Report files, bookkeeping changes, and findings that need no implementation change do not count.
 
 When `code_changed=true`, set `review_fixes_applied=true` and continue to the next round unless this round reached `<CODE_REVIEW_CAP>`. At the cap, stop after the verified fix wave and record that no reviewer saw the final fixes.
 
@@ -630,7 +639,7 @@ When `code_changed=false`, stop the review loop.
 ### Finish code review
 
 1. Close every reviewer terminal.
-2. If `review_fixes_applied=true`, rerun Phase 6 project checks and applicable browser checks against the post-review HEAD.
+2. If `review_fixes_applied=true`, rerun the Phase 6 project checks, the acceptance check, and applicable browser checks against the post-review HEAD.
 3. Treat verification fixes as post-review and unreviewed. Use the Phase 6 fix procedure with its own three-wave limit, recorded in `verification.post_review_fix_waves`. Do not reopen code review.
 4. If no review fix changed the implementation, retain the existing Phase 6 evidence.
 5. Require current verification evidence or an explicit reason for every remaining unverified gap.
@@ -653,7 +662,7 @@ git -C <WT-PATH> status --porcelain
 When `qa_policy` is `skip`:
 
 1. Do not create a QA task, terminal, worktree, dispatch, or findings file.
-2. Set `qa.status` to `skipped` and `qa.reason` to `run complexity policy` in `run-state.json`. Record the same result in `summary.md`.
+2. Set `qa.status` to `skipped` and `qa.reason` to `run complexity policy` in `run-state.json`.
 3. Commit the skip record.
 4. Continue to Phase 9.
 
@@ -704,7 +713,7 @@ Assess each concrete finding on the same terms as Phase 7:
 
 - discard it when it does not hold;
 - accept it when it holds;
-- carry it to the PR only when it needs a human-owned decision or the approved plan excludes it.
+- record it under Remaining in `summary.md` only when it needs a human-owned decision or the approved plan excludes it.
 
 Write `<RUNDIR>/review/qa-review.md`. It is the QA review of record and stands alone: a reader must not need the worker report. Carry every finding from `scratch/qa-findings.md` over in the QA skill's own format, complete and unedited: Severity, Category, Type, Location, Finding, Reproduction, Expected, Actual, Evidence, and Regression test. Carry the coverage list and verdict as written. Then append a Triage section: for each finding, the outcome, the evidence you checked, and the reason. Commit the QA review and manifest before starting fixes.
 
@@ -714,7 +723,7 @@ For every fix wave:
 
 1. Verify each fix task.
 2. Rerun each finding's exact reproduction.
-3. Rerun the Phase 6 project checks and applicable browser checks.
+3. Rerun the Phase 6 project checks, the acceptance check, and applicable browser checks.
 4. Record the fix commit and its verification evidence against the finding in the QA review.
 5. Start another wave if a finding still reproduces.
 
@@ -726,20 +735,7 @@ Set `qa.status` to `completed` and clear `qa.reason`. Commit the final QA, fix, 
 
 ### Finalise the run evidence
 
-Complete `<RUNDIR>/summary.md` with:
-
-- start and end datetimes;
-- what the PR contains;
-- plan-review tier and cap used;
-- final run complexity and downstream review policy;
-- plan-review and code-review rounds with stop reasons;
-- security-review coverage for each round, including why a lens was missing;
-- QA result or policy skip;
-- decisions and judgement calls with their reasons;
-- each acceptance criterion and its evidence;
-- incidents, including reset reviewer trees and superseded dispatches;
-- open questions;
-- every remaining unverified or unfixed item and its reason.
+Complete `<RUNDIR>/summary.md` in the shape of `references/templates/summary-template.md`. Set `finished` and fill every section.
 
 Commit all outstanding evidence and state. Require:
 
@@ -753,17 +749,6 @@ to return no output.
 
 1. Push `<RUN-BRANCH>`. It is the only branch that may reach the remote.
 2. Open the PR through the mapped `{pr-skill}` against the base branch.
-3. Write the PR body from `plan/plan.md` and `summary.md`. Do not copy either document verbatim.
-4. Include:
-   - a concise implementation summary;
-   - acceptance criteria with evidence;
-   - the source issue link when one exists;
-   - review rounds and security coverage;
-   - fixed findings and their verification evidence;
-   - every unfixed finding with its reason and attribution;
-   - the QA result or policy skip;
-   - screenshot references for UI changes;
-   - the sign-off block below.
 
 Use this sign-off instead of the PR skill's sign-off:
 
@@ -779,7 +764,7 @@ Use only handles and ids recorded in `run-state.json`.
 1. Close every recorded terminal and mark its resource record `closed`.
 2. Remove each remaining task or QA worktree by its recorded id and mark its resource record `removed`.
 3. Confirm that every removed terminal and worktree is gone.
-4. Do not sweep or act on unfiltered `terminal list` or `worktree list` output. Orca is shared with other runs.
+4. Do not act on unfiltered `terminal list` or `worktree list` output. Orca is shared with other runs.
 5. Keep the integration worktree until the PR merges and mark it `retained`. Its later removal with `orca worktree rm` belongs to the human.
 6. Set `cleanup.status` to `complete` when no removable resource remains. Otherwise set it to `partial` and record every remaining handle or worktree id.
 
@@ -851,12 +836,7 @@ Then:
 3. Remove task and disposable worktrees by recorded id, preserving each task branch as mechanics 7.0 requires.
 4. Delete a disposable QA branch when one exists.
 5. Keep the integration worktree and run branch for inspection.
-6. Update `summary.md` with:
-   - final status;
-   - what was attempted;
-   - observed failures;
-   - preserved branches;
-   - what remains.
+6. Complete `summary.md` in the shape of `references/templates/summary-template.md`. Set `finished` and fill every section.
 7. Update `run-state.json`.
 8. Report the failure or blocker to the human.
 
@@ -877,18 +857,31 @@ Then run the abort routine.
 
 ### Recover coordinator failure
 
-On a context-limit or unexpected coordinator error, attempt recovery first. If recovery fails, record as much of the abort state as possible.
+On a context-limit or unexpected coordinator error, attempt recovery first. If recovery fails, record as much of the abort state as possible. A fresh coordinator session takes over through `resume`.
 
-A fresh coordinator session resumes from durable state:
+### Resume a run
 
-1. Load `run-state.json`, the task DAG, `<RUNDIR>`, and the run branch.
-2. Reconcile them with live Orca state.
-3. Treat merge commits and task branches as authoritative when they conflict with manifest task status.
-4. Reacquire stale terminal handles by matching the recorded title and worktree.
-5. Collect pending `worker_done` messages before dispatching anything.
-6. Do not re-dispatch work already committed on a task branch.
-7. Do not re-merge an already merged branch.
-8. In Phases 6 through 8, resume from the recorded round and fix-wave counts.
+`resume <RUN>` names the run. `resume <RUNDIR>` names its run folder. Resolve a run name to the integration worktree of that exact name in Orca's worktree list, and derive `<RUNDIR>` as Phase 0 step 6 does. Stop when the worktree or `run-state.json` does not exist, or when the recorded status is terminal.
+
+Load the run mechanics as Phase 0 step 1 requires. Then read, completely and in this order:
+
+1. `run-state.json`;
+2. `summary.md`;
+3. `plan/brief.md` and `plan/plan.md`;
+4. every agent task and report under `tasks/`;
+5. every review under `review/`;
+6. the `scratch/` reports of the recorded phase.
+
+Then reconcile the manifest with live state:
+
+1. Treat merge commits and task branches as authoritative when they conflict with manifest task status.
+2. Treat live Orca dispatch state as authoritative over manifest dispatch status.
+3. Reacquire stale terminal handles by matching the recorded title and worktree.
+4. Collect pending `worker_done` messages before dispatching anything.
+5. Dispatch only work with no commits on its task branch, and merge only branches not yet merged.
+6. In Phases 6 through 8, resume from the recorded round and fix-wave counts.
+
+Record the resumption and every reconciliation in `summary.md`, commit, and continue from the recorded phase.
 
 ### Handle the Orca circuit breaker
 
