@@ -103,7 +103,7 @@ Append a sign-off as the final lines of the PR body: a divider, then the model i
 
 ```markdown
 ---
-:space_invader: PR created by {model}
+:space_invader: PR created by Agent
 ```
 
 **Filling in `{model}`:**
