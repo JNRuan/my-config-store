@@ -1,5 +1,5 @@
 ---
-description: "Cross-model code + security review: run /code-review-local (Claude Fable + Codex GPT-5.6-Sol) and /security-review-local (Claude Opus 5 + Codex GPT-5.6-Sol) in parallel via Orca, then synthesize and open crit for human comment. For thorough, manually triggered reviews."
+description: "Cross-model code + security review: run /code-review-local (Claude Fable + Codex GPT-6-Astra) and /security-review-local (Claude Fable + Codex GPT-6-Astra) in parallel via Orca, then synthesize and open crit for human comment. For thorough, manually triggered reviews."
 ---
 # Cross-Model Code + Security Review
 
@@ -9,8 +9,8 @@ one and hand it to **crit** for human comment.
 
 | Stream | Skill | Workers |
 | --- | --- | --- |
-| code review | `/code-review-local` | Claude (Fable) and Codex (GPT-5.6-Sol) |
-| security review | `/security-review-local` | Claude (Opus 5) and Codex (GPT-5.6-Sol) |
+| code review | `/code-review-local` | Claude (Fable) and Codex (GPT-6-Astra) |
+| security review | `/security-review-local` | Claude (Fable) and Codex (GPT-6-Astra) |
 
 Arguments, both optional, in any order; an argument matching an effort level is `<EFFORT>`, any
 other argument is `<BASE>`:
@@ -48,14 +48,14 @@ orca orchestration run-create --objective "cross-model code + security review vs
 orca terminal create --worktree current --title "review:claude-fable" \
   --command "claude --model fable --effort <EFFORT> --permission-mode bypassPermissions" --json
 
-orca terminal create --worktree current --title "review:codex-gpt5.6-sol" \
-  --command "codex --model gpt-5.6-sol -c 'model_reasoning_effort=\"<EFFORT>\"' -c 'sandbox_mode=\"workspace-write\"' -c 'sandbox_workspace_write.network_access=true' --ask-for-approval never" --json
+orca terminal create --worktree current --title "review:codex-gpt6-astra" \
+  --command "codex --model gpt-6-astra -c 'model_reasoning_effort=\"<EFFORT>\"' -c 'sandbox_mode=\"workspace-write\"' -c 'sandbox_workspace_write.network_access=true' --ask-for-approval never" --json
 
-orca terminal create --worktree current --title "security:claude-opus5" \
-  --command "claude --model claude-opus-5 --effort <EFFORT> --permission-mode bypassPermissions" --json
+orca terminal create --worktree current --title "security:claude-fable" \
+  --command "claude --model fable --effort <EFFORT> --permission-mode bypassPermissions" --json
 
-orca terminal create --worktree current --title "security:codex-gpt5.6-sol" \
-  --command "codex --model gpt-5.6-sol -c 'model_reasoning_effort=\"<EFFORT>\"' -c 'sandbox_mode=\"workspace-write\"' -c 'sandbox_workspace_write.network_access=true' --ask-for-approval never" --json
+orca terminal create --worktree current --title "security:codex-gpt6-astra" \
+  --command "codex --model gpt-6-astra -c 'model_reasoning_effort=\"<EFFORT>\"' -c 'sandbox_mode=\"workspace-write\"' -c 'sandbox_workspace_write.network_access=true' --ask-for-approval never" --json
 ```
 
 Capture the four terminal **handles** from the `--json` responses (`.result.terminal.handle`) as
@@ -193,7 +193,7 @@ sign-off line:
 
 ```markdown
 ---
-:space_invader: Code Review by Claude Fable 5 & GPT-5.6-Sol, Security Review by Claude Opus 5 & GPT-5.6-Sol; with Orca
+:space_invader: Code Review by Claude Fable 5 & GPT-6 Astra, Security Review by Claude Fable 5 & GPT-6 Astra; with Orca
 ```
 
 ## Rules

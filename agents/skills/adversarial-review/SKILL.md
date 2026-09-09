@@ -20,7 +20,7 @@ Every subagent spawn uses this table. Choose the column for the harness you are 
 | -------------------------------- | ------------------- | ------------------------------------ | --------------- |
 | Scouts (Phase 1)                 | Sonnet, high effort | gpt-5.6-luna, high reasoning effort  | session default |
 | Code test executors (Phase 3)    | Opus, high effort   | gpt-5.6-sol, high reasoning effort   | session default |
-| Browser test executors (Phase 4) | Sonnet, high effort | gpt-5.6-terra, high reasoning effort | session default |
+| Browser test executors (Phase 4) | Sonnet, high effort | gpt-5.6-sol, high reasoning effort   | session default |
 
 If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a review over it.
 
