@@ -117,7 +117,7 @@ On re-dispatch, address the latest cycle first.
 
 - What each cycle attempted: {...}
 - Each failure and its output: {...}
-- Cycle report paths: {...}
+- Report path and relevant Git revisions: {...}
 - Coordinator's diagnosis: {...}
 - What the replacement must do differently: {...}
 ```

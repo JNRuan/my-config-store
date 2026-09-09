@@ -1,11 +1,13 @@
 ---
 name: pr-create
-description: Draft a PR description and open the pull request via `gh`. Use when the user asks to create/open a PR, or to write a PR description or summary. Opens the PR by default; if the user asks for a summary or description *only*, it drafts the text without creating the PR.
+description: Draft a PR description or create/update a pull request via `gh`. Use when the user asks to create, open, or update a PR, or to write a PR description or summary. Writing requests produce a draft; create, open, or update requests authorise publication.
 ---
 
 # PR Create
 
-Draft a pull request description from the current branch's changes and open the PR. If the user asks for a "summary only", "description only", or "don't open the PR", stop after producing the text (see [Summary-only mode](#summary-only-mode)).
+Draft a pull request description from the current branch's changes. Requests for wording use
+[Summary-only mode](#summary-only-mode). Requests to create, open, or update a PR authorise
+publication. Earlier authorisation to publish remains sufficient.
 
 ## Delegation
 
@@ -18,7 +20,7 @@ Do not draft the PR in the session model: dispatch one subagent to run the whole
 
 
 - Give the subagent the user's parameters (base ref if given, create or summary-only mode) and any intent from the session the description should reflect.
-- The subagent runs every step below, including the git and `gh` commands. It reports the PR URL, or the title and body file path in summary-only mode.
+- The subagent follows the selected mode. It reports the PR URL, or the title and body file path in summary-only mode.
 - Where a step below says stop and ask the user, the subagent reports back instead; resolve with the user and dispatch again.
 - If the harness can't spawn subagents or set model and effort per call, run the steps below yourself. The table is an upgrade, not a requirement; never fail the task over it.
 
@@ -47,7 +49,10 @@ If one exists, fill it in and follow its sections instead of the default structu
 
 ### Branch diff
 
-1. Determine the base branch: use an existing PR's base (`gh pr view --json baseRefName`); otherwise the remote's default branch (`gh repo view --json defaultBranchRef` or `git symbolic-ref refs/remotes/origin/HEAD`); otherwise `main`
+1. Determine the base branch: use the user's specified base first; otherwise an existing PR's base
+(`gh pr view --json baseRefName`); otherwise the remote's default branch
+(`gh repo view --json defaultBranchRef` or `git symbolic-ref refs/remotes/origin/HEAD`);
+otherwise `main`.
 2. If the current branch is the base branch, stop and ask which branch the PR should be created from
 3. Run `git log <base>..HEAD --oneline` to see all commits
 4. Run `git diff <base>...HEAD` to read the actual diff: understand what changed, not just which files. Three dots diffs from the merge-base, matching GitHub's PR view. For large PRs, run with `--stat` first, then read the full diff.
@@ -95,50 +100,33 @@ Treat the structure as flexible, not fixed: include a section only if it helps t
 - Write in plain prose; don't decorate with bold, emoji, or badges.
 - Lead with the change, not the file. "Statically generated category routes with client-side filtering via react-query" adds useful context. "Updated `[[...slug]].tsx`" does not.
 - Include implementation details only when they help explain the change.
-- Prefer one strong sentence over two weak ones. If a bullet needs a second line, the first line wasn't direct enough.
+- Prefer one strong sentence over two weak ones.
 
 ## PR signoff
 
-Append a sign-off as the final lines of the PR body: a divider, then the model identity:
+Append this sign-off as the final lines of the PR body:
 
 ```markdown
 ---
 :space_invader: PR created by Agent
 ```
 
-**Filling in `{model}`:**
-
-- Your exact model name and ID are stated in your own system prompt / environment
-  context (e.g. Claude Code's environment block names the model and its ID). Read your
-  identity from there, not from memory.
-- Format as vendor + human-readable name + version: `Claude Opus 4.8`, `GPT-5.5`,
-  `GLM 5.2`. If your context gives the model but not the vendor, prefix the vendor
-  yourself. If it gives an internal ID only (e.g. `claude-opus-4-8`), convert it to the
-  display name (`Claude Opus 4.8`).
-- Use the highest level of this chain your context supports; degrade only when the
-  information is missing, and never invent detail:
-  1. Vendor + name + version: `Claude Opus 4.8`
-  2. Vendor + family, no version: `Claude Opus`, `GPT-5`
-  3. Nothing determinable: use the literal `an AI agent`
-
-Before running `gh pr create`/`gh pr edit`, confirm the body file ends with this sign-off
-and that `{model}` has been replaced (no literal `{model}` and no invented version remain).
-
 ## Creating the PR
 
-This is the default. Write the body to `/tmp/pr-body-{branch-slug}.md` using the Write tool (e.g. `/tmp/pr-body-fix-auth-flow.md`), then:
+For create mode, write the body to `/tmp/pr-body-{branch-slug}.md` using the Write tool (e.g. `/tmp/pr-body-fix-auth-flow.md`), then:
 
 1. **Ensure the branch is pushed.** If it has no upstream, push it: `git -C <root> push -u origin HEAD`.
-2. **Check for an existing open PR** for this branch: `gh pr view --json number,url,state 2>/dev/null`. `gh pr view` also resolves closed and merged PRs, so check `state`:
+2. **Check for an existing open PR** for this branch: `gh pr view --json number,url,state,body 2>/dev/null`. `gh pr view` also resolves closed and merged PRs, so check `state`:
    - **No PR, or state is not `OPEN`** → open one: `gh pr create --base <base> --title "<title>" --body-file <body-file>`
-   - **State is `OPEN`** → update its title and body instead of creating a duplicate: `gh pr edit --title "<title>" --body-file <body-file>`
+   - **State is `OPEN`** → retain relevant decisions, issue links and validation notes from the
+     existing body in the draft, then update its title and body: `gh pr edit --title "<title>" --body-file <body-file>`
 3. Report the PR URL.
 
 If `gh` is not installed or not authenticated, report it and fall back to Summary-only mode so the work isn't lost.
 
 ## Summary-only mode
 
-If the user asked for the description/summary only, run no `gh` create/edit commands. Instead:
+In summary-only mode, run no push or `gh` create/edit commands. Instead:
 
 - Write the body to `/tmp/pr-body-{branch-slug}.md` using the Write tool.
 - Give the user the title, then copy the body to the clipboard with the platform's tool:

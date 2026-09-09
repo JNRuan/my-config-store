@@ -178,7 +178,7 @@ Complete every step in order before Phase 1.
 
    The run folder belongs to `<RUN-BRANCH>`. Commit each artifact as soon as it exists and at every phase boundary. `scratch/` holds worker reports and the coordinator's working files. Do not write ignore rules for it.
 
-   Do not commit between recording `<WT>` HEAD for a collection check and running that check.
+   Do not commit between recording `<WT>` HEAD for a collection check and running that check. For a parallel panel, this covers all workers and allowed retries; collect and check the whole panel before committing its artifacts together.
 
 7. **Initialise `run-state.json`.**
 
@@ -291,7 +291,9 @@ Record the stop reason in the plan-review record.
 
 The plan gate gives the human final control before implementation starts. The human approves the scope, task boundaries, contracts, open assumptions, and review cost.
 
-Changes at the plan gate do not reopen critique or fact checking.
+Changes at the plan gate do not reopen critique.
+Before presenting an updated plan for approval, verify new or changed
+repository claims against the repository.
 
 Present through the mapped `{human-review-skill}`:
 
@@ -430,6 +432,11 @@ Merge each verified task immediately.
    6. Merge the conflict task, then continue finalising the original task.
 
 4. Run the checks in the plan's Integration Verification section for the boundaries this task touches.
+
+If an integration check fails, keep the original task `completed` and its dependants blocked.
+Create a fix task from the current `<RUN-BRANCH>` without making it depend on the original task.
+Count the fix wave in `verification.fix_waves`, using the existing three-wave limit.
+Finalise the original task only after the fix merges and the affected integration checks pass.
 
 Increment the original task's resolve-to-verify count for each conflict task. Allow at most three resolve-to-verify cycles. After the third failed cycle, use the retry protocol.
 
@@ -603,9 +610,10 @@ Assess each surviving finding against the code and its reproduction.
 - Discard a finding that does not hold.
 - Accept a finding that holds.
 - Treat attribution and severity as evidence, not a verdict.
-- Fix every accepted finding in this run unless:
-  - it needs a decision owned by the human; or
-  - the approved plan explicitly excludes the work.
+- Fix every accepted finding unless the approved plan explicitly excludes the work.
+
+If a required fix needs a human-owned decision that the approved task contract
+does not settle, follow the Human touchpoints rule.
 
 Record an excluded finding under Remaining in `summary.md` with the reason it remains.
 
@@ -713,7 +721,7 @@ Assess each concrete finding on the same terms as Phase 7:
 
 - discard it when it does not hold;
 - accept it when it holds;
-- record it under Remaining in `summary.md` only when it needs a human-owned decision or the approved plan excludes it.
+- record it under Remaining in `summary.md` only when the approved plan excludes it.
 
 Write `<RUNDIR>/review/qa-review.md`. It is the QA review of record and stands alone: a reader must not need the worker report. Carry every finding from `scratch/qa-findings.md` over in the QA skill's own format, complete and unedited: Severity, Category, Type, Location, Finding, Reproduction, Expected, Actual, Evidence, and Regression test. Carry the coverage list and verdict as written. Then append a Triage section: for each finding, the outcome, the evidence you checked, and the reason. Commit the QA review and manifest before starting fixes.
 
@@ -735,7 +743,9 @@ Set `qa.status` to `completed` and clear `qa.reason`. Commit the final QA, fix, 
 
 ### Finalise the run evidence
 
-Complete `<RUNDIR>/summary.md` in the shape of `references/templates/summary-template.md`. Set `finished` and fill every section.
+Update `<RUNDIR>/summary.md` in the shape of `references/templates/summary-template.md`.
+Fill every section with the results so far. Leave `finished` as `pending`
+and record publication as pending in Outcome.
 
 Commit all outstanding evidence and state. Require:
 
@@ -746,6 +756,10 @@ git -C <WT-PATH> status --porcelain
 to return no output.
 
 ### Publish the branch and PR
+
+In the PR description, identify code changes that received verification but no
+subsequent code review. State which checks covered those changes.
+Include any missing review lenses and unverified acceptance criteria.
 
 1. Push `<RUN-BRANCH>`. It is the only branch that may reach the remote.
 2. Open the PR through the mapped `{pr-skill}` against the base branch.
@@ -771,7 +785,8 @@ Use only handles and ids recorded in `run-state.json`.
 ### Record PR state
 
 1. Set `run-state.json` status to `pr`.
-2. Record the PR URL.
+2. Record the PR URL in the manifest and `summary.md`.
+   Set the summary's `finished` timestamp.
 3. Commit and push the final state update.
 4. Report:
    - the PR URL;
@@ -793,7 +808,7 @@ A worker may use at most three verify-to-fix cycles. Exhausting those cycles sta
 4. Append a retry briefing to the agent task:
    - what each cycle attempted;
    - each failure and its output;
-   - the relevant cycle-report paths;
+   - the report path and relevant Git revisions;
    - the coordinator's diagnosis;
    - what the replacement must do differently.
 5. Stop and close the original worker.
@@ -863,7 +878,7 @@ On a context-limit or unexpected coordinator error, attempt recovery first. If r
 
 `resume <RUN>` names the run. `resume <RUNDIR>` names its run folder. Resolve a run name to the integration worktree of that exact name in Orca's worktree list, and derive `<RUNDIR>` as Phase 0 step 6 does. Stop when the worktree or `run-state.json` does not exist, or when the recorded status is terminal.
 
-Load the run mechanics as Phase 0 step 1 requires. Then read, completely and in this order:
+Load the run mechanics as Phase 0 step 1 requires. Then read the following artifacts completely and in order. Use `run-state.json` to skip artifacts from steps not yet reached. Recover missing artifacts from completed steps before continuing.
 
 1. `run-state.json`;
 2. `summary.md`;
@@ -874,11 +889,11 @@ Load the run mechanics as Phase 0 step 1 requires. Then read, completely and in 
 
 Then reconcile the manifest with live state:
 
-1. Treat merge commits and task branches as authoritative when they conflict with manifest task status.
+1. Use Git to establish which task branches have merged. Mark a task `merged` in the manifest only after integration verification passes.
 2. Treat live Orca dispatch state as authoritative over manifest dispatch status.
 3. Reacquire stale terminal handles by matching the recorded title and worktree.
 4. Collect pending `worker_done` messages before dispatching anything.
-5. Dispatch only work with no commits on its task branch, and merge only branches not yet merged.
+5. Dispatch only unfinished work, using existing task-branch commits as context. Merge only branches not yet merged.
 6. In Phases 6 through 8, resume from the recorded round and fix-wave counts.
 
 Record the resumption and every reconciliation in `summary.md`, commit, and continue from the recorded phase.

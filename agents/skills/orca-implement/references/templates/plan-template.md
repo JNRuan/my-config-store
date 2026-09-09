@@ -91,7 +91,8 @@ independent of `plan_review_tier` and `run_complexity`.
 
 ## Orchestration
 
-Coordinator's execution guide; workers see only their agent task.
+The coordinator owns orchestration. Workers read the full plan for context
+and implement only their assigned task.
 
 ### Waves
 

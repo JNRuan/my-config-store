@@ -227,6 +227,7 @@ Each entry in `tasks` contains:
   "effort": null,
   "active_dispatch_id": null,
   "superseded_dispatch_ids": [],
+  "worker_attempt": 1,
   "verify_fix_cycles": 0,
   "resolve_verify_cycles": 0,
   "agent_task_path": null,
@@ -238,6 +239,13 @@ Each entry in `tasks` contains:
 A task with no dependencies starts `ready`. A task with unmerged dependencies starts `pending`.
 
 A fix task uses `"kind": "fix"` and records the phase and round that produced it.
+
+`worker_attempt` is 1 for the original worker and 2 for its single replacement.
+`verify_fix_cycles` counts cycles for the current attempt.
+When moving from attempt 1 to 2, reset `verify_fix_cycles` to 0.
+Save both values before starting the replacement.
+Resuming an attempt preserves both values.
+After attempt 2 exhausts its three cycles, follow the permanent-failure path.
 
 Increment `resolve_verify_cycles` on the original task for each conflict-resolution task registered for it.
 
@@ -251,6 +259,7 @@ Each entry in `phase_dispatches` contains:
 {
   "role": "<ROLE>",
   "round": null,
+  "start_head": null,
   "task_id": "<TASK_ID>",
   "terminal_handle": "<HANDLE>",
   "terminal_title": "<TITLE>",
@@ -264,6 +273,11 @@ Each entry in `phase_dispatches` contains:
 ```
 
 Use `round` for critic and reviewer rounds. Leave it `null` for unrounded roles. Record a fact check's `role` as `plan-fact-check` or `plan-fact-check-final`, and an acceptance check's `role` as `acceptance-check-<PASS>`.
+
+For a worker in `<WT>`, save the collection baseline `<H>` as `start_head` before dispatch.
+Use the same baseline for every worker and retry in one collection batch.
+Preserve it when the coordinator resumes.
+Leave `start_head` null for workers outside `<WT>`.
 
 ## Plan-review record
 
@@ -426,7 +440,7 @@ The manifest owns resource identity and coordinator intent. Git and Orca own liv
 
 During recovery:
 
-- merge commits and task branches override stale task status;
+- Git establishes which task branches have merged; the manifest's `merged` status also requires successful integration verification;
 - live Orca dispatch state overrides stale dispatch status;
 - recorded round and fix-wave counts preserve spent limits;
 - collect pending `worker_done` deliveries before any new dispatch;

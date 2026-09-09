@@ -150,11 +150,11 @@ three mechanical things per stream, then writes one markdown file. Read the four
 and `<REVIEWDIR>/codex-security.md`. Synthesize each stream separately; never merge a code-review
 finding with a security finding. If the same issue appears in both streams, keep both entries.
 
-1. **Existence check (file-level).** For each finding, confirm its cited file is real (`test -f`)
-   and was touched by this branch (appears in `git --no-pager diff --name-only <BASE>...HEAD`).
-   This catches fabricated or untouched *paths*, not fabricated *line numbers* within a real
-   file, which it cannot see. Drop findings that fail it; the existence check is the only ground
-   for removal.
+1. **Reference and scope check.** Drop a finding when its cited file exists neither at HEAD
+   nor at `<BASE>`. A deleted file remains a valid citation.
+   Keep a finding in untouched code only when its report traces a causal path to a changed file.
+   These checks do not establish that the cited line numbers or the finding are correct.
+   Failure of these checks is the only ground for removal.
 2. **Dedupe by identity, not wording, within a stream.** Merge findings from the stream's two
    models that refer to the **same underlying issue** (same file, overlapping or adjacent lines,
    same root cause) even when the two models phrase or rate them differently. This is an
@@ -170,11 +170,11 @@ missing lens.
 Write `<REVIEWDIR>/synthesis.md`:
 
 - Header: base ref, branch, effort, which lenses ran, and per-stream counts (raw per model →
-  after existence filter → after dedupe).
+  after reference and scope checks → after dedupe).
 - Two sections, **Code review** and **Security review**. In each, findings ordered by
   attribution (`both` first), then by the higher of the two severities. Each finding keeps the
   original fields from its source report(s), plus the attribution tag and both severity labels.
-- A short **Dropped (non-existent reference)** appendix listing what the existence check removed,
+- A short **Dropped (reference or scope)** appendix listing what the checks removed,
   from which stream and model, so the filtering is visible rather than silent.
 
 Do not add findings of your own, re-score confidence, or decide which are "real."

@@ -59,13 +59,11 @@ Then launch scouts in parallel as read-only general-purpose subagents. Do not us
 - **Test coverage**: for each changed function or module, find its tests, the scenarios they cover, and the edge cases they miss. Return a map from changed symbol to test files, coverage, and gaps.
 - **Additional scouts**: launch any others the diff needs, on the same terms.
 
-Wait for all scouts. Note where blast radius, pattern divergence, and test gaps overlap. Those are the highest-risk areas for your verify pass. Do not pass them to subagents.
+Wait for all scouts. Note where blast radius, pattern divergence, and test gaps overlap. Those are the highest-risk areas for your verify pass. Keep your risk assessment in your own context.
 
 ## Step 2: Spawn category reviewers
 
 Spawn one subagent per category in parallel. Always spawn Correctness, Reliability, and Patterns. Spawn Requirements only when Step 1 resolved an intent source, and pass it or its path in the package. Spawn Tests only when the diff contains test files.
-
-If your harness cannot spawn parallel subagents, apply the category lenses one at a time in your own context using the same package, then continue to Step 3.
 
 ### Spawn package
 
@@ -200,7 +198,10 @@ For each finding:
 Across all surviving findings:
 
 4. Consolidate. Merge findings with the same root cause and refer to duplicates as "See issue #N". Cross-reference related findings.
-5. Normalise severity across the full set.
+5. Normalise severity across the full set by likely impact. Examples:
+   - Critical: widespread failure, irreversible data loss, or broad security compromise.
+   - High: a core workflow is broken or produces materially wrong results.
+   - Medium: a concrete issue with limited impact.
 6. Drop Low severity findings, nits, anything below 75 confidence, and anything in code the diff neither changed nor exposed.
 
 Subagents propose. You rule.
@@ -213,6 +214,8 @@ Always include this subsection.
 
 - Tests subagent ran with findings: `Tests review: see findings above.`
 - Tests subagent ran with no findings: `Tests review: no issues found.`
+- Tests subagent skipped and new logic is covered by existing tests:
+  > **Tests review**: Skipped (no test files in diff). Existing tests cover the new logic.
 - Tests subagent skipped and new logic lacks coverage:
   > **Tests review**: Skipped (no test files in diff). New production logic added without coverage: `{symbols from the test coverage scout}`. Review recommended.
 - Tests subagent skipped and no new logic either: `Tests review: Skipped (no test files in diff, no new production logic).`
@@ -249,6 +252,8 @@ If none: **NO RECOMMENDATIONS.**
 ### Verdict
 
 One line: **Ready to merge**, **Needs work** (Medium issues only), or **Blocked** (any Critical or High).
+
+Use **Incomplete** instead of **Ready to merge** if a review category failed to complete.
 
 ## Example finding
 

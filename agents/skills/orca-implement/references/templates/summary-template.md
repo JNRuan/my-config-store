@@ -1,6 +1,6 @@
 # Summary template
 
-Write `<RUNDIR>/summary.md` in exactly this shape. The summary is the run narrative: it tells what happened. The manifest, plan, reviews, and reports hold the detail, so point to them rather than repeat them. Start it in Phase 0, add to it as the run proceeds, and complete it before the PR opens or the run aborts.
+Write `<RUNDIR>/summary.md` in exactly this shape. The summary is the run narrative: it tells what happened. The manifest, plan, reviews, and reports hold the detail, so point to them rather than repeat them. Start it in Phase 0 and add to it as the run proceeds. Complete it after the PR opens and teardown finishes, or when the run aborts.
 
 ```markdown
 ---
@@ -13,6 +13,8 @@ finished: {ISO 8601 UTC, or pending}
 # Summary: {title}
 
 ## Outcome
+
+Before the PR opens: publication pending and what the branch contains.
 
 For an open PR: the PR URL and what the PR contains.
 

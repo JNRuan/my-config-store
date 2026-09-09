@@ -16,7 +16,8 @@ modified: {ISO 8601 UTC}
 
 For an issue or a file, cite it and quote only the text that carries a requirement or constraint.
 
-For an ad-hoc prompt, record the prompt verbatim.
+For an ad-hoc prompt, record the prompt verbatim except for secrets and private data.
+Replace those values with `[REDACTED]` before writing the brief.
 
 ## Problem
 

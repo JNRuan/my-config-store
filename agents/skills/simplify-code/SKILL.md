@@ -6,9 +6,7 @@ description: >-
   inefficiencies, and raising fix-altitude (deep fixes over band-aids). Use
   when the user wants to simplify, clean up, tidy, declutter, refactor for
   clarity, DRY up / deduplicate, reduce nesting or complexity, or polish a
-  diff, branch, or PR before committing. Trigger phrases: "simplify this",
-  "clean up the code", "tidy this up", "make it cleaner / simpler", "refactor
-  for readability", "reduce complexity", "DRY this up", "polish the diff".
+  diff, branch, or PR before committing.
   Also aligns the diff with project convention files (CLAUDE.md/AGENTS.md).
   Quality only: does NOT hunt for correctness bugs; that's the job of a code
   review.
@@ -21,11 +19,6 @@ Review the diff for **reuse, simplification, efficiency, altitude, and
 conventions** issues, then fix what you find. This is a quality pass, **not a
 bug hunt**.
 
-## Inputs
-
-- `$target` (optional): a PR number, branch name, commit range, or file path to
-  review. If omitted, review the current uncommitted + branch changes.
-
 ## Goal
 
 A cleaner diff: duplication, needless complexity, wasted work, and band-aid
@@ -35,22 +28,8 @@ confirms the code was already clean).
 
 ## Phase 0: Gather the diff
 
-Get the unified diff under review:
-
-- If a `$target` was passed, review that instead of the defaults below. A
-  branch, commit range, or path goes straight to `git diff`; for a PR number,
-  read the diff with `gh pr diff <n>` and check the branch out
-  (`gh pr checkout <n>`) before Phase 2, since fixes can only be applied to a
-  local checkout.
-- Otherwise determine the base branch: use an existing PR's base
-  (`gh pr view --json baseRefName`); otherwise the remote's default branch
-  (`gh repo view --json defaultBranchRef` or
-  `git symbolic-ref refs/remotes/origin/HEAD`); otherwise `main`. Run
-  `git diff <base>...HEAD`.
-- On the base branch itself, review the last commit: `git diff HEAD~1`.
-- If there are uncommitted changes, or the range diff is empty, also run
-  `git diff HEAD` and include the working-tree changes in scope; this skill
-  often runs before the commit.
+Review the code changes from the work just completed on the current branch or PR,
+including any uncommitted changes from that work.
 
 Treat this diff as the review scope. Read the enclosing function/file around each
 hunk when context is needed. You may search adjacent/shared code to understand
@@ -85,11 +64,8 @@ simpler form that does the same job.
 
 Flag wasted work the diff introduces: redundant computation or repeated I/O,
 independent operations run sequentially, blocking work added to startup or hot
-paths. Also flag long-lived objects built from closures or captured
-environments: depending on the language, they can keep much of the enclosing
-scope alive for the object's lifetime, a memory leak when that scope holds
-large values; prefer a class/struct that copies only the fields it needs. Name
-the cheaper alternative.
+paths. Also flag unnecessary memory retention when you can identify the retained
+data and explain why it stays alive longer than needed. Name the cheaper alternative.
 
 ### Altitude
 
@@ -100,12 +76,8 @@ special cases.
 
 ### Conventions
 
-Find the convention files that govern the changed code: the user-level
-`~/.claude/CLAUDE.md`, the repo-root `CLAUDE.md` or `AGENTS.md`, plus any
-`CLAUDE.md`, `CLAUDE.local.md`, or `AGENTS.md` in a directory that is an
-ancestor of a changed file (a directory's file only applies to files at or
-below it). Read each one that exists, then check the diff for clear violations
-of the rules they state.
+Check the changes against the instructions governing this session and the repository
+conventions that apply to the changed code.
 
 Only flag a violation when you can quote the exact rule and the exact line
 that breaks it: no style preferences, no vague "spirit of the doc"

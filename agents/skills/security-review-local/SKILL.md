@@ -23,7 +23,7 @@ You scout first, fan the review across security-lens subagents, then adversarial
 Never report:
 
 - denial of service, resource exhaustion, rate limiting, or memory or CPU consumption;
-- memory safety in memory-safe languages (Rust, Go, Java, Python, JS/TS);
+- memory safety in memory-safe languages (Rust, Go, Java, Python, JS/TS), except where the changed code uses unsafe operations or native interfaces;
 - vulnerabilities in outdated third-party libraries, which dependency scanners own;
 - log spoofing, regex injection, or ReDoS;
 - missing hardening or audit logs. Flag concrete vulnerabilities, not absent best practice;
@@ -55,7 +55,7 @@ Attacker-controlled (untrusted):
 - database content written by other users;
 - content fetched from external services an attacker can influence.
 
-Trusted (operator-controlled):
+Trusted only when controlled by an operator authorised for the resource and operation:
 
 - environment variables and CLI flags;
 - server config files, framework settings, and hardcoded constants;
@@ -64,14 +64,14 @@ Trusted (operator-controlled):
 
 Framework protections are real. Respect them:
 
-- React, Angular, and Vue escape output by default. Flag XSS only through `dangerouslySetInnerHTML`, `v-html`, `bypassSecurityTrustHtml`, or similar unsafe APIs.
+- React, Angular, and Vue escape HTML by default. Flag XSS only with a concrete path from attacker-controlled input to script execution. Examples include `dangerouslySetInnerHTML`, `v-html`, `bypassSecurityTrustHtml`, and URL bindings that allow executable schemes.
 - ORM query builders and parameterised queries are safe. Flag `.raw()`, `.extra()`, or string-built SQL.
 - Template engines with autoescaping are safe unless it is disabled with `|safe`, `{% autoescape off %}`, or `mark_safe` on user input.
 - Client-side code needs no auth or permission checks. The server validates everything the client sends.
 
 Precedents:
 
-- SSRF is a finding only when the attacker controls the host or protocol. Path-only control is not.
+- SSRF requires attacker-controlled input to cause an unauthorised server-side request with concrete impact. Account for URL construction and redirects before dismissing path-only control.
 - Unguessable UUIDs make enumeration impractical, so format validation is not a finding. A missing ownership check on a UUID-keyed resource still is.
 - Command injection in shell scripts needs a concrete untrusted-input path. Scripts run with operator input are not findings.
 - Findings in GitHub Actions workflows or notebooks need a specific attack path from untrusted input.
@@ -95,13 +95,11 @@ Then launch scouts in parallel as read-only general-purpose subagents. Do not us
 - **Blast radius**: for each function, type, or export the diff modified or removed, identify upstream callers and dependents. Note where a call path crosses a privilege boundary: unauthenticated to authenticated, user to admin, external to internal. Return a map from changed symbol to callers, dependents, and privilege boundaries crossed.
 - **Additional scouts**: launch any others the diff needs, on the same terms.
 
-Wait for all scouts. Note where attacker-controlled input, privilege boundaries, and pattern divergence overlap. Those are the highest-risk areas for your verify pass. Do not pass them to subagents.
+Wait for all scouts. Note where attacker-controlled input, privilege boundaries, and pattern divergence overlap. Those are the highest-risk areas for your verify pass. Keep your risk assessment in your own context.
 
 ## Step 2: Spawn security lens reviewers
 
 Spawn one subagent per lens in parallel. Always spawn Injection and code execution, AuthN/Z and sessions, Crypto and secrets, and Data exposure. Spawn Web boundary only when the diff touches HTTP handlers, responses, CORS or header config, or outbound requests. Spawn Agentic only when the diff touches agents, skills, tools, memory, or prompt files. Record skipped lenses in the Coverage note in Step 4.
-
-If your harness cannot spawn parallel subagents, apply the lenses one at a time in your own context using the same package, then continue to Step 3.
 
 ### Spawn package
 
@@ -211,7 +209,7 @@ Starting points, not checklists. The goal is real vulnerabilities, not bullet co
 
 **Agentic**
 
-Reference the OWASP Agentic Top 10. Prompt injection is a finding when untrusted content reaches an agent that can act, by calling tools, writing files, or persisting memory. It is not a finding when the content merely shapes generated text.
+Reference the OWASP Agentic Top 10. Flag prompt injection when untrusted content can cause a concrete security impact. Examples include unauthorised tool use, file writes, memory changes, or disclosure of private data through generated text. Harmless wording changes are not findings.
 
 - Untrusted content (user input, fetched pages, file contents) flowing into agent instructions that can redirect the task, escalate access, or exfiltrate data.
 - Unbounded tool allow-lists or over-broad permissions in agent and skill configs.
@@ -259,11 +257,13 @@ Report each surviving finding in the Subagent output format, with Severity limit
 
 Report a recurring issue once and refer to it later as "See issue #N". Leave an empty line between findings.
 
-If none survive: **NO SECURITY ISSUES.**
+If none survive: **NO SECURITY ISSUES FOUND WITHIN THE REVIEW SCOPE.**
 
 ### Verdict
 
 One line: **Ready to merge**, **Needs work** (Medium issues only), or **Blocked** (any Critical or High).
+
+Use **Incomplete** instead of **Ready to merge** if a review lens failed to complete.
 
 ## Example finding
 
@@ -276,11 +276,11 @@ This generic example shows the format only. Base your findings on the code revie
 **File:** api/reports.py:58
 **Findings:**
 
-- The `sort_by` query parameter is interpolated directly into the ORDER BY clause through an f-string. The allowlist check added in this branch compares case-sensitively and can be bypassed.
+- The `sort_by` query parameter is interpolated directly into the ORDER BY clause through an f-string without allowlist validation.
 
 **Attack path:**
 
-- An authenticated user sends `GET /reports?sort_by=name);DROP TABLE reports;--`. The value passes the broken allowlist, reaches `cursor.execute` unparameterised, and executes arbitrary SQL with the app's DB role.
+- An authenticated user supplies `sort_by=name; DROP TABLE reports;--`, producing `SELECT * FROM reports ORDER BY name; DROP TABLE reports;--`. In this example, the Psycopg connection uses autocommit and a role that owns `reports`, so both statements execute and the table is deleted.
 
 **Evidence:**
 

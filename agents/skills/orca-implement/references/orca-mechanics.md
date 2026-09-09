@@ -59,8 +59,8 @@ Prefer structured `worker_done` payloads and report files. Use bounded terminal 
 
 1. Wait through 3.0 until the dispatch is terminal. A worker is overdue after two consecutive slices with no message for it. Read its terminal. If it is active, keep waiting. Otherwise treat it as failed.
 2. Require a non-empty report.
-3. For a worker in `<WT>`, run the read-only check.
-4. Commit the run folder.
+3. For a worker in `<WT>`, run the read-only check. For a parallel panel, defer the check until every worker and allowed retry has reached a terminal outcome, then check the whole panel once.
+4. Commit the run folder after the check passes. For a parallel panel, commit all collected reports together.
 5. Close the terminal unless the phase keeps it across rounds.
 
 ### Read-only check
@@ -73,7 +73,13 @@ git -C <WT-PATH> status --porcelain -- .agents/orca/orchestration
 git -C <WT-PATH> rev-parse HEAD
 ```
 
-The first command must return no output. The second must list only the reports expected from this collection and the coordinator's own manifest and artifact edits. HEAD must equal `<H>`.
+The first command must return no output. The second must list only reports expected from the worker or whole panel being collected, including retries, and the coordinator's own manifest and artifact edits. HEAD must equal `<H>`.
+
+Before deleting files or restoring the worktree, stop any workers that can
+still write to it. Confirm that the changes and files to be discarded come
+from this run's read-only workers. If ownership is unclear or any affected
+work belongs to someone else, leave it intact and follow the current phase's
+failure path.
 
 Delete any unexpected file under the run directory and record the incident.
 
@@ -104,6 +110,7 @@ Retry each worker once. The phase says what happens when the retry also fails.
 - Record the integration worktree's default terminal in the manifest and keep it until teardown. Close every terminal recorded for a task or QA worktree before removing that worktree.
 - After accepting `worker_done`, follow the live guide's release or reuse procedure. Keep a terminal only for reuse. A builder keeps its terminal through fix cycles. Critics and reviewers keep theirs through their round loop.
 - Remove task worktrees after their branches merge.
+- If a failed task's worktree contains uncommitted or untracked changes, retain it. Record its id and path in the manifest and `summary.md`, and mark cleanup `partial`.
 - Before removing a failed task's worktree, confirm that removal preserves its branch. If it does not, create the local tag `orca-run/<RUN>/{slug}` at the branch tip first. Never push the tag.
 - Apply the concurrency cap only to builders. Scout, fact-check, planner, critic, acceptance-check, reviewer, and QA terminals are additional phase-bound resources.
 

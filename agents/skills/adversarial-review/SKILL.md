@@ -39,6 +39,8 @@ git worktree add --detach "$WT" HEAD
 
 Run every command, test, and dev server from the review worktree. Give every subagent its absolute path.
 
+Before starting a dev server or running tests, identify any live services they can affect. Use disposable test data. Live-data changes, external messages and paid calls require user authorisation; existing authorisation is sufficient.
+
 Screenshots go to the directory the caller names. If the caller names none, create one, whether or not the caller provided the worktree:
 
 ```bash
@@ -73,7 +75,7 @@ Study the implementation and the survey. Ask how to make this fail. You decide w
 - **Boundary inputs**: null, empty, zero, negative, MAX_SAFE_INTEGER, very long strings, unicode, deeply nested objects, circular references.
 - **Invalid state**: wrong call order, valid shape with wrong meaning, missing fields, extra fields, wrong types.
 - **Concurrency**: concurrent access to shared state, rapid repeated calls, interleaved async operations.
-- **Mutation testing**: flip a critical condition (`<` to `<=`, `===` to `!==`, `&&` to `||`) and run the suite. If no test fails, the boundary is uncovered. Revert the mutation before reporting.
+- **Mutation testing**: start with a passing suite, then flip a critical condition (`<` to `<=`, `===` to `!==`, `&&` to `||`) and rerun against the changed code. If no test fails, report a gap only when you can show a reachable input whose behaviour differs between the original and mutated code. Revert the mutation before reporting.
 - **Property violations**: invariants that must always hold (a balance is never negative, a sorted list stays sorted), round trips (encode then decode, serialise then deserialise, do then undo), idempotence (twice equals once), and metamorphic relations (changing input X changes the output in a predictable way). These catch bug classes that single-input tests miss.
 
 ### Browser angles
@@ -91,10 +93,12 @@ What does this code assume that nobody tested? What would a real user do that th
 
 1. List every test vector you are considering, code-level and browser.
 2. Prioritise by risk. High risk: no validation, no tests, untrusted input, shared mutable state. High impact: data loss, security breach, state corruption. Low risk: well tested, simple logic, validated inputs. Drop anything the test coverage scout showed is already well covered.
-3. Select the 5 highest-risk vectors across code and browser. Skip browser vectors when the change cannot affect user functionality.
+3. Select up to 10 highest-risk vectors across code and browser. Use fewer when additional vectors add little coverage. Skip browser vectors when the change cannot affect user functionality.
 4. For each selected vector, group the 5 to 10 inputs most likely to trigger failures into one test case.
 
 ## Phase 3: Code-level adversarial tests
+
+Run each test that mutates source alone in its worktree. Revert its mutation before other tests use that worktree.
 
 You plan the tests. Subagents execute them. Give each executor the review worktree path, its vectors, the target functions and files, the test runner command, and the reporting format below. Run independent executors in parallel. Executors delete their throwaway test files after capturing results and revert any mutation they made.
 
@@ -143,9 +147,9 @@ For every test:
 Before writing the output:
 
 1. Stop every dev server you started.
-2. Delete throwaway test files and revert every remaining source change in the review worktree.
+2. Delete only this review's throwaway test files and revert only its source mutations.
 3. If you created the worktree, remove it with `git worktree remove --force "$WT"`. Keep the screenshot directory.
-4. If the caller provided the worktree, leave it clean for the caller to remove.
+4. If the caller provided the worktree, preserve all files and changes this review did not create. Leave worktree removal to the caller.
 
 ### Findings
 
@@ -172,10 +176,11 @@ One line per vector tested: the vector, PASS or FAIL or ERROR, and the finding n
 
 ### Verdict
 
-- **PASS**: no Critical or High findings.
+- **PASS**: all selected vectors were verified, with no Critical or High findings.
 - **FAIL**: Critical or High findings. List the blocking finding numbers.
+- **INCOMPLETE**: no Critical or High findings, but some selected vectors could not be verified.
 
-With no findings, write exactly **NO ISSUES FOUND. PASS.** followed by the coverage list.
+With no findings and a PASS verdict, write exactly **NO ISSUES FOUND. PASS.** followed by the coverage list.
 
 ## Example finding
 
@@ -187,11 +192,11 @@ Finding #1
 - Category: Test gap
 - Type: Code
 - Location: src/utils/pricing.ts:23
-- Finding: Flipping `<` to `<=` in the discount threshold fails no test. The boundary is uncovered.
-- Reproduction: Flipped the line 23 condition to `<=`, ran the suite, reverted
+- Finding: No test detects that changing `<` to `<=` makes an order total of 100 cost 100 instead of the discounted 90.
+- Reproduction: Confirmed the baseline suite passes, changed the line 23 condition to `<=`, compared charges at an order total of 100, ran the mutated suite, reverted
 - Expected: At least one test fails
 - Actual: All 12 tests pass with the mutated condition
-- Evidence: Test runner output showing 12/12 pass
+- Evidence: Both suite runs show 12/12 pass. At an order total of 100, the original code charges 90 and the mutated code charges 100.
 
 ## Rules
 

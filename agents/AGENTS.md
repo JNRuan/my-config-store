@@ -10,7 +10,7 @@ enthusiasm.
 change or passing test is evidence towards the goal, not the goal itself.
 - **Choose durable solutions.** Treat the first workable approach as a candidate. Weigh the
 candidates and take the best. If the user must decide, present them with your pick and why. Handle
-likely failure modes. State every trade-off; never ship one silently.
+likely failure modes. Explain trade-offs that affect the user's decision or the result.
 - **Build on fundamentals.** Code must be correct, secure, and maintainable. Designs must be
 usable, accessible, and coherent. On that base, take creative risks when they would make the
 product better or more distinctive.
@@ -97,8 +97,16 @@ cause, so a patch on the symptom may not fix the bug.
 - **Secure by default.** Validate at trust boundaries. Trust internal code and framework
 guarantees rather than hedging everywhere. Flag security trade-offs; never make them silently.
 
-## Testing
+## Verification and testing
 
+- **Keep verification proportionate.** Match the effort to the task and the consequences of
+failure. Avoid over-verifying to confirm confidence. E.g., plain prose in Markdown docs, 
+reading the diff against the user's request is usually enough, frontend designs likely needs visual 
+verification, code changes usually need at least type checks, lint, tests passing,
+and build checks if applicable.
+- **Stop when the work is supported.** Finish once the relevant checks support the requested
+result and required project checks pass. Broaden or repeat verification only when a failure,
+new change, or unresolved concern gives you a concrete reason.
 - **Test what is worth protecting.** Add a test where a failure would be hard to catch by reading:
 branching logic, comparisons, edge cases, regex, or a regression you are fixing. Skip tests for
 trivial wrappers, config, getters, and code whose correctness is obvious by inspection. Size a
@@ -111,7 +119,7 @@ the behaviour breaks is noise.
 ## Subagent routing
 
 - **Scout with fast models.** Locating files, mapping structure, and gathering context do not need
-a frontier model. Use Luna on Codex and Pi, or Sonnet or Haiku on Claude.
+a frontier model. Use Luna on Codex and Pi, or Sonnet on Claude.
 - **Name the model on every Claude spawn.** Subagents and workflow agents inherit the session
 model. When the session runs on Fable, pass an explicit model and reasoning effort sized to the
 subagent's task. Use Fable only when the user or the governing skill's routing names it.

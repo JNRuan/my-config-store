@@ -19,6 +19,8 @@ Write the planner brief to `<RUNDIR>/scratch/planner-brief.md`. It stands alone 
 - confirmed scout evidence;
 - open assumptions;
 - project tooling verbatim;
+- the selected `plan_review_tier` and plan-review cap, with downstream policy fields left `pending`;
+- the task-complexity rubric and builder routing rows from `references/routing.md`;
 - the required structure from `references/templates/plan-template.md`.
 
 Planners cannot read the coordinator's skill files. Include every instruction they need in the planner brief. Every planner reads the same file.

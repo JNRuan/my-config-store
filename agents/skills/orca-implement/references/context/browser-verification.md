@@ -18,6 +18,8 @@ Resolve:
 
 ## Context rules
 
+Before starting a dev server or running tests, identify any live services they can affect. Use disposable test data. Live-data changes, external messages and paid calls require user authorisation; existing authorisation is sufficient.
+
 Run headlessly. Require screenshots for passing and failing checks. Undo interactions that change real data. Stop every dev server you start.
 
 If the dev server does not start, try at most three times. Use another port, confirm that `.env` exists, and run the project's recorded install command when needed. After the third failure, report `not verified: dev server unavailable` with every startup error.
@@ -26,6 +28,8 @@ If the dev server does not start, try at most three times. Use another port, con
 
 ```text
 Use /{browser-skill} in headless mode to verify the integrated UI from <WT-PATH>.
+
+Before starting a dev server or running tests, identify any live services they can affect. Use disposable test data. Live-data changes, external messages and paid calls require user authorisation; existing authorisation is sufficient.
 
 Dev server: <DEV_SERVER_URL_OR_COMMAND>
 Port: <PORT>
