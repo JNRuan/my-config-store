@@ -10,7 +10,7 @@ These roles follow the runtime that runs `/orca-implement`.
 | Role                 | Claude coordinator   | Codex coordinator      | Effort (Claude / Codex) | Notes                                                                                             |
 | -------------------- | -------------------- | ---------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
 | Coordinator          | the invoking session | the invoking session   | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only          |
-| Browser verification | `opus` subagent      | `gpt-5.6-sol` subagent | `medium` / `medium`     | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal |
+| Browser verification | `sonnet` subagent    | `gpt-5.6-sol` subagent | `medium` / `medium`     | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal |
 
 
 This browser row governs Phase 6 verification. Worker-invoked skills own the routing of any subagents they spawn.
@@ -22,9 +22,9 @@ Identical regardless of coordinator.
 
 | Role                          | Runtime / model                                                                                                        | Effort          | Fallback                                           | Notes                                                                                                                                                             |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scouts                        | Codex `gpt-5.6-luna`                                                                                                   | `medium`        | —                                                  | read-only; Orca terminals in `<WT>`; one report per lens                                                                                                          |
-| Plan fact check               | Codex `gpt-5.6-luna`                                                                                                   | `xhigh`         | —                                                  | read-only; Orca terminal in `<WT>`; verifies checkable plan claims only; runs before critique and again after it when critique changed the plan                   |
-| Acceptance check              | Codex `gpt-5.6-luna`                                                                                                   | `xhigh`         | —                                                  | read-only; Orca terminal in `<WT>`; verifies each acceptance criterion against the integrated HEAD; one report per pass                                           |
+| Scouts                        | Codex `gpt-5.6-luna`                                                                                                   | `high`          | —                                                  | read-only; Orca terminals in `<WT>`; one report per lens                                                                                                          |
+| Plan fact check               | Codex `gpt-5.6-luna`                                                                                                   | `high`          | —                                                  | read-only; Orca terminal in `<WT>`; verifies checkable plan claims only; runs before critique and again after it when critique changed the plan                   |
+| Acceptance check              | Codex `gpt-5.6-luna`                                                                                                   | `high`          | —                                                  | read-only; Orca terminal in `<WT>`; verifies each acceptance criterion against the integrated HEAD; one report per pass                                           |
 | Planner, `low`/`medium` tier  | Claude `fable`                                                                                                         | `medium`        | coordinator drafts the plan                        | single planner; a complete plan from the brief; writes only its own draft file                                                                                    |
 | Planners, `high`/`xhigh` tier | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `xhigh` all     | continue with the surviving planner                | independent complete plans from the brief; each writes only its own draft file                                                                                    |
 | Plan critics                  | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high` all      | continue with the surviving critic                 | both each round; critique adversarially; read-only by instruction; round cap from `plan_review_tier`                                                              |
@@ -112,12 +112,12 @@ nono run --profile my-claude --allow-cwd --allow "<RUNDIR>" -- claude --model <f
 **Codex in `<WT>`** (scout, plan fact check, acceptance check, planner, critic, reviewer):
 
 ```bash
-ncodex --model <gpt-5.6-luna|gpt-5.6-sol> -c 'model_reasoning_effort="<effort>"' --sandbox danger-full-access --ask-for-approval never
+ncodex --model <gpt-5.6-luna|gpt-6-astra|gpt-5.6-sol> -c 'model_reasoning_effort="<effort>"' --sandbox danger-full-access --ask-for-approval never
 ```
 
 **Codex in a task or QA worktree** (builder, fix, QA):
 
 ```bash
-nono run --profile my-codex --allow-cwd --allow "<RUNDIR>" -- codex --model gpt-5.6-sol -c 'model_reasoning_effort="<effort>"' --sandbox danger-full-access --add-dir "<RUNDIR>" --ask-for-approval never
+nono run --profile my-codex --allow-cwd --allow "<RUNDIR>" -- codex --model <gpt-6-astra|gpt-5.6-sol> -c 'model_reasoning_effort="<effort>"' --sandbox danger-full-access --add-dir "<RUNDIR>" --ask-for-approval never
 ```
 
