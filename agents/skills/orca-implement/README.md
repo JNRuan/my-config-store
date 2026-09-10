@@ -41,7 +41,7 @@ A general request to implement, fix, or build something does **not** trigger the
 9. **Whole-run verification**: runs the project checks, sends a routed read-only worker to verify every acceptance criterion, turns unmet criteria into fix tasks, and records any remaining gaps. Later passes re-check only the criteria a fix affected.
 10. **Review**: runs the routed code and security review lenses, with browser verification in parallel in the first round. A later round runs only after a Critical or High fix, up to the approved cap. It confirms the previous round's fixes and reports only new findings.
 11. **Final adversarial QA**: runs once when the routing policy requires it, then verifies accepted fixes.
-12. **PR**: pushes only the run branch, opens a PR, then makes the single run-record commit.
+12. **PR**: pushes only the run branch, opens a PR, then commits the final checkpoint.
 
 There are four human touchpoints: invocation, the understanding check, the plan gate, and review of the resulting PR. After plan approval the coordinator runs autonomously. An unresolved blocker aborts the run rather than opening a new decision mid-build.
 
@@ -76,7 +76,7 @@ Each run keeps its artifacts inside the integration worktree at:
 <WT-PATH>/.agents/orca/orchestration/<RUN>/
 ```
 
-The run folder stays out of git while the run is live. Phase 9 commits it once, as a single record commit holding the brief, plan, agent tasks and reports, reviews, summary, and manifest. Worker reports and the coordinator's working files go under `scratch/`, which never reaches the branch.
+The run record reaches the branch through checkpoint commits at plan approval, build verification, code-review completion, the PR, and abort. Each checkpoint holds the brief, plan, agent tasks and reports, reviews, summary, and manifest at that HEAD. The run makes no other record commits. Worker reports and the coordinator's working files go under `scratch/`, which never reaches the branch.
 
 The artifact set is closed. A run writes these and nothing else:
 

@@ -46,7 +46,37 @@ Settle every decision the human owns by the plan gate: scope, security, destruct
 
 Report what happened, not what a worker or plan claimed would happen.
 
-`references/run-state.md` is the sole manifest schema. Update `<RUNDIR>/run-state.json` after every state transition and before the next Orca mutation. Writing it never requires a commit. Phase 9 commits the run folder once.
+`references/run-state.md` is the sole manifest schema. Update `<RUNDIR>/run-state.json` after every state transition and before the next Orca mutation. Writing it never requires or causes a commit. The run record reaches the branch only through the five checkpoints in the next rule.
+
+### Commit a checkpoint
+
+The run record is `plan/`, `tasks/`, `review/`, `summary.md`, `timeline.md`, and `run-state.json`. A checkpoint commits the run record to `<RUN-BRANCH>` at one of the five boundaries below. Between checkpoints, the files on disk are current and the last checkpoint is behind them. Never amend a checkpoint.
+
+Commit a checkpoint only when no task is dispatched and no phase worker is running.
+
+1. Update `run-state.json`, `summary.md`, and `timeline.md` for the boundary.
+2. Stage the run record. Commit only when something is staged:
+
+   ```bash
+   git -C <WT-PATH> add -f -- "$RUNDIR/plan" "$RUNDIR/tasks" "$RUNDIR/review" "$RUNDIR/summary.md" "$RUNDIR/timeline.md" "$RUNDIR/run-state.json"
+   git -C <WT-PATH> diff --cached --quiet || git -C <WT-PATH> commit -m "checkpoint: <desc>" -m "Run: <RUN>"
+   ```
+
+   `scratch/`, `screenshots/`, and `run-page.html` never reach the branch.
+3. Append the checkpoint commit to `timeline.md`. The next checkpoint commits it.
+
+Use exactly these subjects:
+
+| Boundary | Subject |
+|---|---|
+| After plan approval, before Phase 5 | `checkpoint: plan approved` |
+| After Phase 6 passes, before Phase 7 | `checkpoint: build verified` |
+| After code review finishes, before Phase 8 | `checkpoint: code review complete` |
+| Phase 9, after the PR URL is recorded | `checkpoint: PR opened` |
+| Abort routine, run status `failed` | `checkpoint: run failed` |
+| Abort routine, run status `blocked` | `checkpoint: run blocked` |
+
+These are the only checkpoints in a run. Make no checkpoint after a task merge, a fix wave, a review round, a QA pass, or a manifest update. Code reaches `<RUN-BRANCH>` only through task merge commits. The run record reaches it only through these checkpoints.
 
 ### Run page
 
@@ -243,7 +273,7 @@ Complete every step in order before Phase 1.
    scratch/qa-findings.md                     QA worker report, when qa_policy is run
    ```
 
-   The run folder stays out of git until Phase 9. Append `.agents/orca/orchestration/` to the file named by `git -C <WT-PATH> rev-parse --git-path info/exclude`. That file is shared by every worktree of the repository and is never committed. Do not add a `.gitignore` rule. Write every artifact to disk as soon as you produce it. `scratch/` holds worker reports and the coordinator's working files and never reaches the branch.
+   The run folder reaches git only through checkpoint commits. Append `.agents/orca/orchestration/` to the file named by `git -C <WT-PATH> rev-parse --git-path info/exclude`. That file is shared by every worktree of the repository and is never committed. Do not add a `.gitignore` rule. Write every artifact to disk as soon as you produce it. `scratch/` holds worker reports and the coordinator's working files and never reaches the branch.
 
    Do not commit anything between recording `<WT>` HEAD for the read-only check and running that check.
 
@@ -390,7 +420,7 @@ A change to `run_complexity` needs separate approval because it changes review d
 
 Phase 6 may still raise the tier if implementation reveals more risk.
 
-After approval, update the manifest before Phase 5. An explicit rejection or cancellation runs the abort routine.
+After approval, update the manifest and commit the `plan approved` checkpoint. Then start Phase 5. An explicit rejection or cancellation runs the abort routine.
 
 ## Phase 5: Build
 
@@ -486,7 +516,13 @@ After three verify-to-fix cycles, use the retry protocol.
 
 Merge each verified task immediately.
 
-1. Merge the task branch into `<RUN-BRANCH>` in `<WT>`.
+1. Merge the task branch into `<RUN-BRANCH>` in `<WT>`:
+
+   ```bash
+   git -C <WT-PATH> merge --no-ff -m "orca: merge task <task-title>" <task-branch>
+   ```
+
+   `--no-ff` gives every task one merge commit on `<RUN-BRANCH>`, even when a fast-forward is possible. The first-parent history then reads one line per task, and `merge_commit` always names a real merge.
 2. Resolve a trivial text conflict yourself only under the coordinator's exceptions in the run-wide rules.
 3. For a semantic conflict:
 
@@ -623,7 +659,7 @@ Start Phase 7 only when every project check passes and every acceptance criterio
 
 ### Record the verification evidence
 
-Update `<RUNDIR>/summary.md` with the implementation decisions so far, the evidence for each acceptance criterion, every incident, and every unverified gap with its reason. Reviewers and QA read this file. Save it before Phase 7.
+Update `<RUNDIR>/summary.md` with the implementation decisions so far, the evidence for each acceptance criterion, every incident, and every unverified gap with its reason. Reviewers and QA read this file. Save it. Commit the `build verified` checkpoint. Then start Phase 7. Review round 1 reviews that commit.
 
 ## Phase 7: Code review
 
@@ -733,6 +769,7 @@ When `severe_fix_merged=false`, stop the review loop.
 6. Set `code_review_complete=true` in `run-state.json`.
 7. Confirm that the final round's stop reason is recorded.
 8. Update the manifest with the final round review and verification evidence.
+9. Commit the `code review complete` checkpoint. Phase 8 records that commit as `QA_HEAD`.
 
 ## Phase 8: Final adversarial QA
 
@@ -829,10 +866,10 @@ and record publication as pending in Outcome.
 Run this command:
 
 ```bash
-git -C <WT-PATH> status --porcelain
+git -C <WT-PATH> status --porcelain -- . ':!.agents/orca/orchestration'
 ```
 
-It must return no output. The excluded run folder does not appear.
+It must return no output. The pathspec excludes the run folder because its committed files change between checkpoints.
 
 ### Publish the branch and PR
 
@@ -866,14 +903,7 @@ Use only handles and ids recorded in `run-state.json`.
 1. Set `run-state.json` status to `pr`.
 2. Record the PR URL in the manifest and `summary.md`.
    Set the summary's `finished` timestamp.
-3. Commit the run record. This is the run's only bookkeeping commit:
-
-   ```bash
-   git -C <WT-PATH> add -f -- "$RUNDIR/plan" "$RUNDIR/tasks" "$RUNDIR/review" "$RUNDIR/summary.md" "$RUNDIR/timeline.md" "$RUNDIR/run-state.json"
-   git -C <WT-PATH> commit -m "orca: run record for <RUN>"
-   ```
-
-   `scratch/`, `screenshots/`, and `run-page.html` stay uncommitted in the retained worktree. Leave the exclude entry in place.
+3. Commit the `PR opened` checkpoint. Leave the exclude entry in place.
 4. Push `<RUN-BRANCH>`.
 5. Report:
    - the PR URL;
@@ -940,7 +970,8 @@ Then:
 5. Keep the integration worktree and run branch for inspection.
 6. Complete `summary.md` in the shape of `references/templates/summary-template.md`. Set `finished` and fill every section.
 7. Update `run-state.json`.
-8. Report the failure or blocker to the human.
+8. Commit the `run failed` or `run blocked` checkpoint for the run status.
+9. Report the failure or blocker to the human.
 
 ### Detect an infeasible plan
 

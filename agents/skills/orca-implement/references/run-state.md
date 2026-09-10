@@ -2,7 +2,7 @@
 
 `<RUNDIR>/run-state.json` is the durable manifest for one `/orca-implement` run. It records coordinator decisions, Orca resource ownership, task progress, review progress, and cleanup.
 
-Update it after every state transition and before the next Orca mutation. Phase 9 commits it once, with the run record.
+Update it after every state transition and before the next Orca mutation. The checkpoint rule in SKILL.md commits it at five boundaries.
 
 ## Run phases
 
@@ -457,7 +457,8 @@ On failure or blockage:
 2. set `status` to `failed` or `blocked`;
 3. record failed tasks and cleanup results;
 4. keep the integration worktree and run branch;
-5. write the final manifest to disk. The run folder stays uncommitted in the retained worktree.
+5. write the final manifest to disk;
+6. commit the abort checkpoint.
 
 ## Recovery authority
 
