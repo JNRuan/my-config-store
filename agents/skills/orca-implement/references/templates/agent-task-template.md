@@ -62,6 +62,7 @@ Build against these as written. Do not reshape a contract to fit your implementa
 
 {Every command copied verbatim from the plan's Project Tooling section.}
 
+Setup hook:    {what the orca.yaml setup script did on worktree create, or `none`}
 Install:       {command}
 Build:         {command or `none`}
 Test:          {command}
@@ -77,7 +78,7 @@ Commit style:  {the repository's commit-message convention, from the plan}
 Worktree (absolute): {task worktree path from the worktree-create response}
 Branch: {task branch name captured from that worktree}
 
-All work happens in this worktree. Anchor every shell command and file operation to the absolute worktree path. A `cd` in one command does not move your session.
+All work happens in this worktree. It is a fresh checkout. When Setup hook is `none` or does not install dependencies, run the Install command before anything else. Anchor every shell command and file operation to the absolute worktree path. A `cd` in one command does not move your session.
 
 ## Reporting
 

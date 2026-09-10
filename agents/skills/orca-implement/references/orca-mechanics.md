@@ -60,7 +60,7 @@ Prefer structured `worker_done` payloads and report files. Use bounded terminal 
 1. Wait through 3.0 until the dispatch is terminal. A worker is overdue after two consecutive slices with no message for it. Read its terminal. If it is active, keep waiting. Otherwise treat it as failed.
 2. Require a non-empty report.
 3. For a worker in `<WT>`, run the read-only check. For a parallel panel, defer the check until every worker and allowed retry has reached a terminal outcome, then check the whole panel once.
-4. Commit the run folder after the check passes. For a parallel panel, commit all collected reports together.
+4. Record the collected reports in the manifest after the check passes.
 5. Close the terminal unless the phase keeps it across rounds.
 
 ### Read-only check
@@ -69,7 +69,7 @@ Require:
 
 ```bash
 git -C <WT-PATH> status --porcelain -- ':!.agents/orca/orchestration'
-git -C <WT-PATH> status --porcelain -- .agents/orca/orchestration
+git -C <WT-PATH> status --porcelain --ignored=matching -- .agents/orca/orchestration
 git -C <WT-PATH> rev-parse HEAD
 ```
 
@@ -91,7 +91,7 @@ git -C <WT-PATH> restore --worktree -- . ':!.agents/orca/orchestration'
 git -C <WT-PATH> clean -fd -- ':!.agents/orca/orchestration'
 ```
 
-Rerun all three checks. They must pass before committing any report. Record the incident in the manifest and `summary.md`.
+Rerun all three checks. They must pass before recording any report. Record the incident in the manifest and `summary.md`.
 
 ## 6.0 Retry a phase worker
 
@@ -106,9 +106,9 @@ Retry each worker once. The phase says what happens when the retry also fails.
 ## 7.0 Manage terminals and worktrees
 
 - `worktree create` controls the requested worktree name. Record the actual branch returned by Orca.
-- Inspect any terminal that worktree creation starts. Close it only when it is an unused shell. Record any terminal you keep.
-- Record the integration worktree's default terminal in the manifest and keep it until teardown. Close every terminal recorded for a task or QA worktree before removing that worktree.
-- After accepting `worker_done`, follow the live guide's release or reuse procedure. Keep a terminal only for reuse. A builder keeps its terminal through fix cycles. Critics and reviewers keep theirs through their round loop.
+- Inspect any terminal that worktree creation starts. A running setup terminal is the repository's `orca.yaml` setup script. Wait for it to exit before booting a worker there. A non-zero exit is a worktree-setup failure. Read its output, remove the worktree, and retry the create once. If it fails again, follow the current phase's failure path. Close any other terminal only when it is an unused shell. Record any terminal you keep.
+- Record the integration worktree's default terminal in the manifest and keep it until teardown. For an adopted integration worktree, record no pre-existing terminal. Teardown touches only recorded ones. Close every terminal recorded for a task or QA worktree before removing that worktree.
+- After accepting `worker_done`, follow the live guide's release or reuse procedure. Keep a terminal only for reuse. A builder keeps its terminal through fix cycles. Reviewers keep theirs through the review round loop.
 - Remove task worktrees after their branches merge.
 - If a failed task's worktree contains uncommitted or untracked changes, retain it. Record its id and path in the manifest and `summary.md`, and mark cleanup `partial`.
 - Before removing a failed task's worktree, confirm that removal preserves its branch. If it does not, create the local tag `orca-run/<RUN>/{slug}` at the branch tip first. Never push the tag.

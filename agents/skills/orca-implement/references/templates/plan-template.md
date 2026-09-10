@@ -1,6 +1,6 @@
 # Plan template
 
-Write `<RUNDIR>/plan/plan.md` in exactly this shape. The plan is the run's spec of record: workers and reviewers never need the original ticket.
+Write `<RUNDIR>/plan/plan.md` in exactly this shape. The plan is the run's spec of record. Workers and reviewers never need the original ticket.
 
 ```markdown
 ---
@@ -23,12 +23,11 @@ What to build and why, briefly.
 
 ## Review Policy
 
-- **Plan-review cap used**: {1 | 2 | 3 | 5, recorded before critique}
 - **Run-complexity rationale**: {aggregate risk, blast radius, coupling, failure impact, and observability evidence from the reviewed plan}
 - **Code-review cap**: {pending before critique | 1 | 2 | 3 | 5 after critique}
 - **Adversarial QA**: {pending before critique | skip for low | run after all code review for medium/high/xhigh}
 
-Fill the plan-review fields before critique from `references/routing.md`.
+Leave every downstream field `pending` before critique.
 After critique, replace every pending downstream field from
 `run_complexity`. Keep all recorded values synchronised with `run-state.json`.
 
@@ -116,6 +115,7 @@ scenarios, build verification.
 
 Record these commands verbatim:
 
+- Setup hook: what `orca.yaml` `scripts.setup` does on worktree create, or `none`;
 - Install;
 - Build;
 - Test;

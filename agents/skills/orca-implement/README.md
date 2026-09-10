@@ -31,17 +31,17 @@ A general request to implement, fix, or build something does **not** trigger the
 [`references/routing.md`](./references/routing.md) is the only source for model and effort assignments. This README describes roles and phases without repeating them.
 
 1. **Intake**: loads the Orca guides and reads the task source.
-2. **Setup**: pins the base, creates the run and integration worktree, and initialises the manifest.
+2. **Setup**: settles the role of the current branch, pins the base, adopts the current Orca worktree or creates one, and initialises the manifest.
 3. **Scout**: sends routed read-only workers to inspect the affected code and project practices.
 4. **Understanding check**: presents the task contract and all known questions through the mapped human review interface.
-5. **Plan**: drafts, fact-checks, and critiques the implementation plan, then fact-checks the revised plan.
+5. **Plan**: drafts and fact-checks the implementation plan, critiques it once, then fact-checks the revised sections.
 6. **Plan gate**: repeats human review until the plan has no unresolved comments.
 7. **Build**: registers the build tasks and their dependencies, then dispatches workers as dependencies merge.
 8. **Verify and integrate**: checks, fixes, and merges each task before releasing its dependants.
-9. **Whole-run verification**: runs the project checks, sends a routed read-only worker to verify every acceptance criterion, turns unmet criteria into fix tasks, and records any remaining gaps.
-10. **Review**: runs the routed code and security review lenses up to the approved cap. Later rounds confirm the previous round's fixes and report only new findings.
+9. **Whole-run verification**: runs the project checks, sends a routed read-only worker to verify every acceptance criterion, turns unmet criteria into fix tasks, and records any remaining gaps. Later passes re-check only the criteria a fix affected.
+10. **Review**: runs the routed code and security review lenses, with browser verification in parallel in the first round. A later round runs only after a Critical or High fix, up to the approved cap. It confirms the previous round's fixes and reports only new findings.
 11. **Final adversarial QA**: runs once when the routing policy requires it, then verifies accepted fixes.
-12. **PR**: commits the evidence, pushes only the run branch, and opens a PR.
+12. **PR**: pushes only the run branch, opens a PR, then makes the single run-record commit.
 
 There are four human touchpoints: invocation, the understanding check, the plan gate, and review of the resulting PR. After plan approval the coordinator runs autonomously. An unresolved blocker aborts the run rather than opening a new decision mid-build.
 
@@ -76,7 +76,7 @@ Each run keeps its artifacts inside the integration worktree at:
 <WT-PATH>/.agents/orca/orchestration/<RUN>/
 ```
 
-The coordinator commits the run folder to the run branch as each artifact appears and at every phase boundary. Worker reports and the coordinator's working files go under `scratch/`.
+The run folder stays out of git while the run is live. Phase 9 commits it once, as a single record commit holding the brief, plan, agent tasks and reports, reviews, summary, and manifest. Worker reports and the coordinator's working files go under `scratch/`, which never reaches the branch.
 
 The artifact set is closed. A run writes these and nothing else:
 

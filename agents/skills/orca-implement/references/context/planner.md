@@ -19,7 +19,7 @@ Write the planner brief to `<RUNDIR>/scratch/planner-brief.md`. It stands alone 
 - confirmed scout evidence;
 - open assumptions;
 - project tooling verbatim;
-- the selected `plan_review_tier` and plan-review cap, with downstream policy fields left `pending`;
+- the selected `plan_review_tier`, with downstream policy fields left `pending`;
 - the task-complexity rubric and builder routing rows from `references/routing.md`;
 - the required structure from `references/templates/plan-template.md`.
 
@@ -51,7 +51,6 @@ Write `<RUNDIR>/plan/plan.md` as one coherent document that follows `references/
 The final plan must contain:
 
 - frontmatter with pinned `base_sha`, captured `<RUN-BRANCH>`, `plan_review_tier`, and `run_complexity: pending`;
-- the plan-review cap selected from `plan_review_tier`;
 - pending code-review and QA policy until critique determines `run_complexity`;
 - requirements and acceptance criteria with `AC-n` ids;
 - at least one task covering every acceptance criterion;

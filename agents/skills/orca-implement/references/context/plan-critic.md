@@ -2,7 +2,7 @@
 
 ## Load when
 
-Read this file in Phase 3 before the first plan-critique round. Reuse it for later rounds.
+Read this file in Phase 3 before the plan-critique round.
 
 ## Required values
 

@@ -2,7 +2,7 @@
 
 `<RUNDIR>/run-state.json` is the durable manifest for one `/orca-implement` run. It records coordinator decisions, Orca resource ownership, task progress, review progress, and cleanup.
 
-Update it after every state transition and before the next Orca mutation. Commit it at each phase boundary.
+Update it after every state transition and before the next Orca mutation. Phase 9 commits it once, with the run record.
 
 ## Run phases
 
@@ -49,10 +49,7 @@ These fields accept `pending`, `low`, `medium`, `high`, or `xhigh`:
 
 ### Caps
 
-These fields accept `pending`, `1`, `2`, `3`, or `5`:
-
-- `plan_review_cap`;
-- `code_review_cap`.
+`code_review_cap` accepts `pending`, `1`, `2`, `3`, or `5`.
 
 ### QA policy
 
@@ -65,6 +62,10 @@ These fields accept `pending`, `1`, `2`, `3`, or `5`:
 Read final caps and QA policy from `references/routing.md`.
 
 Keep plan frontmatter, the plan's Review Policy, and these manifest fields synchronised.
+
+## Base and start refs
+
+`base_ref` is the PR target. `start_ref` is the branch the run built on, or null when the run started from `base_ref`. `base_sha` is `git rev-parse base_ref` when `start_ref` is null or equal to `base_ref`, and `git merge-base base_ref start_ref` otherwise. `integration_worktree.origin` is `created` or `adopted`.
 
 ## Build-task statuses
 
@@ -124,9 +125,9 @@ Phase 0 creates the manifest with these top-level fields:
   "phase": "setup",
   "status": "active",
   "base_ref": "<BASE_REF>",
+  "start_ref": null,
   "base_sha": "<BASE_SHA>",
   "plan_review_tier": "pending",
-  "plan_review_cap": "pending",
   "run_complexity": "pending",
   "code_review_cap": "pending",
   "qa_policy": "pending",
@@ -141,10 +142,15 @@ Phase 0 creates the manifest with these top-level fields:
     "fix_waves": 0,
     "post_review_fix_waves": 0
   },
+  "browser_verification": {
+    "policy": "pending",
+    "result": null
+  },
   "integration_worktree": {
     "id": "<WT>",
     "path": "<WT_PATH>",
-    "branch": "<RUN_BRANCH>"
+    "branch": "<RUN_BRANCH>",
+    "origin": "created"
   },
   "build_owned_task_ids": [],
   "tasks": [],
@@ -293,11 +299,13 @@ Each entry in `plan_review.rounds` contains:
 }
 ```
 
-Add a lens to `missing_lenses` when its in-round retry fails. Set `rounds_run` and `stop_reason` when the critique loop stops. `stop_reason` accepts `no plan change`, `cap reached`, or `all critics failed`.
+Add a lens to `missing_lenses` when its in-round retry fails. Critique runs one round, so `rounds_run` is `1` when it finishes. `stop_reason` accepts `critique complete` or `all critics failed`.
 
 ## Verification record
 
 `verification.fix_waves` counts Phase 6 fix waves. `verification.post_review_fix_waves` counts the post-review verification fix waves in Phase 7. Each has its own limit of three.
+
+`browser_verification.policy` accepts `pending`, `run`, or `not_needed`. Set it in Phase 6. `browser_verification.result` accepts `null`, `passed`, `failed`, or `not verified`, recorded from the round 1 browser report or the latest scoped rerun.
 
 ## Review-round record
 
@@ -310,16 +318,19 @@ Each entry in `review_rounds` contains:
   "code_reviewer_reports": [],
   "security_reviewer_reports": [],
   "missing_lenses": [],
+  "security_lenses_run": true,
+  "security_skip_reason": null,
+  "browser_result": null,
   "review_path": null,
   "fix_waves": 0,
-  "code_changed": false,
+  "severe_fix_merged": false,
   "stop_reason": null
 }
 ```
 
-Add a lens to `missing_lenses` when its in-round retry fails.
+Add a lens to `missing_lenses` when its in-round retry fails. Set `security_lenses_run=false` with `security_skip_reason` when the Phase 7 security trigger does not fire for a later round. Set `browser_result` in round 1 only. `stop_reason` accepts `no accepted fixes`, `no severe findings`, or `cap reached`.
 
-Set `review_fixes_applied=true` after any substantive review code or test fix merges and passes verification.
+`fix_waves` counts the round's review fix waves. Set `review_fixes_applied=true` after any review fix, Medium included, merges and passes verification. Only a Critical or High fix sets `severe_fix_merged`, and only `severe_fix_merged` continues the loop.
 
 Set `code_review_complete=true` only after the review loop and any required post-review verification finish.
 
@@ -432,7 +443,7 @@ On failure or blockage:
 2. set `status` to `failed` or `blocked`;
 3. record failed tasks and cleanup results;
 4. keep the integration worktree and run branch;
-5. commit the final manifest when possible.
+5. write the final manifest to disk. The run folder stays uncommitted in the retained worktree.
 
 ## Recovery authority
 

@@ -2,7 +2,7 @@
 
 ## Load when
 
-Read this file in Phase 6 when the integrated diff needs browser verification.
+Read this file in Phase 7 round 1 when `browser_verification.policy` is `run`. Reuse it for a scoped rerun after a fix that changed UI files; then `<AFFECTED_PAGES>` and `<INTERACTIONS>` cover only what the fix touched.
 
 ## Required values
 
@@ -15,6 +15,8 @@ Resolve:
 - `<INTERACTIONS>`;
 - `<EXPECTED_RESULTS>`;
 - `<RUNDIR>`.
+
+The subagent runs on the model in `references/routing.md`.
 
 ## Context rules
 

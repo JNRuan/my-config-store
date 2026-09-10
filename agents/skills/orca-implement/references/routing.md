@@ -8,12 +8,12 @@ These roles follow the runtime that runs `/orca-implement`.
 
 
 | Role                 | Claude coordinator   | Codex coordinator      | Effort (Claude / Codex) | Notes                                                                                             |
-| -------------------- | -------------------- | ---------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
+|----------------------|----------------------|------------------------|-------------------------|---------------------------------------------------------------------------------------------------|
 | Coordinator          | the invoking session | the invoking session   | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only          |
 | Browser verification | `sonnet` subagent    | `gpt-5.6-sol` subagent | `medium` / `medium`     | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal |
 
 
-This browser row governs Phase 6 verification. Worker-invoked skills own the routing of any subagents they spawn.
+This browser row governs the round 1 browser verification in Phase 7 and its scoped reruns. Worker-invoked skills own the routing of any subagents they spawn.
 
 ## Pinned roles
 
@@ -21,19 +21,19 @@ Identical regardless of coordinator.
 
 
 | Role                          | Runtime / model                                                                                                        | Effort          | Fallback                                           | Notes                                                                                                                                                             |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|-------------------------------|------------------------------------------------------------------------------------------------------------------------|-----------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Scouts                        | Codex `gpt-5.6-luna`                                                                                                   | `high`          | —                                                  | read-only; Orca terminals in `<WT>`; one report per lens                                                                                                          |
 | Plan fact check               | Codex `gpt-5.6-luna`                                                                                                   | `high`          | —                                                  | read-only; Orca terminal in `<WT>`; verifies checkable plan claims only; runs before critique and again after it when critique changed the plan                   |
 | Acceptance check              | Codex `gpt-5.6-luna`                                                                                                   | `high`          | —                                                  | read-only; Orca terminal in `<WT>`; verifies each acceptance criterion against the integrated HEAD; one report per pass                                           |
 | Planner, `low`/`medium` tier  | Claude `fable`                                                                                                         | `medium`        | coordinator drafts the plan                        | single planner; a complete plan from the brief; writes only its own draft file                                                                                    |
 | Planners, `high`/`xhigh` tier | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high` all      | continue with the surviving planner                | independent complete plans from the brief; each writes only its own draft file                                                                                    |
-| Plan critics                  | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high` all      | continue with the surviving critic                 | both each round; critique adversarially; read-only by instruction; round cap from `plan_review_tier`                                                              |
+| Plan critics                  | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high` all      | continue with the surviving critic                 | both, one round only; critique adversarially; read-only by instruction                                                                                          |
 | Builder, `low` complexity     | Codex `gpt-6-astra`                                                                                                    | `low`           | —                                                  |                                                                                                                                                                   |
 | Builder, `medium`             | Codex `gpt-6-astra`                                                                                                    | `medium`        | —                                                  | default builder                                                                                                                                                   |
 | Builder, `high`               | Codex `gpt-6-astra`                                                                                                    | `high`          | `Claude fable or Claude opus or Codex gpt-5.6-sol` | many-file or mechanically hard, but fully specified by plan + contracts                                                                                           |
 | Builder, `xhigh`              | Claude `fable`                                                                                                         | `xhigh`         | `Codex gpt-6-astra`                                | the remaining reasoning is the risk: see the task complexity rubric                                                                                               |
 | Code reviewers                | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high` / `high` | `Codex gpt-5.6-sol or Claude Opus`                 | both each round; round cap from `run_complexity`                                                                                                                  |
-| Security reviewers            | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high / high`   | `Codex gpt-5.6-sol or Claude Opus`                 | both each round, dispatched alongside the code reviewers; each runs the mapped security-review skill (`references/skill-map.md`); round cap from `run_complexity` |
+| Security reviewers            | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high / high`   | `Codex gpt-5.6-sol or Claude Opus`                 | both in round 1, dispatched alongside the code reviewers; later rounds only on the Phase 7 security trigger; each runs the mapped security-review skill (`references/skill-map.md`) |
 | Adversarial QA                | Cross-model to the builder of the highest-complexity merged task: Claude → Codex `gpt-6-astra`; Codex → Claude `fable` | `high`          | `Claude opus or Codex gpt-5.6-sol`                 | `medium`/`high`/`xhigh` runs only; runs once after all code-review rounds and fixes; disposable worktree, branch never merged                                     |
 
 
@@ -45,26 +45,26 @@ Classify every fix with the task-complexity rubric and route it through the matc
 
 Review depth uses two assessments of aggregate risk. Consider affected area, coupling, novelty, failure impact, and observability.
 
-Classify `plan_review_tier` after the understanding check. It controls the drafting mode and plan-review cap.
+Classify `plan_review_tier` after the understanding check. It controls the drafting mode.
 
 Classify `run_complexity` from the reviewed plan. It controls code-review depth and QA. It may be higher or lower than `plan_review_tier`.
 
 Both are independent of per-task builder complexity.
 
 
-| Tier     | Typical run shape                                                                                             | Plan rounds when used as `plan_review_tier` | Code-review rounds when used as `run_complexity` | Adversarial QA from `run_complexity` |
-| -------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------ | ------------------------------------ |
-| `low`    | narrow, localised, established pattern, low-impact failure, strong existing coverage                          | 1                                           | 1                                                | no                                   |
-| `medium` | several files or one subsystem, ordinary cross-layer interaction, moderate blast radius                       | 2                                           | 2                                                | yes, after code review               |
-| `high`   | broad or highly coupled change, important state or user-flow risk, weak observability, or high failure impact | 3                                           | 3                                                | yes, after code review               |
-| `xhigh`  | systemic or novel change with subtle invariants, architectural consequences, or severe failure impact         | 5                                           | 5                                                | yes, after code review               |
+| Tier     | Typical run shape                                                                                             | Code-review rounds when used as `run_complexity` | Adversarial QA from `run_complexity` |
+| -------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------ |
+| `low`    | narrow, localised, established pattern, low-impact failure, strong existing coverage                          | 1                                                | no                                   |
+| `medium` | several files or one subsystem, ordinary cross-layer interaction, moderate blast radius                       | 2                                                | yes, after code review               |
+| `high`   | broad or highly coupled change, important state or user-flow risk, weak observability, or high failure impact | 3                                                | yes, after code review               |
+| `xhigh`  | systemic or novel change with subtle invariants, architectural consequences, or severe failure impact         | 5                                                | yes, after code review               |
 
 
 This table is the sole tier-to-policy mapping. Auth/authz, payments, destructive data migration, security-critical logic, and concurrency or consistency primitives are never below `high`.
 
 ## Task complexity and builder routing
 
-Classify each task after drafting the plan: task complexity is what remains for the builder once the plan pins contracts, constraints, and relevant-code pointers. If planning removed the judgement, the tier drops.
+Classify each task after drafting the plan. Task complexity is what remains for the builder once the plan pins contracts, constraints, and relevant-code pointers. If planning removed the judgement, the tier drops.
 
 
 | Tier     | What remains for the builder        | Typical signals                                                                                                                                                                                                                                                                                                                                                                                                  |

@@ -14,16 +14,17 @@ Resolve:
 - `<ROUND>`;
 - `<CODE_REVIEWER>`: the stable code-reviewer label;
 - `<SECURITY_REVIEWER>`: the stable security-reviewer label;
-- `<PREVIOUS_HEAD>`: the previous round's recorded HEAD;
+- `<PREVIOUS_REVIEW>`: the review of record for the last round in which this lens ran;
+- `<PREVIOUS_HEAD>`: the recorded HEAD of the last round in which this lens ran;
 - `<ROUND_CONTEXT>`: empty in round 1. After round 1:
 
   ```text
-  The previous round's review of record, with its triage and fix commits, is <PREVIOUS_REVIEW>. First confirm that every finding it records as fixed is fixed at this HEAD, and report each that is not. Then review the whole branch and report only findings that review did not triage. The commits since the previous round are <PREVIOUS_HEAD>..HEAD.
+  The review of record for the last round you ran, with its triage and fix commits, is <PREVIOUS_REVIEW>. First confirm that every finding it records as fixed is fixed at this HEAD, and report each that is not. Then review the whole branch and report only findings that review did not triage. The commits since you last reviewed are <PREVIOUS_HEAD>..HEAD.
   ```
 
 ## Context rules
 
-Every reviewer in a round receives the same context block. The block names the run files and how to weigh them. Reviewers inspect the repository and diff for themselves.
+Every reviewer in a round receives the same context block, with `<PREVIOUS_REVIEW>` and `<PREVIOUS_HEAD>` resolved per lens. The block names the run files and how to weigh them. Reviewers inspect the repository and diff for themselves.
 
 ## Code-review dispatch template
 
