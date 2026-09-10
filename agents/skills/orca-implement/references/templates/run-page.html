@@ -1,0 +1,90 @@
+<title>{{title}}</title>
+<style>
+:root{--ground:#F9F5EC;--panel:#FFFFFF;--ink:#303A50;--text:#202020;--muted:#5B6779;--line:#E4DED0;--pending:#FFFFFF;--pending-line:#C9C2B2;--active:#D97706;--waiting:#2F5EA8;--done:#1F7A4D;--failed:#B42318;--ok-bg:#DFF3E7;--active-bg:#FDEBD0;--waiting-bg:#DEE8F7;--pending-bg:#ECEEF1;--bad-bg:#FBE2DF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ground:#161B26;--panel:#1F2637;--ink:#E8ECF3;--text:#E8ECF3;--muted:#9AA6B8;--line:#33405A;--pending:#1F2637;--pending-line:#4A5670;--active:#F2B36A;--waiting:#8FB3F0;--done:#7BD9A3;--failed:#F29A8E;--ok-bg:#1B3A2B;--active-bg:#43301A;--waiting-bg:#1E2E4A;--pending-bg:#2A3244;--bad-bg:#4A2320}}
+:root[data-theme="dark"]{--ground:#161B26;--panel:#1F2637;--ink:#E8ECF3;--text:#E8ECF3;--muted:#9AA6B8;--line:#33405A;--pending:#1F2637;--pending-line:#4A5670;--active:#F2B36A;--waiting:#8FB3F0;--done:#7BD9A3;--failed:#F29A8E;--ok-bg:#1B3A2B;--active-bg:#43301A;--waiting-bg:#1E2E4A;--pending-bg:#2A3244;--bad-bg:#4A2320}
+body{background:var(--ground);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;font-size:16px;line-height:1.5;margin:0}
+main{max-width:960px;margin:0 auto;padding:32px 20px 64px;display:flex;flex-direction:column;gap:28px}
+header h1{font-size:28px;font-weight:800;color:var(--ink);margin:0 0 4px}
+header p{margin:0;color:var(--muted)}
+header p.goal{margin-top:14px;color:var(--text);font-size:17px;max-width:70ch}
+header p.goal .eyebrow{display:block;margin-bottom:2px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--muted);margin:0 0 10px}
+ol.rail{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(5,1fr);gap:56px 6px}
+ol.rail li{height:10px;border-radius:2px;position:relative;background:var(--pending);border:1px solid var(--pending-line)}
+ol.rail li.done{background:var(--done);border-color:var(--done)}
+ol.rail li.active{background:var(--active);border-color:var(--active)}
+ol.rail li.waiting{background:var(--waiting);border-color:var(--waiting)}
+ol.rail li.failed{background:var(--failed);border-color:var(--failed)}
+ol.rail li span{position:absolute;top:14px;left:0;right:0;font-size:12px;color:var(--muted);line-height:1.25}
+ol.rail li small{display:block;font-size:11px;font-weight:600}
+ol.rail li.active span,ol.rail li.waiting span,ol.rail li.failed span{color:var(--text);font-weight:800}
+.rail-wrap{padding-bottom:48px;overflow-x:auto}
+.now{background:var(--panel);border-left:4px solid var(--active);padding:14px 18px;border-radius:0 6px 6px 0}
+.now.waiting{border-left-color:var(--waiting)}.now.done{border-left-color:var(--done)}.now.failed{border-left-color:var(--failed)}
+.now p{margin:0;font-size:17px}
+.now ul{margin:4px 0 0;padding-left:22px;font-size:16px}
+.now li{margin:2px 0}
+.now .state{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:var(--muted);margin-bottom:4px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.stat{background:var(--panel);padding:14px 16px;border-radius:6px}
+.stat b{display:block;font-size:24px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:13px}
+.tablewrap{overflow-x:auto;background:var(--panel);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{text-align:left;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line)}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.muted{color:var(--muted);font-size:13px}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:800}
+.pill.done{background:var(--ok-bg);color:var(--done)}.pill.active{background:var(--active-bg);color:var(--active)}.pill.waiting{background:var(--waiting-bg);color:var(--waiting)}.pill.pending{background:var(--pending-bg);color:var(--muted)}.pill.failed{background:var(--bad-bg);color:var(--failed)}
+ul.events{list-style:none;padding:0;margin:0}
+ul.events li{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+ul.events li:last-child{border-bottom:0}
+ul.events time{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--muted);padding-top:2px;line-height:1.4}
+ul.events time small{display:block;font-size:12px}
+ul.events p{margin:0}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}
+dt{color:var(--muted)}dd{margin:0}
+a{color:var(--ink)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px;border:1px solid var(--pending-line)}
+@media (max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:720px){.grid{grid-template-columns:1fr 1fr}ol.rail{gap:56px 4px}ul.events li{grid-template-columns:1fr;gap:2px}}
+@media (max-width:480px){.grid{grid-template-columns:1fr}}
+</style>
+<main>
+<header>
+<h1>{{title}}</h1>
+<p>Orca run <span class="mono">{{run_name}}</span> · base <span class="mono">{{base}}</span> · updated {{updated}}{{pr_link}}</p>
+{{goal}}
+</header>
+<section>
+<p class="eyebrow">Phase</p>
+<div class="rail-wrap"><ol class="rail">{{rail}}</ol></div>
+<div class="legend"><span><i style="background:var(--pending)"></i>not reached</span><span><i style="background:var(--active);border-color:var(--active)"></i>in progress</span><span><i style="background:var(--waiting);border-color:var(--waiting)"></i>waiting on you</span><span><i style="background:var(--done);border-color:var(--done)"></i>complete</span><span><i style="background:var(--failed);border-color:var(--failed)"></i>failed or blocked</span></div>
+</section>
+<section class="now {{now_class}}"><span class="state">{{now_state}}</span>{{now}}</section>
+<section class="grid">{{stats}}</section>
+<section>
+<p class="eyebrow">Run</p>
+<dl>{{details}}</dl>
+</section>
+<section>
+<p class="eyebrow">Tasks</p>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>Task</th><th>Origin</th><th>Builder</th><th>Status</th><th>Retries</th><th>Merge</th></tr></thead><tbody>{{tasks}}</tbody></table></div>
+</section>
+<section>
+<p class="eyebrow">Reviews</p>
+<div class="tablewrap"><table><thead><tr><th>Stage</th><th>Head</th><th>Fix waves</th><th>Outcome</th></tr></thead><tbody>{{reviews}}</tbody></table></div>
+</section>
+<section>
+<p class="eyebrow">Human decisions</p>
+{{decisions}}
+</section>
+<section>
+<p class="eyebrow">Timeline (newest first)</p>
+<ul class="events">{{timeline}}</ul>
+</section>
+</main>

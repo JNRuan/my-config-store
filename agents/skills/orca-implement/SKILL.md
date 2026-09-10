@@ -48,6 +48,26 @@ Report what happened, not what a worker or plan claimed would happen.
 
 `references/run-state.md` is the sole manifest schema. Update `<RUNDIR>/run-state.json` after every state transition and before the next Orca mutation. Writing it never requires a commit. Phase 9 commits the run folder once.
 
+### Run page
+
+The run page is a read-only status page for the human, rendered from the manifest, `timeline.md`, and the brief. It is never a control surface.
+
+Append one line to `<RUNDIR>/timeline.md` at every transition, in the form `- <ISO 8601 UTC> <what happened>`. The newest line is the page's status sentence while the run is live, so write it for the human: what just happened, and what the run is waiting on. Once the run ends, the banner shows `run_page.outcome` instead: write it before the final render, under 512 characters, as a summary of what the PR delivers or what failed, for the person who asked for the work. It is not a copy of the summary's Outcome section.
+
+`<SKILL-DIR>` is the directory that holds this file. Render and publish the page whenever you update the manifest at a phase boundary, a task merge, a review round, a human touchpoint, an abort, or the PR:
+
+```bash
+python3 <SKILL-DIR>/scripts/render-run-page.py "$RUNDIR"
+```
+
+Publish `<RUNDIR>/run-page.html` through the first route available, and reuse the same route and URL for the whole run:
+
+1. the Claude Artifact tool, private, redeploying the same file path;
+2. `orca artifacts share` on the first publish and `orca artifacts update` after, rendered with `--standalone`, which makes the page viewable by anyone with the link;
+3. neither: render with `--standalone`, tell the human the file path once, at Phase 0, and keep rendering.
+
+Report the URL or path in the Phase 0 message. A failed publish never stops the run; record it in `summary.md` and continue.
+
 ### Shared Orca state
 
 Orca's task store and terminal list contain resources from other runs and repositories.
@@ -202,6 +222,8 @@ Complete every step in order before Phase 1.
    ```text
    run-state.json                             run manifest
    summary.md                                 run narrative, started in Phase 0, finalised at Phase 9
+   timeline.md                                one event per line, appended at every transition
+   run-page.html                              status page rendered from the manifest, never committed
    plan/brief.md                              human-approved task contract
    plan/plan.md                               spec of record
    tasks/{seq}-{slug}-agent-task.md           coordinator to builder
@@ -233,9 +255,9 @@ Complete every step in order before Phase 1.
 
 10. **Start the summary and report the choice.**
 
-   Start `summary.md` in the shape of `references/templates/summary-template.md`.
+   Start `summary.md` in the shape of `references/templates/summary-template.md`. Start `timeline.md` with the run start. Render and publish the run page as the Run page rule requires.
 
-   Report to the human in one message: whether the integration worktree was adopted or created, its path, `<RUN-BRANCH>`, `start_ref`, `base_ref`, and `BASE_SHA`. Then start Phase 1.
+   Report to the human in one message: whether the integration worktree was adopted or created, its path, `<RUN-BRANCH>`, `start_ref`, `base_ref`, `BASE_SHA`, and the run page URL or path. Then start Phase 1.
 
 ## Phase 1: Scout
 
@@ -267,7 +289,7 @@ Put every known question in the first version. Open `brief.md` with the mapped `
 
 Apply every answer and comment to the brief. Fold each answer into the section it settles and remove the question. If an answer reveals more questions, group all of them into the next version. Reopen the brief and run the printed next-round command.
 
-Continue until every question is answered and the human completes a round with no comments. Treat the approved brief and every human answer as settled facts during planning. Do not carry a known question into the plan as an open assumption.
+Continue until every question is answered and the human completes a round with no comments. Then write `run_page.goal` in the manifest: a summary of the brief's Problem and Goal sections in your own words, under 512 characters, for the run page. Treat the approved brief and every human answer as settled facts during planning. Do not carry a known question into the plan as an open assumption.
 
 If the mapped review skill is unavailable, run the same loop in the conversation and require explicit approval. An explicit rejection or cancellation runs the abort routine with status `blocked`. Update the manifest before Phase 3.
 
@@ -317,7 +339,7 @@ Run one critique round. `<PRE_CRITIQUE_SHA>` is the round's `start_head` in the 
 1. Add the round to the plan-review record with `plan_changed=false` and the current `<WT>` HEAD.
 2. Dispatch `plan-critique-<M>-r1` to every critic, collect, and retry a failed lens once.
 3. When a retry also fails, record the lens in the round's `missing_lenses` and continue with the surviving critics. If every critic fails, record stop reason `all critics failed`. Carry the failure to the plan gate. There the human either approves the uncritiqued plan or cancels the run.
-4. Assess every finding on its merits. Severity and verdict are evidence, not decisions. Revise `plan/plan.md` for each accepted finding. Set `plan_changed=true` only when plan content changes.
+4. Assess every finding on its merits. Severity and verdict are evidence, not decisions. Revise `plan/plan.md` for each accepted finding. Record the accepted counts by severity in the round's `accepted_findings`. Set `plan_changed=true` only when plan content changes.
 5. Save the revised plan and update the manifest.
 
 Critique runs once. No critic reviews the revised plan. The final fact-check, build verification, and code review cover it. Set `rounds_run=1` and record stop reason `critique complete` or `all critics failed` in the plan-review record.
@@ -488,7 +510,7 @@ Increment the original task's resolve-to-verify count for each conflict task. Al
 
 Only after merge and integration verification pass:
 
-1. Mark the task merged in the manifest.
+1. Mark the task merged in the manifest and record the merge commit as `merge_commit`.
 2. Allow dependent tasks to become ready.
 3. Release the accepted dispatch.
 4. Close the builder terminal and every other terminal recorded for the worktree.
@@ -665,7 +687,7 @@ does not settle, follow the Human touchpoints rule.
 
 Record an excluded finding under Remaining in `summary.md` with the reason it remains.
 
-Append a Triage section to `review/review-r<ROUND>.md`. For each finding, record the outcome, the evidence you checked, and the reason. Update the manifest before starting a fix wave.
+Append a Triage section to `review/review-r<ROUND>.md`. For each finding, record the outcome, the evidence you checked, and the reason. Record the accepted counts by source and severity in the round's `accepted_findings`. Update the manifest before starting a fix wave.
 
 If no finding needs a code or test fix:
 
@@ -780,7 +802,7 @@ Assess each concrete finding on the same terms as Phase 7:
 - accept it when it holds;
 - record it under Remaining in `summary.md` only when the approved plan excludes it.
 
-Write `<RUNDIR>/review/qa-review.md`. It is the QA review of record and stands alone. A reader must not need the worker report. Carry every finding from `scratch/qa-findings.md` over in the QA skill's own format, complete and unedited: Severity, Category, Type, Location, Finding, Reproduction, Expected, Actual, Evidence, and Regression test. Carry the coverage list and verdict as written. Then append a Triage section: for each finding, the outcome, the evidence you checked, and the reason. Update the manifest before starting fixes.
+Write `<RUNDIR>/review/qa-review.md`. It is the QA review of record and stands alone. A reader must not need the worker report. Carry every finding from `scratch/qa-findings.md` over in the QA skill's own format, complete and unedited: Severity, Category, Type, Location, Finding, Reproduction, Expected, Actual, Evidence, and Regression test. Carry the coverage list and verdict as written. Then append a Triage section: for each finding, the outcome, the evidence you checked, and the reason. Record the accepted counts by severity in `qa.accepted_findings`. Update the manifest before starting fixes.
 
 Create accepted fixes as Phase 5 fix tasks from the current `<RUN-BRANCH>`. Never make lasting fixes in the disposable QA worktree.
 
@@ -847,11 +869,11 @@ Use only handles and ids recorded in `run-state.json`.
 3. Commit the run record. This is the run's only bookkeeping commit:
 
    ```bash
-   git -C <WT-PATH> add -f -- "$RUNDIR/plan" "$RUNDIR/tasks" "$RUNDIR/review" "$RUNDIR/summary.md" "$RUNDIR/run-state.json"
+   git -C <WT-PATH> add -f -- "$RUNDIR/plan" "$RUNDIR/tasks" "$RUNDIR/review" "$RUNDIR/summary.md" "$RUNDIR/timeline.md" "$RUNDIR/run-state.json"
    git -C <WT-PATH> commit -m "orca: run record for <RUN>"
    ```
 
-   `scratch/` and `screenshots/` stay uncommitted in the retained worktree. Leave the exclude entry in place.
+   `scratch/`, `screenshots/`, and `run-page.html` stay uncommitted in the retained worktree. Leave the exclude entry in place.
 4. Push `<RUN-BRANCH>`.
 5. Report:
    - the PR URL;

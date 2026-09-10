@@ -16,9 +16,9 @@ finished: {ISO 8601 UTC, or pending}
 
 Before the PR opens: publication pending and what the branch contains.
 
-For an open PR: the PR URL and what the PR contains.
+For an open PR: one paragraph, written for the person who asked for the work, naming the PR and what it delivers. Summarise; do not list every change. Detail belongs in the PR description.
 
-For a failed or blocked run: the status, what the run attempted, the observed failures, and every preserved branch.
+For a failed or blocked run: one paragraph giving the status, what the run attempted, and what failed, then a list of every preserved branch.
 
 ## Decisions
 

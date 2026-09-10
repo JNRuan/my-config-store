@@ -85,6 +85,7 @@ The artifact set is closed. A run writes these and nothing else:
 - `tasks/`, worker agent tasks and reports
 - `review/`, the review of record for every round run, and the QA review when QA runs
 - `summary.md`, the run narrative: what happened, acceptance evidence, incidents, lessons for later runs, and what remains
+- `timeline.md`, one event per line, and `run-page.html`, a status page rendered from it and the manifest by `scripts/render-run-page.py` and published for the human when an artifact route is available
 - `screenshots/`, browser-verification evidence when applicable
 - `scratch/`, scout, fact-check, planner, critic, acceptance-check, review-lens, and QA reports
 

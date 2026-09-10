@@ -146,6 +146,10 @@ Phase 0 creates the manifest with these top-level fields:
     "policy": "pending",
     "result": null
   },
+  "run_page": {
+    "goal": null,
+    "outcome": null
+  },
   "integration_worktree": {
     "id": "<WT>",
     "path": "<WT_PATH>",
@@ -177,7 +181,8 @@ Phase 0 creates the manifest with these top-level fields:
     "dispatch_id": null,
     "report_path": null,
     "review_path": null,
-    "fix_waves": 0
+    "fix_waves": 0,
+    "accepted_findings": {"critical": 0, "high": 0, "medium": 0}
   },
   "resources": {
     "terminals": [
@@ -227,6 +232,7 @@ Each entry in `tasks` contains:
   "worktree_path": null,
   "branch": null,
   "starting_commit": null,
+  "merge_commit": null,
   "terminal_handle": null,
   "terminal_title": null,
   "model": null,
@@ -255,7 +261,7 @@ After attempt 2 exhausts its three cycles, follow the permanent-failure path.
 
 Increment `resolve_verify_cycles` on the original task for each conflict-resolution task registered for it.
 
-Fill resource, routing, dispatch, and artifact fields when those values become known. Never derive them later from names.
+Fill resource, routing, dispatch, and artifact fields when those values become known. Never derive them later from names. Set `merge_commit` to the merge commit on `<RUN-BRANCH>` when the task is finalised.
 
 ## Phase-dispatch record
 
@@ -294,16 +300,19 @@ Each entry in `plan_review.rounds` contains:
   "round": 1,
   "start_head": "<SHA>",
   "critique_reports": [],
+  "accepted_findings": {"blocking": 0, "risky": 0, "note": 0},
   "missing_lenses": [],
   "plan_changed": false
 }
 ```
 
-Add a lens to `missing_lenses` when its in-round retry fails. Critique runs one round, so `rounds_run` is `1` when it finishes. `stop_reason` accepts `critique complete` or `all critics failed`.
+Set `accepted_findings` at triage to the counts of findings you accepted, by severity. Add a lens to `missing_lenses` when its in-round retry fails. Critique runs one round, so `rounds_run` is `1` when it finishes. `stop_reason` accepts `critique complete` or `all critics failed`.
 
 ## Verification record
 
 `verification.fix_waves` counts Phase 6 fix waves. `verification.post_review_fix_waves` counts the post-review verification fix waves in Phase 7. Each has its own limit of three.
+
+`run_page.goal` and `run_page.outcome` are prose written for the run page only, each under 512 characters. Set `goal` when the brief is approved: a summary of the brief's Problem and Goal sections. Set `outcome` when the run ends: what the PR delivers, or what failed. Neither is a copy of a brief or summary section.
 
 `browser_verification.policy` accepts `pending`, `run`, or `not_needed`. Set it in Phase 6. `browser_verification.result` accepts `null`, `passed`, `failed`, or `not verified`, recorded from the round 1 browser report or the latest scoped rerun.
 
@@ -324,11 +333,16 @@ Each entry in `review_rounds` contains:
   "review_path": null,
   "fix_waves": 0,
   "severe_fix_merged": false,
+  "accepted_findings": {
+    "code": {"critical": 0, "high": 0, "medium": 0},
+    "security": {"critical": 0, "high": 0, "medium": 0},
+    "browser": 0
+  },
   "stop_reason": null
 }
 ```
 
-Add a lens to `missing_lenses` when its in-round retry fails. Set `security_lenses_run=false` with `security_skip_reason` when `run_complexity` is `low`, or when the Phase 7 security trigger does not fire for a later round. Set `browser_result` in round 1 only. `stop_reason` accepts `no accepted fixes`, `no severe findings`, or `cap reached`.
+Set `accepted_findings` at triage to the counts of findings you accepted, by source and severity; a browser failure counts once. Add a lens to `missing_lenses` when its in-round retry fails. Set `security_lenses_run=false` with `security_skip_reason` when `run_complexity` is `low`, or when the Phase 7 security trigger does not fire for a later round. Set `browser_result` in round 1 only. `stop_reason` accepts `no accepted fixes`, `no severe findings`, or `cap reached`.
 
 `fix_waves` counts the round's review fix waves. Set `review_fixes_applied=true` after any review fix, Medium included, merges and passes verification. Only a Critical or High fix sets `severe_fix_merged`, and only `severe_fix_merged` continues the loop.
 

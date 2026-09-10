@@ -19,9 +19,13 @@ For an issue or a file, cite it and quote only the text that carries a requireme
 For an ad-hoc prompt, record the prompt verbatim except for secrets and private data.
 Replace those values with `[REDACTED]` before writing the brief.
 
+## Goal
+
+What this run builds and what it changes for the people in the Problem section. Be concise.
+
 ## Problem
 
-What is wrong or missing today, and for whom. Use the source's terms, not the repository's.
+What is wrong or missing today, and for whom. Use the source's terms, not the repository's. Be concise.
 
 ## Requirements
 
