@@ -29,7 +29,7 @@ Every reviewer in a round receives the same context block, with `<PREVIOUS_REVIE
 ## Code-review dispatch template
 
 ```text
-Run /{code-review-skill} (it exists; do not check) and follow its instructions. Review the current branch against base commit <BASE_SHA>.
+Run /{code-review-skill} and follow its instructions. The skill exists. Do not check for it. Review the current branch against base commit <BASE_SHA>.
 
 Context:
 - <RUNDIR>/plan/brief.md is the task contract: approved requirements, scope, exclusions, and human decisions.
@@ -45,7 +45,7 @@ Exclude .agents/orca/orchestration/ because it contains run bookkeeping, not the
 ## Security-review dispatch template
 
 ```text
-Run /{security-review-skill} (it exists; do not check) and follow its instructions. Review the current branch against base commit <BASE_SHA>.
+Run /{security-review-skill} and follow its instructions. The skill exists. Do not check for it. Review the current branch against base commit <BASE_SHA>.
 
 Context:
 - <RUNDIR>/plan/brief.md is the task contract: approved requirements, scope, exclusions, and human decisions.

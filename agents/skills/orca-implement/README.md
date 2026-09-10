@@ -2,7 +2,7 @@
 
 `orca-implement` is a skill for **Claude Code and Codex** that orchestrates implementation work through [Orca's CLI](https://github.com/stablyai/orca).
 
-It takes a GitHub issue, Linear issue, specification, or prompt through planning, implementation, verification, review, optional adversarial QA, and an open pull request.
+It takes a GitHub issue, Linear issue, specification, or prompt through planning, implementation, verification, review, and optional adversarial QA, then opens a pull request.
 
 This repository contains the skill. [Orca](https://github.com/stablyai/orca) is the external orchestration runtime and CLI it uses.
 

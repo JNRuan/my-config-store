@@ -27,7 +27,7 @@ You may only:
 
 Put coordinator changes in a separate commit. Dispatch every other code change to a worker.
 
-Workers do not create Orca tasks, dispatches, or terminals. You own all Orca coordination. Critics, reviewers, and QA workers may use their runtime's native subagents for the work their context allows. They must clean up those subagents before reporting completion.
+Workers do not create Orca tasks, dispatches, or terminals. You own all Orca coordination. Critics, reviewers, and QA workers may use native subagents for read-only repository scouting. They must clean up those subagents before reporting completion.
 
 ### Human touchpoints
 
@@ -40,7 +40,7 @@ The run has four human touchpoints:
 
 After plan approval, continue autonomously to the PR. Record each judgement in `summary.md`.
 
-Settle human-owned scope, security, destructive-operation, and architectural decisions by the plan gate. If one arises later and you cannot resolve it within the approved task contract, run the abort routine with status `blocked`. Do not open another decision round during implementation.
+Settle every decision the human owns by the plan gate: scope, security, destructive operations, and architecture. If one arises later and you cannot resolve it within the approved task contract, run the abort routine with status `blocked`. Do not open another decision round during implementation.
 
 ### Evidence and manifest
 
@@ -79,7 +79,7 @@ Resolve the argument:
 
 Stop before creating anything when an intake read fails or returns empty, such as a missing Linear connection, an unresolvable issue, or an unreadable file.
 
-The brief distils what intake read into requirements and cites the source, in the shape of `references/templates/brief-template.md`. The plan turns the approved brief into acceptance criteria and tasks, in the shape of `references/templates/plan-template.md`. Both stand alone, because a worker cannot reach a URL or a path outside its sandbox. The run works from what intake read. A ticket that changes mid-run does not change the plan.
+The brief records what intake read, states the requirements, and cites the source, in the shape of `references/templates/brief-template.md`. The plan turns the approved brief into acceptance criteria and tasks, in the shape of `references/templates/plan-template.md`. Both stand alone, because a worker cannot reach a URL or a path outside its sandbox. The run works from what intake read. A ticket that changes mid-run does not change the plan.
 
 ## Phase 0: Setup
 
@@ -115,7 +115,7 @@ Complete every step in order before Phase 1.
    > 2. **Target.** This is a shared branch that other work merges into, such as a release or `dev` branch. The run starts from its tip and the PR targets `<CURRENT_BRANCH>` instead of `<DEFAULT_BRANCH>`. Nothing on it is reviewed. Pick this for a shared integration branch.
    > 3. **Ignore it.** This branch is unrelated. The run starts from `<DEFAULT_BRANCH>` and the PR targets `<DEFAULT_BRANCH>`. Your branch is left alone.
    >
-   > Options 2 and 3 never modify your branch. Option 1 modifies it only when this is an Orca-managed worktree. The run then adopts it, commits here, and opens the PR from this branch. Otherwise the run works on its own branch cut from yours.
+   > Options 2 and 3 never modify `<CURRENT_BRANCH>`. Option 1 modifies it only when this is an Orca-managed worktree. The run then adopts that worktree, commits to `<CURRENT_BRANCH>`, and opens the PR from it. Otherwise the run creates its own branch from `<CURRENT_BRANCH>` and works there.
 
    | Answer         | `base_ref`         | `start_ref`        |
    | -------------- | ------------------ | ------------------ |
@@ -132,7 +132,7 @@ Complete every step in order before Phase 1.
    BASE_SHA=$(git merge-base <base_ref> <start_ref>)    # start_ref set and different from base_ref
    ```
 
-   From here on, every diff, review, and changed-file list uses `BASE_SHA`, never a symbolic ref. `base_ref` serves once more, as the PR's target branch. A merge-base puts the start branch's existing commits inside every diff, review, and the PR.
+   From here on, every diff, review, and changed-file list uses `BASE_SHA`, never a symbolic ref. `base_ref` is used once more, as the PR's target branch. A merge-base puts the start branch's existing commits inside every diff, review, and the PR.
 
 5. **Name the run.**
 
@@ -221,9 +221,9 @@ Complete every step in order before Phase 1.
    scratch/qa-findings.md                     QA worker report, when qa_policy is run
    ```
 
-   The run folder stays out of git until Phase 9. Append `.agents/orca/orchestration/` to the file named by `git -C <WT-PATH> rev-parse --git-path info/exclude`. That file is shared by every worktree of the repository and is never committed. Do not add a `.gitignore` rule. Write every artifact to disk as soon as it exists. `scratch/` holds worker reports and the coordinator's working files and never reaches the branch.
+   The run folder stays out of git until Phase 9. Append `.agents/orca/orchestration/` to the file named by `git -C <WT-PATH> rev-parse --git-path info/exclude`. That file is shared by every worktree of the repository and is never committed. Do not add a `.gitignore` rule. Write every artifact to disk as soon as you produce it. `scratch/` holds worker reports and the coordinator's working files and never reaches the branch.
 
-   Do not commit anything between recording `<WT>` HEAD for a collection check and running that check.
+   Do not commit anything between recording `<WT>` HEAD for the read-only check and running that check.
 
 9. **Initialise `run-state.json`.**
 
@@ -246,7 +246,7 @@ Run these read-only lenses in parallel:
 - **Test coverage**: find existing coverage that needs adjustment and important gaps to close.
 - **Additional lenses**: add a lens when the task needs evidence not covered above.
 
-Read `references/context/scout.md` and write one self-contained task context per lens. Dispatch one scout per lens in `<WT>` as task `scout-<SLUG>`, collect, and retry once.
+Read `references/context/scout.md` and resolve a self-contained `<TASK_CONTEXT>` for each lens. Dispatch one scout per lens in `<WT>` as task `scout-<SLUG>`, collect, and retry once.
 
 After all retries:
 
@@ -259,7 +259,7 @@ Read every completed report. Carry confirmed findings into the brief and the pla
 
 ## Phase 2: Understanding check
 
-The understanding check settles the task contract before planning. It reconciles the task source, repository evidence, and human intent, and puts every decision the coordinator must not make alone to the human before autonomous work begins.
+The understanding check settles the task contract before planning. It reconciles the task source, repository evidence, and human intent. Before autonomous work begins, it puts every decision the coordinator must not make alone to the human.
 
 Write `<RUNDIR>/plan/brief.md` in the shape of `references/templates/brief-template.md`.
 
@@ -316,7 +316,7 @@ Run one critique round. `<PRE_CRITIQUE_SHA>` is the round's `start_head` in the 
 
 1. Add the round to the plan-review record with `plan_changed=false` and the current `<WT>` HEAD.
 2. Dispatch `plan-critique-<M>-r1` to every critic, collect, and retry a failed lens once.
-3. When a retry also fails, record the lens in the round's `missing_lenses` and continue with the surviving critics. If every critic fails, record stop reason `all critics failed`. Carry the failure to the plan gate, where the human approves the plan without critique or cancels the run.
+3. When a retry also fails, record the lens in the round's `missing_lenses` and continue with the surviving critics. If every critic fails, record stop reason `all critics failed`. Carry the failure to the plan gate. There the human either approves the uncritiqued plan or cancels the run.
 4. Assess every finding on its merits. Severity and verdict are evidence, not decisions. Revise `plan/plan.md` for each accepted finding. Set `plan_changed=true` only when plan content changes.
 5. Save the revised plan and update the manifest.
 
@@ -562,7 +562,9 @@ Record the result of every applicable command. Verify every boundary in the plan
 
 ### Check acceptance criteria
 
-Read `references/context/acceptance-check.md`. The first pass covers every criterion. That reference selects the criteria for every later pass. Dispatch the `acceptance-check-<PASS>` task to the routed worker in `<WT>`, collect, and retry once. If the retry fails, verify each in-scope criterion yourself and record the missing check in `summary.md`.
+Read `references/context/acceptance-check.md`. The first pass covers every criterion. `references/context/acceptance-check.md` selects the criteria for every later pass.
+
+Dispatch the `acceptance-check-<PASS>` task to the routed worker in `<WT>`, collect, and retry once. If the retry fails, verify each in-scope criterion yourself and record the missing check in `summary.md`.
 
 Read the report. Confirm each `not met` and `not verifiable` entry against the code before acting on it. Treat each confirmed `not met` criterion as a verification failure. Carry forward the verdict and evidence of every criterion outside the pass's scope. Record the evidence for every criterion in `summary.md`.
 
@@ -574,7 +576,7 @@ Set `browser_verification.policy` to `run` in `run-state.json` when the diff tou
 
 Compare the integrated diff and observed failures with the approved `run_complexity`. Planning can underestimate risk that becomes visible only after implementation.
 
-If the implementation has greater aggregate risk:
+If the implementation carries more risk than the approved `run_complexity` assumed:
 
 1. Raise `run_complexity`.
 2. Recalculate the code-review cap and QA policy from `references/routing.md`.
@@ -603,14 +605,14 @@ Update `<RUNDIR>/summary.md` with the implementation decisions so far, the evide
 
 ## Phase 7: Code review
 
-Each round gives independent code and security lenses the same committed HEAD. Round 1 also runs browser verification when Phase 6 required it. A later round runs only when the previous round fixed an accepted Critical or High finding, up to the approved round cap. Medium findings get one fix wave and never reopen review.
+Each round dispatches the code and security lenses together, in one wave, against the same committed HEAD. Round 1 also runs browser verification when Phase 6 required it. A later round runs only when the previous round fixed an accepted Critical or High finding, up to the approved round cap. Medium findings get one fix wave and never reopen review.
 
 ### Prepare the review
 
 1. Read `references/context/review.md`.
 2. Read `<CODE_REVIEW_CAP>` from the plan's Review Policy.
 3. Set `review_fixes_applied=false` in the manifest.
-4. Start every routed code reviewer and security reviewer in `<WT>` from `references/routing.md`. Reviewer terminals stay open across rounds.
+4. Start every routed code reviewer in `<WT>` from `references/routing.md`. Start the security reviewers only when `run_complexity` is `medium` or above. Reviewer terminals stay open across rounds.
 
 ### Run a review round
 
@@ -618,11 +620,12 @@ For each `<ROUND>` from 1 through `<CODE_REVIEW_CAP>`:
 
 1. Add the round to `review_rounds` with `severe_fix_merged=false` and the current `<WT>` HEAD.
 2. Resolve every required value in `references/context/review.md`. Every round reviews the whole branch against `<BASE_SHA>`. Each later round first confirms the previous round's fixes, then reports only findings the previous review did not triage.
-3. Select the security lenses for the round. Round 1 dispatches both. A later round dispatches them only when a previous security lens reported a finding, or when a fix wave since the previous round changed a file that handles attacker-controlled input. The trust model in the mapped `{security-review-skill}` defines that input. Otherwise set `security_lenses_run=false` and `security_skip_reason` in the round record.
-4. Dispatch a fresh task with a unique report path to every code reviewer and each selected security reviewer. In round 1, when `browser_verification.policy` is `run`, read `references/context/browser-verification.md` and resolve every required value. Start one native subagent in the same wave, on the model from `references/routing.md`, with that reference's dispatch template and failure policy. The browser subagent is not a phase worker. Its report stays in coordinator context. If it returns none, start it once more. Collect, and retry a failed lens once within the round.
-5. When a retry also fails, record the lens in the round's `missing_lenses` and in the round review, and start a fresh terminal for it before any later round. Run the abort routine if both code-review lenses are unavailable. Record every missing security lens, then continue with the surviving lenses.
-6. Read the browser screenshots yourself. A browser report without screenshots is not verified. Record the result as `browser_result` in the round record and in `browser_verification.result`.
-7. For each acceptance criterion the acceptance check recorded as `not verifiable here` because it needs a browser, record the round-1 browser evidence and the resulting verdict against that criterion in `summary.md`.
+3. Select the security lenses for the round. At `low` complexity, set `security_lenses_run=false` with reason `run complexity policy` and dispatch none. Otherwise round 1 dispatches both. A later round dispatches them only when a previous security lens reported a finding, or when a fix wave since the previous round changed a file that handles attacker-controlled input. The trust model in the mapped `{security-review-skill}` defines that input. Otherwise set `security_lenses_run=false` and `security_skip_reason` in the round record.
+4. Dispatch a fresh task with a unique report path to every code reviewer and each selected security reviewer. Collect, and retry a failed lens once within the round.
+5. In round 1, when `browser_verification.policy` is `run`, read `references/context/browser-verification.md` and resolve every required value. Start one native subagent in the same wave as the reviewers, on the model from `references/routing.md`. Use the dispatch template and failure policy in `references/context/browser-verification.md`. The browser subagent is not a phase worker. Its report stays in coordinator context. If it produces no report, start it once more.
+6. When a retry also fails, record the lens in the round's `missing_lenses` and in the round review, and start a fresh terminal for it before any later round. Run the abort routine if both code-review lenses are unavailable. Record every missing security lens, then continue with the surviving lenses.
+7. Read the browser screenshots yourself. A browser report without screenshots is not verified. Record the result as `browser_result` in the round record and in `browser_verification.result`.
+8. For each acceptance criterion the acceptance check recorded as `not verifiable here` because it needs a browser, record the round-1 browser evidence and the resulting verdict against that criterion in `summary.md`.
 
 ### Write the round review
 
@@ -801,13 +804,13 @@ Update `<RUNDIR>/summary.md` in the shape of `references/templates/summary-templ
 Fill every section with the results so far. Leave `finished` as `pending`
 and record publication as pending in Outcome.
 
-Require:
+Run this command:
 
 ```bash
 git -C <WT-PATH> status --porcelain
 ```
 
-to return no output. The excluded run folder does not appear.
+It must return no output. The excluded run folder does not appear.
 
 ### Publish the branch and PR
 
@@ -866,7 +869,7 @@ A worker may use at most three verify-to-fix cycles. Exhausting those cycles sta
 
 1. Diagnose whether the approach or its execution caused the failures.
 2. Revise implementation details only within the approved task contract.
-3. If recovery needs a human-owned scope, security, destructive-operation, or architectural decision, run the abort routine with status `blocked`.
+3. If recovery needs a decision the human owns, about scope, security, a destructive operation, or architecture, run the abort routine with status `blocked`.
 4. Append a retry briefing to the agent task:
    - what each cycle attempted;
    - each failure and its output;
@@ -887,7 +890,7 @@ If the replacement exhausts that limit, the task fails permanently:
 4. Remove its worktree by recorded id, preserving its branch as mechanics 7.0 requires.
 5. Record every attempt and the preserved branch in `summary.md`.
 
-Allow independent in-flight tasks to finish through collection, verification, and merge. Dispatch no new tasks. Then run the abort routine.
+Allow independent tasks already dispatched to finish through collection, verification, and merge. Dispatch no new tasks. Then run the abort routine.
 
 ### Run the abort routine
 
@@ -938,7 +941,7 @@ On a context-limit or unexpected coordinator error, attempt recovery first. If r
 
 ### Resume a run
 
-`resume <RUN>` names the run. `resume <RUNDIR>` names its run folder. Resolve a run name to the worktree of that name in Orca's worktree list. When none exists, the run adopted a worktree: find the Orca worktree whose path holds `.agents/orca/orchestration/<RUN>/run-state.json`. Derive `<RUNDIR>` as Phase 0 step 8 does. Stop when the worktree or `run-state.json` does not exist, or when the recorded status is terminal.
+`resume <RUN>` names the run. `resume <RUNDIR>` names its run folder. Resolve a run name to the worktree of that name in Orca's worktree list. When none exists, the run adopted a worktree. Find the Orca worktree whose path holds `.agents/orca/orchestration/<RUN>/run-state.json`. Derive `<RUNDIR>` as Phase 0 step 8 does. Stop when the worktree or `run-state.json` does not exist, or when the recorded status is terminal.
 
 Load the run mechanics as Phase 0 step 1 requires. Then read the following artifacts completely and in order. Use `run-state.json` to skip artifacts from steps not yet reached. Recover missing artifacts from completed steps before continuing.
 

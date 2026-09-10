@@ -328,7 +328,7 @@ Each entry in `review_rounds` contains:
 }
 ```
 
-Add a lens to `missing_lenses` when its in-round retry fails. Set `security_lenses_run=false` with `security_skip_reason` when the Phase 7 security trigger does not fire for a later round. Set `browser_result` in round 1 only. `stop_reason` accepts `no accepted fixes`, `no severe findings`, or `cap reached`.
+Add a lens to `missing_lenses` when its in-round retry fails. Set `security_lenses_run=false` with `security_skip_reason` when `run_complexity` is `low`, or when the Phase 7 security trigger does not fire for a later round. Set `browser_result` in round 1 only. `stop_reason` accepts `no accepted fixes`, `no severe findings`, or `cap reached`.
 
 `fix_waves` counts the round's review fix waves. Set `review_fixes_applied=true` after any review fix, Medium included, merges and passes verification. Only a Critical or High fix sets `severe_fix_merged`, and only `severe_fix_merged` continues the loop.
 
@@ -451,7 +451,8 @@ The manifest owns resource identity and coordinator intent. Git and Orca own liv
 
 During recovery:
 
-- Git establishes which task branches have merged; the manifest's `merged` status also requires successful integration verification;
+- Git establishes which task branches have merged;
+- the manifest's `merged` status also requires successful integration verification;
 - live Orca dispatch state overrides stale dispatch status;
 - recorded round and fix-wave counts preserve spent limits;
 - collect pending `worker_done` deliveries before any new dispatch;

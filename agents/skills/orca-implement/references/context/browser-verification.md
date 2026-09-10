@@ -20,7 +20,7 @@ The subagent runs on the model in `references/routing.md`.
 
 ## Context rules
 
-Before starting a dev server or running tests, identify any live services they can affect. Use disposable test data. Live-data changes, external messages and paid calls require user authorisation; existing authorisation is sufficient.
+Before starting a dev server or running tests, identify any live services they can affect. Use disposable test data. Live-data changes, external messages, and paid calls require user authorisation. Existing authorisation is enough.
 
 Run headlessly. Require screenshots for passing and failing checks. Undo interactions that change real data. Stop every dev server you start.
 
@@ -31,7 +31,7 @@ If the dev server does not start, try at most three times. Use another port, con
 ```text
 Use /{browser-skill} in headless mode to verify the integrated UI from <WT-PATH>.
 
-Before starting a dev server or running tests, identify any live services they can affect. Use disposable test data. Live-data changes, external messages and paid calls require user authorisation; existing authorisation is sufficient.
+Before starting a dev server or running tests, identify any live services they can affect. Use disposable test data. Live-data changes, external messages, and paid calls require user authorisation. Existing authorisation is enough.
 
 Dev server: <DEV_SERVER_URL_OR_COMMAND>
 Port: <PORT>

@@ -14,7 +14,7 @@ Resolve:
 
 ## Context rules
 
-The critic challenges the plan rather than approving it. It may use runtime-native subagents for read-only repository scouting. It must not create Orca tasks, dispatches, or terminals and must clean up its native subagents.
+The critic challenges the plan rather than approving it. It may use native subagents for read-only repository scouting. It must not create Orca tasks, dispatches, or terminals and must clean up its native subagents.
 
 ## Dispatch template
 
@@ -23,7 +23,7 @@ Read <RUNDIR>/plan/plan.md. Review it as an adversarial critic, not an approver.
 
 Follow the plan's specific risks wherever they lead. Your critique must account for requirement coverage, assumptions, task boundaries and dependencies, verification adequacy, and task sizing. Pursue any other credible failure mode the plan reveals.
 
-When you need repository evidence, use your runtime's native subagents for read-only scouting. Do not create Orca tasks, dispatches, or terminals. You own and must clean up any subagents you start.
+When you need repository evidence, use native subagents for read-only scouting. Do not create Orca tasks, dispatches, or terminals. You own and must clean up any subagents you start.
 
 Do not review implementation detail or style. Do not expand the approved scope.
 

@@ -21,7 +21,7 @@ The worker attacks behaviour beyond the plan's happy path and retests every path
 ## Dispatch template
 
 ```text
-Run /{adversarial-qa-skill} (it exists; do not check) against the current branch and base commit <BASE_SHA>. Try to break the implementation through code-level and browser-based testing.
+Run /{adversarial-qa-skill} against the current branch and base commit <BASE_SHA>. The skill exists. Do not check for it. Attack the implementation through code-level and browser-based testing.
 
 Context:
 - <RUNDIR>/plan/brief.md is the task contract.

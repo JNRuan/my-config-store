@@ -32,7 +32,7 @@ Every other criterion keeps its previous verdict, evidence, and reason. A `not v
 
 ## Context rules
 
-The worker verifies each acceptance criterion against the integrated HEAD in `<WT>`. It reads code, runs the recorded project commands and the tests that cover a criterion, and exercises behaviour where a command can. It judges only whether the criterion is met.
+The worker verifies each acceptance criterion against the integrated HEAD in `<WT>`. It reads code, runs the recorded project commands and the tests that cover a criterion, and exercises the behaviour when a command can exercise it. It judges only whether the criterion is met.
 
 ## Dispatch template
 
@@ -40,7 +40,7 @@ The worker verifies each acceptance criterion against the integrated HEAD in `<W
 Read <RUNDIR>/plan/plan.md. Verify these acceptance criteria against the integrated HEAD in this worktree: <CRITERIA>.
 <PREVIOUS_CONTEXT>
 
-Read the code, run the recorded project commands and the tests that cover the criterion, and exercise the behaviour where a command can. Leave implementation files unchanged.
+Read the code, run the recorded project commands and the tests that cover the criterion, and exercise the behaviour when a command can exercise it. Leave implementation files unchanged.
 
 Report each criterion by id as one of:
 

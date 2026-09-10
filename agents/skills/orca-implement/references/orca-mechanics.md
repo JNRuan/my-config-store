@@ -50,10 +50,10 @@ Phase workers are scouts, fact checks, planners, critics, the acceptance check, 
 For every worker, including builders:
 
 - If readiness times out, inspect the terminal before deciding whether the worker failed.
-- If an Orca CLI command returns an error or loses its response, inspect its structured result and live Orca state to determine whether the command had an effect. Retry only when the live guide permits it or state proves that no effect occurred.
+- If an Orca CLI command returns an error, or returns no response, inspect its structured result and live Orca state to determine whether the command had an effect. Retry only when the live guide permits it or state proves that no effect occurred.
 - After one confirmed recovery failure, follow the current phase's failure path. Builders enter fix or retry handling.
 
-Prefer structured `worker_done` payloads and report files. Use bounded terminal output for status, not as the result.
+Prefer structured `worker_done` payloads and report files. Read terminal output for status only. Never treat it as the worker's result.
 
 ## 5.0 Collect a phase worker
 
@@ -81,9 +81,9 @@ from this run's read-only workers. If ownership is unclear or any affected
 work belongs to someone else, leave it intact and follow the current phase's
 failure path.
 
-Delete any unexpected file under the run directory and record the incident.
+Delete any unexpected file under the run folder and record the incident.
 
-If the first or third check fails, restore the integration worktree while preserving the run directory:
+If the first or third check fails, restore the integration worktree while preserving the run folder:
 
 ```bash
 git -C <WT-PATH> reset --mixed <H>
@@ -107,7 +107,7 @@ Retry each worker once. The phase says what happens when the retry also fails.
 
 - `worktree create` controls the requested worktree name. Record the actual branch returned by Orca.
 - Inspect any terminal that worktree creation starts. A running setup terminal is the repository's `orca.yaml` setup script. Wait for it to exit before booting a worker there. A non-zero exit is a worktree-setup failure. Read its output, remove the worktree, and retry the create once. If it fails again, follow the current phase's failure path. Close any other terminal only when it is an unused shell. Record any terminal you keep.
-- Record the integration worktree's default terminal in the manifest and keep it until teardown. For an adopted integration worktree, record no pre-existing terminal. Teardown touches only recorded ones. Close every terminal recorded for a task or QA worktree before removing that worktree.
+- Record the integration worktree's default terminal in the manifest and keep it until teardown. For an adopted integration worktree, record no pre-existing terminal. Teardown touches only recorded terminals. Close every terminal recorded for a task or QA worktree before removing that worktree.
 - After accepting `worker_done`, follow the live guide's release or reuse procedure. Keep a terminal only for reuse. A builder keeps its terminal through fix cycles. Reviewers keep theirs through the review round loop.
 - Remove task worktrees after their branches merge.
 - If a failed task's worktree contains uncommitted or untracked changes, retain it. Record its id and path in the manifest and `summary.md`, and mark cleanup `partial`.
@@ -120,7 +120,7 @@ Retry each worker once. The phase says what happens when the retry also fails.
 - Only `<RUN-BRANCH>` may reach the remote, and only in Phase 9.
 - Workers write code only in their assigned worktree.
 - Workers write under `<RUNDIR>` only to their designated files.
-- Enforce read-only workers through the collection check above.
+- Enforce read-only workers through the read-only check above.
 - When `qa_policy` is `run`, QA may write only:
   - its disposable worktree;
   - `<RUNDIR>/scratch/qa-findings.md`;

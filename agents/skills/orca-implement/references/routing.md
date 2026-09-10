@@ -1,6 +1,6 @@
 # Routing and worker boot
 
-**Concurrency cap**: 5 builders; workers' internal native subagents do not count.
+**Concurrency cap**: 5 builders. Workers' native subagents do not count.
 
 ## Coordinator-relative roles
 
@@ -22,18 +22,18 @@ Identical regardless of coordinator.
 
 | Role                          | Runtime / model                                                                                                        | Effort          | Fallback                                           | Notes                                                                                                                                                             |
 |-------------------------------|------------------------------------------------------------------------------------------------------------------------|-----------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Scouts                        | Codex `gpt-5.6-luna`                                                                                                   | `high`          | —                                                  | read-only; Orca terminals in `<WT>`; one report per lens                                                                                                          |
+| Scouts                        | Codex `gpt-5.6-luna`                                                                                                   | `medium`        | —                                                  | read-only; Orca terminals in `<WT>`; one report per lens                                                                                                          |
 | Plan fact check               | Codex `gpt-5.6-luna`                                                                                                   | `high`          | —                                                  | read-only; Orca terminal in `<WT>`; verifies checkable plan claims only; runs before critique and again after it when critique changed the plan                   |
-| Acceptance check              | Codex `gpt-5.6-luna`                                                                                                   | `high`          | —                                                  | read-only; Orca terminal in `<WT>`; verifies each acceptance criterion against the integrated HEAD; one report per pass                                           |
+| Acceptance check              | Claude `opus`                                                                                                          | `high`          | `Codex gpt-5.6-sol`                                | read-only; Orca terminal in `<WT>`; verifies each acceptance criterion against the integrated HEAD; one report per pass                                           |
 | Planner, `low`/`medium` tier  | Claude `fable`                                                                                                         | `medium`        | coordinator drafts the plan                        | single planner; a complete plan from the brief; writes only its own draft file                                                                                    |
 | Planners, `high`/`xhigh` tier | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high` all      | continue with the surviving planner                | independent complete plans from the brief; each writes only its own draft file                                                                                    |
-| Plan critics                  | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high` all      | continue with the surviving critic                 | both, one round only; critique adversarially; read-only by instruction                                                                                          |
+| Plan critics                  | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `xhigh` all     | continue with the surviving critic                 | both, one round only; critique adversarially; read-only by instruction                                                                                          |
 | Builder, `low` complexity     | Codex `gpt-6-astra`                                                                                                    | `low`           | —                                                  |                                                                                                                                                                   |
 | Builder, `medium`             | Codex `gpt-6-astra`                                                                                                    | `medium`        | —                                                  | default builder                                                                                                                                                   |
 | Builder, `high`               | Codex `gpt-6-astra`                                                                                                    | `high`          | `Claude fable or Claude opus or Codex gpt-5.6-sol` | many-file or mechanically hard, but fully specified by plan + contracts                                                                                           |
-| Builder, `xhigh`              | Claude `fable`                                                                                                         | `xhigh`         | `Codex gpt-6-astra`                                | the remaining reasoning is the risk: see the task complexity rubric                                                                                               |
+| Builder, `xhigh`              | Claude `fable`                                                                                                         | `xhigh`         | `Codex gpt-6-astra or Claude opus or Codex gpt-5.6-sol` | the remaining reasoning is the risk: see the task complexity rubric                                                                                               |
 | Code reviewers                | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high` / `high` | `Codex gpt-5.6-sol or Claude Opus`                 | both each round; round cap from `run_complexity`                                                                                                                  |
-| Security reviewers            | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high / high`   | `Codex gpt-5.6-sol or Claude Opus`                 | both in round 1, dispatched alongside the code reviewers; later rounds only on the Phase 7 security trigger; each runs the mapped security-review skill (`references/skill-map.md`) |
+| Security reviewers            | Claude `fable` + Codex `gpt-6-astra`                                                                                   | `high` / `high`   | `Codex gpt-5.6-sol or Claude Opus`                 | `medium` and above only; both in round 1, dispatched alongside the code reviewers; later rounds only on the Phase 7 security trigger; each runs the mapped security-review skill (`references/skill-map.md`) |
 | Adversarial QA                | Cross-model to the builder of the highest-complexity merged task: Claude → Codex `gpt-6-astra`; Codex → Claude `fable` | `high`          | `Claude opus or Codex gpt-5.6-sol`                 | `medium`/`high`/`xhigh` runs only; runs once after all code-review rounds and fixes; disposable worktree, branch never merged                                     |
 
 
@@ -52,12 +52,12 @@ Classify `run_complexity` from the reviewed plan. It controls code-review depth 
 Both are independent of per-task builder complexity.
 
 
-| Tier     | Typical run shape                                                                                             | Code-review rounds when used as `run_complexity` | Adversarial QA from `run_complexity` |
-| -------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------ |
-| `low`    | narrow, localised, established pattern, low-impact failure, strong existing coverage                          | 1                                                | no                                   |
-| `medium` | several files or one subsystem, ordinary cross-layer interaction, moderate blast radius                       | 2                                                | yes, after code review               |
-| `high`   | broad or highly coupled change, important state or user-flow risk, weak observability, or high failure impact | 3                                                | yes, after code review               |
-| `xhigh`  | systemic or novel change with subtle invariants, architectural consequences, or severe failure impact         | 5                                                | yes, after code review               |
+| Tier     | Typical run shape                                                                                             | Code-review rounds when used as `run_complexity` | Security review from `run_complexity`      | Adversarial QA from `run_complexity` |
+| -------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | -------------------------------------- | ------------------------------------ |
+| `low`    | narrow, localised, established pattern, low-impact failure, strong existing coverage                          | 1                                                | no                                          | no                                   |
+| `medium` | several files or one subsystem, ordinary cross-layer interaction, moderate blast radius                       | 2                                                | with code review: round 1, then on trigger | yes, after code review               |
+| `high`   | broad or highly coupled change, important state or user-flow risk, weak observability, or high failure impact | 3                                                | with code review: round 1, then on trigger | yes, after code review               |
+| `xhigh`  | systemic or novel change with subtle invariants, architectural consequences, or severe failure impact         | 5                                                | with code review: round 1, then on trigger | yes, after code review               |
 
 
 This table is the sole tier-to-policy mapping. Auth/authz, payments, destructive data migration, security-critical logic, and concurrency or consistency primitives are never below `high`.
@@ -97,7 +97,7 @@ Boot workers with `terminal create` and an explicit `--command`, never `worker-s
 - Codex's sandbox cannot nest inside nono. Pass `--sandbox danger-full-access` to each Codex worker command. Do not set it in machine configuration.
 - Workers in `<WT>` use the aliases. Workers in task or QA worktrees write to `<RUNDIR>` in the integration worktree, which the aliases do not grant, so boot them with `nono run` and `--allow "<RUNDIR>"`. For Codex, `--add-dir` only tells Codex the directory exists. The nono grant enforces access.
 
-**Claude in `<WT>`** (planner, critic, reviewer):
+**Claude in `<WT>`** (planner, critic, reviewer, acceptance check):
 
 ```bash
 nclaude --model <fable|opus> --effort <effort> --permission-mode bypassPermissions
@@ -109,7 +109,7 @@ nclaude --model <fable|opus> --effort <effort> --permission-mode bypassPermissio
 nono run --profile my-claude --allow-cwd --allow "<RUNDIR>" -- claude --model <fable|opus> --effort <effort> --permission-mode bypassPermissions
 ```
 
-**Codex in `<WT>`** (scout, plan fact check, acceptance check, planner, critic, reviewer):
+**Codex in `<WT>`** (scout, plan fact check, planner, critic, reviewer):
 
 ```bash
 ncodex --model <gpt-5.6-luna|gpt-6-astra|gpt-5.6-sol> -c 'model_reasoning_effort="<effort>"' --sandbox danger-full-access --ask-for-approval never

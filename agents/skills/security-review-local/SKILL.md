@@ -4,9 +4,9 @@ description: "Security review of the current branch against a base ref: scout th
 ---
 # Security Review
 
-You are a senior security engineer reviewing what this branch newly introduces. This is not a general code review. Only security implications matter.
+Find the exploitable vulnerabilities this branch introduces. This is not a general code review. Only security implications matter.
 
-A finding is real when attacker-controlled input reaches a sensitive operation, or when the diff itself exposes a secret or weakens a cryptographic or data-handling guarantee. Trace the data flow before you believe the pattern. Every finding must be one a security engineer would confidently raise in a PR review.
+A finding is real when attacker-controlled input reaches a sensitive operation, or when the diff itself exposes a secret or weakens a cryptographic or data-handling guarantee. Trace the data flow before you believe the pattern. Report a finding only when you can show the attack path or the exposure.
 
 You scout first, fan the review across security-lens subagents, then adversarially verify and consolidate the findings yourself.
 
@@ -52,8 +52,9 @@ Attacker-controlled (untrusted):
 - request params, body, headers, unsigned cookies, and URL path segments;
 - file uploads, both names and content;
 - WebSocket messages and webhook payloads;
-- database content written by other users;
-- content fetched from external services an attacker can influence.
+- stored data that originated from any untrusted source, including the current user's earlier input;
+- responses from third-party services, until the boundary authenticates and validates them;
+- results returned by tools and MCP servers: fetched pages, search results, file contents.
 
 Trusted only when controlled by an operator authorised for the resource and operation:
 
@@ -99,7 +100,39 @@ Wait for all scouts. Note where attacker-controlled input, privilege boundaries,
 
 ## Step 2: Spawn security lens reviewers
 
-Spawn one subagent per lens in parallel. Always spawn Injection and code execution, AuthN/Z and sessions, Crypto and secrets, and Data exposure. Spawn Web boundary only when the diff touches HTTP handlers, responses, CORS or header config, or outbound requests. Spawn Agentic only when the diff touches agents, skills, tools, memory, or prompt files. Record skipped lenses in the Coverage note in Step 4.
+Spawn one subagent per selected lens, in parallel. Select each lens from the
+scout maps and the diff:
+
+- **Injection and code execution**: the attack-surface map shows
+  attacker-controlled input reaching changed code, or the diff adds a sink:
+  a query, a shell or process call, `eval`, a template, deserialisation, or
+  a file path built from input.
+- **AuthN/Z and sessions**: the blast-radius map shows a call path crossing a
+  privilege boundary, or the diff touches authentication, session,
+  permission, identity, or token code.
+- **Crypto and secrets**: the diff touches hashing, encryption, signing,
+  randomness, keys, credentials, or config that carries them, or the
+  security-patterns scout reports a divergence from the codebase's crypto or
+  secret-management helpers.
+- **Data exposure**: the diff changes what is logged, returned in a response,
+  written to storage, or sent to a third party, on a path that carries user
+  or attacker-visible data.
+- **Web boundary**: the diff touches HTTP handlers, responses, CORS or header
+  config, or outbound requests.
+- **Agentic**: the diff touches agents, skills, tools, memory, or prompt
+  files, or adds or changes a feature that uses a model: an LLM API call, a
+  prompt built from application or user data, tool or function definitions a
+  model can invoke, or code that acts on model output.
+
+You may add lenses. Spawn a listed lens whose trigger did not fire when your
+Step 1 risk assessment gives a concrete reason. Spawn an unlisted lens when
+the diff carries a Critical or High risk that no listed lens covers. Write an
+unlisted lens in the format below and name it. Record every added lens and
+its reason in the Coverage note. Never skip a lens whose trigger fired.
+
+When no trigger fires, spawn no lens. Step 3 still runs on your own read of
+the diff and the scout maps. Record every skipped lens in the Coverage note in
+Step 4.
 
 ### Spawn package
 
@@ -108,7 +141,7 @@ Each subagent receives:
 ```
 **Role**
 You are a security reviewer focused on {lens}. Apply the {lens} lens to this diff.
-- The lens items are starting points, not a checklist. Analyse the code beyond the list where it matters to your lens, and flag concrete issues you find, on or off the list.
+- The lens items are starting points, not a checklist, and the list is not complete. Analyse the code beyond the list wherever your lens applies, and flag concrete issues you find, on or off the list. Finishing the list is not finishing the review.
 - Before flagging, trace attacker-controlled input to the vulnerable sink, or show a concrete exposure the diff itself introduces: a hardcoded secret, or a weakened crypto or data-handling guarantee. Apply the Trust model.
 - Never flag anything in the hard exclusions.
 - The main reviewer verifies, scores, and consolidates your output. Propose a draft Severity from your lens. Do not normalise across findings.
@@ -145,7 +178,7 @@ Each finding has these fields:
 ```
 **Issue 1** - Short name of issue
 **Severity (draft):** Critical | High | Medium | Low
-**Category:** Injection | AuthN/Z | Crypto | Secrets | Data exposure | Web boundary | Agentic
+**Category:** Injection | AuthN/Z | Crypto | Secrets | Data exposure | Web boundary | Agentic | {extra lens name}
 **File:** `path:line(s)`
 **Findings:**
 - Concise statement and list of findings
@@ -166,7 +199,10 @@ If a subagent fails or returns garbage, restart it with the same package, up to 
 
 ### Security lenses
 
-Starting points, not checklists. The goal is real vulnerabilities, not bullet coverage.
+Each lens below is a starting point, not a checklist, and none is complete.
+Read the changed code for any way an attacker could reach a sink or an
+exposure through your lens, whether or not a bullet names it. Covering every
+bullet is not the goal. A finding off the list counts the same as one on it.
 
 **Injection and code execution**
 
@@ -212,6 +248,9 @@ Starting points, not checklists. The goal is real vulnerabilities, not bullet co
 Reference the OWASP Agentic Top 10. Flag prompt injection when untrusted content can cause a concrete security impact. Examples include unauthorised tool use, file writes, memory changes, or disclosure of private data through generated text. Harmless wording changes are not findings.
 
 - Untrusted content (user input, fetched pages, file contents) flowing into agent instructions that can redirect the task, escalate access, or exfiltrate data.
+- Model output used as input to a sink without validation: executed as a command, run as a query, used as a file path or URL, or rendered as HTML.
+- Prompts that place untrusted data and instructions in the same channel with nothing separating them, on a path where the model can act.
+- Tool or function definitions that expose a destructive or privileged operation to the model with no confirmation step and no scope limit.
 - Unbounded tool allow-lists or over-broad permissions in agent and skill configs.
 - Memory poisoning: untrusted content written into persistent agent memory.
 - Instruction files that direct unsafe defaults: auto-approve, bypassed sandboxing, plaintext credential handling.
@@ -245,7 +284,7 @@ Subagents propose. You rule.
 
 ### Coverage note
 
-Include only when a lens failed every attempt or a conditional lens was skipped. Use one line per lens:
+Include only when a lens failed every attempt or a lens was skipped. Use one line per lens:
 
 > **Coverage note**: {Lens} lens did not complete. This report does not cover {lens} concerns.
 
