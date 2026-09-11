@@ -27,7 +27,7 @@ You may only:
 
 Put coordinator changes in a separate commit. Dispatch every other code change to a worker.
 
-Workers do not create Orca tasks, dispatches, or terminals. You own all Orca coordination. Critics, reviewers, and QA workers may use native subagents for read-only repository scouting. They must clean up those subagents before reporting completion.
+Workers do not create Orca tasks, dispatches, or terminals. You own all Orca coordination.
 
 ### Human touchpoints
 

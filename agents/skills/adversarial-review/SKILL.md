@@ -16,15 +16,16 @@ The review tests committed work at HEAD. Uncommitted changes are not tested.
 
 Every subagent spawn uses this table. Choose the column for the harness you are running in.
 
-| Role                             | Claude              | Codex                                | Other harness   |
-| -------------------------------- | ------------------- | ------------------------------------ | --------------- |
-| Scouts (Phase 1)                 | Sonnet, high effort | gpt-5.6-luna, high reasoning effort  | session default |
-| Code test executors (Phase 3)    | Opus, high effort   | gpt-5.6-sol, high reasoning effort   | session default |
-| Browser test executors (Phase 4) | Sonnet, high effort | gpt-5.6-sol, high reasoning effort   | session default |
+
+| Role                       | Claude                | Codex                                | Other harness   |
+| -------------------------- | --------------------- | ------------------------------------ | --------------- |
+| Scouts (Phase 1)           | Sonnet, medium effort | gpt-5.6-luna, high reasoning effort  | session default |
+| Browser executor (Phase 4) | opus, medium effort   | gpt-5.6-sol, medium reasoning effort | session default |
+
 
 If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a review over it.
 
-The survey, test planning, the Phase 3 chaining decision, and the verdict stay in your own context on the session model.
+The survey, test planning, every code-level test, and the verdict stay in your own context on the session model. One subagent runs the browser tests.
 
 ## Phase 0: Isolate the review
 
@@ -56,9 +57,9 @@ Run these yourself in the review worktree:
 1. `git log --oneline $BASE..HEAD` and `git diff --stat $BASE...HEAD` for the shape of the branch.
 2. The full diff: `git --no-pager diff --no-color --patch --unified=3 --find-renames=50% $BASE...HEAD`
 3. Map the affected surface. Identify every affected user-facing path: routes, endpoints, forms, buttons, state transitions. Note which are new and which are modified. Trace from changed functions to their callers and entry points.
-4. Determine project tooling. Find the install command, the build command, the dev server start command, and the dev server URL in `package.json`, `Makefile`, `Cargo.toml`, or the equivalent. Run the install command in the review worktree. Note the test runner command for the Phase 3 executors. If the project has no test runner, such as no `test` script or the default `echo "Error: no test specified"`, the executors run standalone scripts with `node`, `npx tsx`, `python`, or the equivalent.
+4. Determine project tooling. Find the install command, the build command, the dev server start command, and the dev server URL in `package.json`, `Makefile`, `Cargo.toml`, or the equivalent. Run the install command in the review worktree. Note the test runner command for Phase 3. If the project has no test runner, such as no `test` script or the default `echo "Error: no test specified"`, Phase 3 runs standalone scripts with `node`, `npx tsx`, `python`, or the equivalent.
 
-Then launch scouts in parallel as read-only general-purpose subagents. Do not use a locate-only explorer, because the scouts assess code rather than find it.
+Then launch scouts in parallel as read-only general-purpose subagents. Do not use a locate-only explorer, because the scouts assess code rather than find it. Skip the scouts when the survey already covered every changed file in full.
 
 - **Input surface scout**: for each new or modified function that accepts external input (API handlers, form processors, CLI parsers, file readers), catalogue parameter types, validation, sanitisation, and error handling. Return a map from function to input-surface description.
 - **Test coverage scout**, skipped when the project has no test suite: for each changed function, find its tests. Assess whether boundary values and error paths are tested and whether the assertions would catch wrong results. Return a map from function to coverage assessment with specific gaps.
@@ -98,11 +99,18 @@ What does this code assume that nobody tested? What would a real user do that th
 
 ## Phase 3: Code-level adversarial tests
 
-Run each test that mutates source alone in its worktree. Revert its mutation before other tests use that worktree.
+Run these yourself in the review worktree. Take the code-level vectors in priority order.
 
-You plan the tests. Subagents execute them. Give each executor the review worktree path, its vectors, the target functions and files, the test runner command, and the reporting format below. Run independent executors in parallel. Executors delete their throwaway test files after capturing results and revert any mutation they made.
+For each vector:
 
-### Executor report (code-level)
+1. Write the test case as a throwaway file inside the review worktree, or as a standalone script when the project has no test runner.
+2. Run it with output captured to a file. Read the failing assertions, error messages, and stack traces from that file with `grep` or `tail`. Never read a full suite run into context.
+3. Record the result in `$WT/adversarial-review-log.md` with the fields below.
+4. Revert any source mutation and delete the throwaway file before the next vector.
+
+Adapt the plan as results arrive. A verbose error, a leaked identifier, or lingering state after one vector is a lead for the next. Add a vector when a result exposes an input the plan missed. Drop a planned vector when an earlier result already proves or disproves it.
+
+### Log entry (code-level)
 
 For every test case:
 
@@ -113,21 +121,26 @@ For every test case:
 - **Actual**: what happened, with error messages, stack traces, or return values
 - **Result**: PASS (no bug), FAIL (bug found), or ERROR (test could not run, with the reason)
 
-Report FAIL and ERROR in full. One line per PASS is enough. The same rule applies to browser reports.
+Record FAIL and ERROR in full. One line per PASS is enough. The same rule applies to the browser report.
 
 ### Chain signals
 
-After all executors report, review each FAIL and each PASS with an unexpected side effect: a leaked ID, a verbose error, lingering state. If two results combine into a more severe failure, such as one leaking a resource ID and another failing to check ownership, dispatch one more executor to test the chained scenario. A chained Critical can hide behind two isolated Mediums.
+After the last vector, reread the log. Review each FAIL and each PASS with an unexpected side effect: a leaked ID, a verbose error, lingering state. If two results combine into a more severe failure, such as one leaking a resource ID and another failing to check ownership, test the chained scenario before Phase 4. A chained Critical can hide behind two isolated Mediums.
 
 ## Phase 4: Browser adversarial tests
 
 Skip when Phase 2 selected no browser vectors.
 
-Start the dev server from the review worktree. If it fails to start, recover yourself: try another port, confirm `.env` exists, rerun the install command for a missing dependency. Stop after three attempts. Then report the errors from each attempt, convert planned browser vectors to code-level equivalents where possible, and mark any browser-only vector "not verified: dev server unavailable" in the output.
+One browser executor runs every browser vector in order and owns the dev server. Give it the review worktree path, the dev server start command and URL from Phase 1, the screenshot directory, the browser vectors in priority order with their pages, flows, inputs, and expected behaviour, and the report format below.
 
-Have the first browser executor confirm that each changed flow works end to end before attacking it. Do not rely on earlier verification.
+Its brief:
 
-Launch executors with agent-browser in headless mode. Give each the dev server URL, the screenshot directory, its pages and flows, its test plan, and the reporting format below. Give executors disjoint pages and flows. Run vectors that touch the same mutable state sequentially, so one executor's double-submit or multi-tab test cannot contaminate another's flow.
+1. Start the dev server from the review worktree. If it fails to start, try another port, confirm `.env` exists, and rerun the install command for a missing dependency. Stop after three attempts and report the errors from each.
+2. Confirm that each changed flow works end to end before attacking it. Do not rely on earlier verification.
+3. Run the vectors in order with agent-browser in headless mode. Screenshot every FAIL.
+4. Stop the dev server. Report.
+
+When the dev server did not start, convert each browser vector to a code-level equivalent where possible and run it as in Phase 3. Mark any browser-only vector "not verified: dev server unavailable" in coverage.
 
 ### Executor report (browser)
 
@@ -140,14 +153,16 @@ For every test:
 - **Result**: PASS, FAIL, or ERROR
 - **Screenshot**: link to the file, required for FAIL
 
-## Phase 5: Teardown and output
+## Phase 5: Output
+
+### Draft
+
+Draft the findings, coverage, and verdict from the Phase 3 log and the browser report before teardown.
 
 ### Teardown
 
-Before writing the output:
-
-1. Stop every dev server you started.
-2. Delete only this review's throwaway test files and revert only its source mutations.
+1. Confirm the browser executor stopped its dev server. Stop any server still running.
+2. Delete only this review's throwaway test files and log, and revert only its source mutations.
 3. If you created the worktree, remove it with `git worktree remove --force "$WT"`. Keep the screenshot directory.
 4. If the caller provided the worktree, preserve all files and changes this review did not create. Leave worktree removal to the caller.
 
@@ -203,5 +218,7 @@ Finding #1
 - Every finding is reproducible. No speculation.
 - Report what breaks, not what could be better.
 - Never test in the developer's working tree. Write only inside the review worktree and the screenshot directory.
-- Revert every mutation before its executor reports.
+- Read test output from files. Never read a full suite run into context.
+- Revert every mutation before the next vector.
 - Do not commit.
+
