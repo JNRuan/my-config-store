@@ -64,12 +64,16 @@ a URL as `Title - what it contributed, in about ten words - URL`.
 
 - **Write readable code.** Favour clarity over cleverness: clear names, obvious control flow, and
 plain code even when the idea is inventive.
-- **Comment only what the code cannot say.** A comment or docstring earns its place when it gives
-the reader a reason, constraint, invariant, contract, or trade-off. Reread each comment you wrote
-and ask whether the code already says it, and whether it gives the reader any of those. Delete it
-if the code is clear without it.
+- **Comment only what the code cannot say.** Reread each comment and docstring you wrote. It stays
+only when the code is not clear without it and it gives the reader one of these:
+  - a reason, constraint, invariant, or trade-off;
+  - the contract of a public API;
+  - behaviour forced by a dependency, platform, or protocol you cannot change;
+  - a link to the issue or RFC that explains a constraint.
 - **History belongs to git.** Leave no note that code was added, moved, or removed, no account of
 what it used to do, and no commented-out code.
+- **Suppress a check only when the rule is wrong.** A lint, type, or formatter suppression stays
+only when the rule it silences is faulty or pedantic. Otherwise fix the code.
 - **Write general solutions.** Solve the class of problem, not just the case in front of you.
 - **Reuse before you build.** Prefer existing helpers over new ones. Abstract when repetition is
 real, not anticipated.
