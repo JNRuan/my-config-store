@@ -7,6 +7,7 @@ description: >-
   ONLY when the user explicitly runs /orca-implement or explicitly names this
   pipeline. Never trigger from a general request to implement, fix, or build
   something.
+disable-model-invocation: true
 ---
 # /orca-implement
 
