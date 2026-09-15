@@ -13,7 +13,7 @@ You coordinate. Four Orca workers review; you do not. Never substitute your own 
 diff for a worker's report.
 
 `/code-review-orca [BASE] [EFFORT]`, both optional, in any order. An argument that is an
-effort level (`low`, `medium`, `high`, `xhigh`) is `<EFFORT>`, default `medium`. Any other
+effort level (`low`, `medium`, `high`, `xhigh`, `max`) is `<EFFORT>`, default `high`. Any other
 argument is `<BASE>`, a branch, tag, or SHA, default `origin/main`.
 
 ## Orca contract

@@ -28,8 +28,10 @@ what was skipped, or confirms the code was already clean.
 
 ## Phase 0: Gather the diff
 
-If a PR number, branch name, or file path was passed as an argument, review
-that target. Otherwise run `git diff @{upstream}...HEAD`, falling back to
+An argument that is an effort level (`low`, `medium`, `high`, `xhigh`, `max`) is
+`<EFFORT>`, default `medium`; every subagent runs at it. If a PR number,
+branch name, or file path was passed as an argument, review that target.
+Otherwise run `git diff @{upstream}...HEAD`, falling back to
 `git diff main...HEAD` or `git diff HEAD~1` when there is no upstream. If the
 working tree has uncommitted changes, or the range diff is empty, also run
 `git diff HEAD` and include those changes; this pass often runs before the
@@ -46,7 +48,7 @@ Every subagent spawn uses this table. Choose the column for the harness you are 
 
 | Role                      | Claude                                                 | Codex                              | Other harness   |
 | ------------------------------------------- | ------------------------------------------------------ | ---------------------------------- | --------------- |
-| Angle reviewers, large diffs only (Phase 1) | Fable, high effort; Opus if the Fable limit is reached | gpt-6-astra, high reasoning effort | session default |
+| Angle reviewers, large diffs only (Phase 1) | Fable, `<EFFORT>`; Opus if the Fable limit is reached | gpt-6-astra, `<EFFORT>` reasoning effort | session default |
 
 If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a pass over it.
 
