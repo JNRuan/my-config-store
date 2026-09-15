@@ -90,9 +90,9 @@ guarantees rather than hedging everywhere. Flag security trade-offs; never make 
 
 - **Keep verification proportionate.** Match the effort to the task and the consequences of
 failure. Do not repeat checks just for reassurance. Examples:
-  - For plain Markdown prose, reading the diff against the user's request may be enough.
-  - Frontend designs may need visual checks.
-  - Code changes may need type checks, linting, passing tests, and build checks.
+  - For plain Markdown prose, reports, slides, presentations, verifying that user's request is fulfilled may be enough, you should not go through expensive and time consuming verification loops, e.g., content changes.
+  - Frontend application designs may need browser visual checks or testing, but right size it for the task, not all tasks require complex testing loops.
+  - Code changes need type checks, linting, passing tests, and build checks where applicable.
 - **Stop when the work is supported.** Finish once the relevant checks support the requested
 result and required project checks pass. Broaden or repeat verification only when a failure,
 new change, or unresolved concern gives you a concrete reason.
@@ -140,3 +140,4 @@ or has uncommitted changes, copy it to a temp directory first.
 - **Protect installed skills.** Do not delete a skill without authorisation. Never mirror-sync over
 installed skill directories such as `~/.agents/skills` or `~/.claude/skills`. Sync by copying named
 items only.
+
