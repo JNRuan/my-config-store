@@ -19,14 +19,16 @@ index. Raw files come last. Both are agent skills, not shell commands: **graphif
 
 ### Which one to reach for
 
-| You want… | Reach for |
-| --- | --- |
+
+| You want…                                                                                                                              | Reach for                                                                                                                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Orientation: architecture, "how does X work", where a feature lives, how subsystems connect, or a concept spanning code and docs/specs | **graphify**: `/graphify query "<question>"` (scoped subgraph), `/graphify explain "<concept>"` (plain-language explanation of one node), `/graphify path "<A>" "<B>"` (shortest path between two concepts) |
-| Find code by intent, with callers/callees/impact in one shot | **codanna**: `semantic_search_with_context query:"…"`, the default entry point; `semantic_search_docs query:"…"` for a lighter matches-only pass |
-| Exact symbol: definition, signature, the real function behind a name | **codanna**: `find_symbol name:"…"` for full details on one symbol; `search_symbols query:"…" kind:"function"` to find by name/pattern |
-| Who calls this / what does it call (actual `()` calls only) | **codanna**: `find_callers function_name:"…"` upstream, `get_calls function_name:"…"` downstream |
-| "What breaks if I change this": calls plus type usage and composition/rendering | **codanna**: `analyze_impact symbol_name:"…" max_depth:N`, blast radius before refactoring shared code |
-| Exact lines to edit or debug | read the file, but orient with the layers above first |
+| Find code by intent, with callers/callees/impact in one shot                                                                           | **codanna**: `semantic_search_with_context query:"…"`, the default entry point; `semantic_search_docs query:"…"` for a lighter matches-only pass                                                            |
+| Exact symbol: definition, signature, the real function behind a name                                                                   | **codanna**: `find_symbol name:"…"` for full details on one symbol; `search_symbols query:"…" kind:"function"` to find by name/pattern                                                                      |
+| Who calls this / what does it call (actual `()` calls only)                                                                            | **codanna**: `find_callers function_name:"…"` upstream, `get_calls function_name:"…"` downstream                                                                                                            |
+| "What breaks if I change this": calls plus type usage and composition/rendering                                                        | **codanna**: `analyze_impact symbol_name:"…" max_depth:N`, blast radius before refactoring shared code                                                                                                      |
+| Exact lines to edit or debug                                                                                                           | read the file, but orient with the layers above first                                                                                                                                                       |
+
 
 **Tie-breaker:** both run semantic search, but graphify's graph is a snapshot with inferred edges.
 When you need the exact code behind an intent, switch to codanna's `semantic_search_with_context`.
@@ -36,10 +38,10 @@ When you need the exact code behind an intent, switch to codanna's `semantic_sea
 - Treat any natural-language question about the codebase as a `/graphify query` first.
 - If `graphify-out/wiki/index.md` exists, use it for orientation instead of raw source browsing.
 - Fall back to `graphify-out/GRAPH_REPORT.md` (the whole-graph dump) only for a broad architecture
-  review, or when the scoped queries don't surface enough context.
+review, or when the scoped queries don't surface enough context.
 - After modifying code, run `/graphify . --update` to re-extract only changed files (code is
-  AST-only, no LLM cost; changed docs/images trigger an LLM re-pass). If `graphify-out/wiki/`
-  exists, add `--wiki`; only that flag regenerates the wiki, and it goes stale otherwise.
+AST-only, no LLM cost; changed docs/images trigger an LLM re-pass). If `graphify-out/wiki/`
+exists, add `--wiki`; only that flag regenerates the wiki, and it goes stale otherwise.
 
 ## graphify only
 
@@ -70,14 +72,14 @@ file reads: semantic intent search over code, plus exact definitions, callers/ca
 radius. Fine-grained, code-only, exact.
 
 - `semantic_search_with_context query:"…"`: the default entry point. Finds code by intent;
-  returns matches with docs, callers, callees, and impact in one call
+returns matches with docs, callers, callees, and impact in one call
 - `semantic_search_docs query:"…"`: lighter intent search, matches only (no relationship context)
 - `search_symbols query:"…" kind:"function"`: find symbols by name/pattern
 - `find_symbol name:"…"`: full details on one symbol
 - `find_callers function_name:"…"`: upstream callers
 - `get_calls function_name:"…"`: downstream calls
 - `analyze_impact symbol_name:"…" max_depth:N`: blast radius before refactoring shared code;
-  unlike the call tools, also covers type usage and composition/rendering
+unlike the call tools, also covers type usage and composition/rendering
 
 Read raw files last: only for the exact lines to edit or debug, once the tools above have
 oriented you.
