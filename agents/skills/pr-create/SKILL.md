@@ -9,6 +9,9 @@ Draft a pull request description from the current branch's changes. Requests for
 [Summary-only mode](#summary-only-mode). Requests to create, open, or update a PR authorise
 publication. Earlier authorisation to publish remains sufficient.
 
+Before drafting, load the `technical-writing` skill and apply its prose guidance.
+Follow this skill's rules for PR structure and content.
+
 ## How to gather context
 
 ### Repository safety check
