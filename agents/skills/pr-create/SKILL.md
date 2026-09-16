@@ -9,21 +9,6 @@ Draft a pull request description from the current branch's changes. Requests for
 [Summary-only mode](#summary-only-mode). Requests to create, open, or update a PR authorise
 publication. Earlier authorisation to publish remains sufficient.
 
-## Delegation
-
-Do not draft the PR in the session model: dispatch one subagent to run the whole skill, and relay its result. Set model and effort per this table, choosing the column for the harness you are running in:
-
-
-| Role                         | Claude                | Codex                                 | Other harness                                               |
-| ---------------------------- | --------------------- | ------------------------------------- | ----------------------------------------------------------- |
-| PR worker (everything below) | Sonnet, medium effort | gpt-5.6-luna, medium reasoning effort | gpt-5.6-luna, medium reasoning effort; else session default |
-
-
-- Give the subagent the user's parameters (base ref if given, create or summary-only mode) and any intent from the session the description should reflect.
-- The subagent follows the selected mode. It reports the PR URL, or the title and body file path in summary-only mode.
-- Where a step below says stop and ask the user, the subagent reports back instead; resolve with the user and dispatch again.
-- If the harness can't spawn subagents or set model and effort per call, run the steps below yourself. The table is an upgrade, not a requirement; never fail the task over it.
-
 ## How to gather context
 
 ### Repository safety check
@@ -76,11 +61,11 @@ Use this when the repo has no PR template of its own. The PR **title** is separa
 
 ## Changes
 
-<Short bullet list of what was done. Each bullet is a single line. Group related changes under sub-headings when the PR spans multiple areas.>
+<Short bullet list of what was done. Each bullet is a single line. Always group related changes under sub-headings when the PR spans multiple areas unless the PR is small and can be described by 5 or fewer bullets.>
 
 ## Test plan
 
-<Checklist of how to verify the changes. Only tick items that were actually run and verified in this session.>
+<A short checklist for validating the PR as a whole, not a check for every change. Include relevant checks such as typechecking, linting, builds, automated tests, browser verification, or human testing of affected features. Name the behaviour to verify for browser and manual checks. Only tick items actually run and verified in this session.>
 ```
 
 Treat the structure as flexible, not fixed: include a section only if it helps the reviewer understand or verify the change, and drop any that would be empty or just restate what's already clear (e.g. omit Impact when nothing breaks, omit per-area grouping on a single-area PR).
@@ -94,6 +79,7 @@ Treat the structure as flexible, not fixed: include a section only if it helps t
 
 ## Writing principles
 
+- Describe the delivered changes, not the process used to produce them. Omit run, orchestration, and specification artefacts unless creating or updating those artefacts is itself the purpose of the PR. They may inform the description without being discussed in it.
 - Summary paragraphs are about intent: what problem is being solved or what goal is being achieved. "Overhauls the blog to support category browsing and improve discoverability" is good. "Added filters, changed routing, updated SEO" is bad; that's just restating the bullets.
 - If the change breaks existing consumers (removed exports, changed API shapes, renamed public interfaces), lead with that in the Impact section, and flag it in the Summary.
 - Open directly with what the change does: the PR is already the context.
