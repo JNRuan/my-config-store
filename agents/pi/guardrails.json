@@ -80,6 +80,33 @@
     ]
   },
   "permissionGate": {
+    "autoDenyPatterns": [
+      {
+        "pattern": "git\\s+(?:-\\S+\\s+\\S+\\s+|-\\S+\\s+)*push\\b[^;&#|]*(\\s--force\\b|\\s(?<!-)-\\w*f\\w*\\b)",
+        "regex": true,
+        "description": "Git force push (any -f/--force form, incl. -C paths)"
+      },
+      {
+        "pattern": "git\\s+(?:-\\S+\\s+\\S+\\s+|-\\S+\\s+)*checkout\\b[^;&#|]*(\\s--\\s|\\s--force\\b|\\s(?<!-)-\\w*f\\w*\\b|\\s\\.(?:\\s|/|$))",
+        "regex": true,
+        "description": "Git checkout discarding working tree (pathspec after --, -f/--force, or . / ./ targets)"
+      },
+      {
+        "pattern": "git\\s+(?:-\\S+\\s+\\S+\\s+|-\\S+\\s+)*switch\\b[^;&#|]*(\\s--discard-changes\\b|\\s(?<!-)-\\w*f\\w*\\b)",
+        "regex": true,
+        "description": "Git switch -f / --discard-changes (discard local changes)"
+      },
+      {
+        "pattern": "git\\s+(?:-\\S+\\s+\\S+\\s+|-\\S+\\s+)*clean\\b",
+        "regex": true,
+        "description": "Git clean (untracked file deletion, unrecoverable)"
+      },
+      {
+        "pattern": "gh\\s+(?:-\\S+\\s+\\S+\\s+|-\\S+\\s+)*repo\\s+delete\\b",
+        "regex": true,
+        "description": "GitHub repository deletion"
+      }
+    ],
     "patterns": [
       {
         "pattern": "DROP DATABASE",
@@ -102,8 +129,24 @@
         "description": "AWS S3 object deletion"
       },
       {
-        "pattern": "brew",
-        "description": "Homebrew package manager"
+        "pattern": "brew install",
+        "description": "Homebrew install"
+      },
+      {
+        "pattern": "brew reinstall",
+        "description": "Homebrew reinstall"
+      },
+      {
+        "pattern": "brew uninstall",
+        "description": "Homebrew uninstall"
+      },
+      {
+        "pattern": "brew remove",
+        "description": "Homebrew remove"
+      },
+      {
+        "pattern": "brew upgrade",
+        "description": "Homebrew upgrade"
       },
       {
         "pattern": "docker compose down",
@@ -122,8 +165,22 @@
         "description": "Docker system cleanup"
       },
       {
-        "pattern": "git push --force",
-        "description": "Git force push"
+        "pattern": "gh pr merge",
+        "description": "GitHub PR merge"
+      },
+      {
+        "pattern": "gh release",
+        "description": "GitHub release create/edit/delete"
+      },
+      {
+        "pattern": "git\\s+(?:-\\S+\\s+\\S+\\s+|-\\S+\\s+)*reset\\b[^;&#|]*--hard",
+        "regex": true,
+        "description": "Git hard reset"
+      },
+      {
+        "pattern": "git\\s+(?:-\\S+\\s+\\S+\\s+|-\\S+\\s+)*restore\\b",
+        "regex": true,
+        "description": "Git restore (working tree overwrite)"
       },
       {
         "pattern": "npm publish",
@@ -285,9 +342,6 @@
           },
           {
             "pattern": ".env.test"
-          },
-          {
-            "pattern": ".env.local"
           },
           {
             "pattern": "*.example.env"
