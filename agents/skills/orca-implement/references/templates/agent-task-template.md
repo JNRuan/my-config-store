@@ -72,6 +72,10 @@ Format check:  {command or `none`}
 Format write:  {command or `none`}
 Dev server:    {command and port, or `none`}
 Commit style:  {the repository's commit-message convention, from the plan}
+Project rules: {each rule file from the plan's Project rules section, as path and one-sentence summary, or `none`}
+Browser:       agent-browser, headless, with `AGENT_BROWSER_ARGS="--no-sandbox"` set for every agent-browser command
+
+Give the Browser instruction to every subagent that runs a browser.
 
 ## Worktree & branch
 

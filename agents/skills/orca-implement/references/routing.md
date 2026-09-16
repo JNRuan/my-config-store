@@ -106,7 +106,7 @@ nclaude --model <fable|opus> --effort <effort> --permission-mode bypassPermissio
 **Claude in a task or QA worktree** (builder, fix, QA):
 
 ```bash
-nono run --profile my-claude --allow-cwd --allow "<RUNDIR>" -- claude --model <fable|opus> --effort <effort> --permission-mode bypassPermissions
+nono run --profile my-claude --allow-cwd --allow-gpu --allow "<RUNDIR>" -- claude --model <fable|opus> --effort <effort> --permission-mode bypassPermissions
 ```
 
 **Codex in `<WT>`** (scout, plan fact check, planner, critic, reviewer):
@@ -118,6 +118,6 @@ ncodex --model <gpt-5.6-luna|gpt-6-astra|gpt-5.6-sol> -c 'model_reasoning_effort
 **Codex in a task or QA worktree** (builder, fix, QA):
 
 ```bash
-nono run --profile my-codex --allow-cwd --allow "<RUNDIR>" -- codex --model <gpt-6-astra|gpt-5.6-sol> -c 'model_reasoning_effort="<effort>"' --sandbox danger-full-access --add-dir "<RUNDIR>" --ask-for-approval never
+nono run --profile my-codex --allow-cwd --allow-gpu --allow "<RUNDIR>" -- codex --model <gpt-6-astra|gpt-5.6-sol> -c 'model_reasoning_effort="<effort>"' --sandbox danger-full-access --add-dir "<RUNDIR>" --ask-for-approval never
 ```
 

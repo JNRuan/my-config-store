@@ -19,6 +19,7 @@ Write the planner brief to `<RUNDIR>/scratch/planner-brief.md`. It stands alone 
 - confirmed scout evidence;
 - open assumptions;
 - project tooling verbatim;
+- the project-rules paths from scouting, with the instruction to read every file before drafting;
 - the selected `plan_review_tier`, with downstream policy fields left `pending`;
 - the task-complexity rubric and builder routing rows from `references/routing.md`;
 - the required structure from `references/templates/plan-template.md`.
@@ -53,10 +54,14 @@ The final plan must contain:
 - frontmatter with pinned `base_sha`, captured `<RUN-BRANCH>`, `plan_review_tier`, and `run_complexity: pending`;
 - pending code-review and QA policy until critique determines `run_complexity`;
 - requirements and acceptance criteria with `AC-n` ids;
+- constraints cited by `C-n` id, each with a verification method;
 - at least one task covering every acceptance criterion;
+- a coverage table from every requirement to its criteria and tasks, with no empty cell;
 - a task table with explicit dependencies, complexity, and builder routing;
 - the smallest workable task set;
 - every interface shared across tasks as a pinned contract;
+- a Project rules section summarising every rule file, with deviations and contradictions;
+- a Decisions section recording each design choice with the alternative rejected and why;
 - validated assumptions with evidence;
 - open assumptions assigned to the task that must verify them;
 - project tooling verbatim, including Build, Format check, and Format write;

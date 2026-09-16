@@ -38,14 +38,25 @@ What the change must do. Number each one `R-1`, `R-2`, and so on. Write each so 
 
 ## Constraints
 
-Limits the implementation must obey: security, data handling, architecture, compatibility, process. Record every human-owned decision here once the human makes it.
+Limits the implementation must obey: security, data handling, architecture, compatibility, process. Number each one `C-1`, `C-2`, and so on. Record every human-owned decision here once the human makes it.
 
 ## Repository findings
 
 Scout findings that change the approach: current behaviour, affected code, existing coverage, tooling. Cite all claims with `path:line`.
 
+## Assumptions
+
+Details the source leaves open that a sane default settles. Number each one `A-1`, `A-2`, and so on, and give the default and its reasoning. A human-owned decision is never an assumption. It goes in Questions.
+
 ## Questions
 
-Every ambiguity, missing acceptance criterion, and conflict between the source and the repository. Number each one `Q-1`, `Q-2`, and so on. Give your recommended answer where you have one.
+Every ambiguity, missing acceptance criterion, and conflict between the source and the repository that no default settles. Number each one `Q-1`, `Q-2`, and so on. Order them by impact: scope first, then security and data handling, then user-facing behaviour, then technical detail.
+
+Write each question as a full question ending in `?`, then one sentence on what the answer decides. Give one to three suggested answers and mark the recommended one:
+
+**Q-1**: Does the export include archived reports?
+Decides whether R-2 covers the `archived_reports` table.
+- A (recommended): No. The reports page already hides archived rows, and the source does not mention them.
+- B: Yes, behind the existing "include archived" filter.
 ```
 

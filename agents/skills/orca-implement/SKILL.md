@@ -294,7 +294,7 @@ Complete every step in order before Phase 1.
 
 Run these read-only lenses in parallel:
 
-- **Discovery**: find project mechanics, tooling commands, `.env` presence, the commit-message convention, relevant code locations, and whether `orca.yaml` defines a `scripts.setup` hook and what that hook does.
+- **Discovery**: find project mechanics, tooling commands, `.env` presence, the commit-message convention, relevant code locations, and whether `orca.yaml` defines a `scripts.setup` hook and what that hook does. Find the project rules: rule files that touch this task, such as `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `CONTEXT.md`, `DESIGN.md`, `ARCHITECTURE.md`, `STYLEGUIDE.md`, or `CONSTITUTION.md`, at any depth. Report their paths, not their contents.
 - **Comprehension**: establish current behaviour, affected code, and dependencies on existing code.
 - **Test coverage**: find existing coverage that needs adjustment and important gaps to close.
 - **Additional lenses**: add a lens when the task needs evidence not covered above.
@@ -308,7 +308,7 @@ After all retries:
 3. Confirm that the completed reports still cover project mechanics, current behaviour, and tests.
 4. Run the abort routine if any of those three areas lacks coverage.
 
-Read every completed report. Carry confirmed findings into the brief and the planner brief. Put every unresolved assumption in the brief as a question for the human.
+Read every completed report. Carry confirmed findings into the brief and the planner brief. Record each unresolved assumption that has a sane default in the brief's Assumptions section, unless the assumption is a human-owned decision. Put every other one in the Questions section.
 
 ## Phase 2: Understanding check
 
@@ -316,7 +316,17 @@ The understanding check settles the task contract before planning. It reconciles
 
 Write `<RUNDIR>/plan/brief.md` in the shape of `references/templates/brief-template.md`.
 
-Put every known question in the first version. Open `brief.md` with the mapped `{human-review-skill}` and run its documented review loop.
+Put every known question in the first version. Before opening the brief, and before reopening each revised version, check it and fix what fails:
+
+- every `R-n` states a behaviour a criterion can test, with no implementation detail;
+- Scope lists both In and Out;
+- every `C-n` is verifiable;
+- Questions are in impact order;
+- every `Q-n` is a full question with one to three suggested answers and a marked recommendation;
+- every `A-n` gives its default and reasoning, and none is a human-owned decision;
+- every repository claim cites `path:line`.
+
+Open `brief.md` with the mapped `{human-review-skill}` and run its documented review loop.
 
 Apply every answer and comment to the brief. Fold each answer into the section it settles and remove the question. If an answer reveals more questions, group all of them into the next version. Reopen the brief and run the printed next-round command.
 
@@ -621,11 +631,11 @@ Record the result of every applicable command. Verify every boundary in the plan
 
 ### Check acceptance criteria
 
-Read `references/context/acceptance-check.md`. The first pass covers every criterion. `references/context/acceptance-check.md` selects the criteria for every later pass.
+Read `references/context/acceptance-check.md`. The first pass covers every criterion and constraint. `references/context/acceptance-check.md` selects the scope of every later pass.
 
 Dispatch the `acceptance-check-<PASS>` task to the routed worker in `<WT>`, collect, and retry once. If the retry fails, verify each in-scope criterion yourself and record the missing check in `summary.md`.
 
-Read the report. Confirm each `not met` and `not verifiable` entry against the code before acting on it. Treat each confirmed `not met` criterion as a verification failure. Carry forward the verdict and evidence of every criterion outside the pass's scope. Record the evidence for every criterion in `summary.md`.
+Read the report. Confirm each `not met` and `not verifiable` entry against the code before acting on it. Treat each confirmed `not met` criterion or constraint as a verification failure. Confirm each reported unrequested change against the plan. Revert a confirmed one through a fix task, or keep it and record the reason under Decisions in `summary.md`. Carry forward the verdict and evidence of every criterion and constraint outside the pass's scope. Record the evidence for every criterion and constraint in `summary.md`.
 
 ### Decide browser verification
 
@@ -645,7 +655,7 @@ If the implementation carries more risk than the approved `run_complexity` assum
 
 ### Fix verification failures
 
-Turn each failure into a fix task through the Phase 5 fix-task procedure. Put the failing command, its output, and the expected result in the agent task. For an unmet criterion, put the criterion, the report's evidence, and the expected behaviour in the agent task.
+Turn each failure into a fix task through the Phase 5 fix-task procedure. Put the failing command, its output, and the expected result in the agent task. For an unmet criterion or constraint, put it, the report's evidence, and the expected behaviour in the agent task.
 
 After each fix merge:
 

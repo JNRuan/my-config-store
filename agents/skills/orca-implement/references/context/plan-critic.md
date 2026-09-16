@@ -21,7 +21,7 @@ The critic challenges the plan rather than approving it. It may use native subag
 ```text
 Read <RUNDIR>/plan/plan.md. Review it as an adversarial critic, not an approver. Find the strongest concrete issues that could cause implementation, integration, or verification to fail.
 
-Follow the plan's specific risks wherever they lead. Your critique must account for requirement coverage, assumptions, task boundaries and dependencies, verification adequacy, and task sizing. Pursue any other credible failure mode the plan reveals.
+Follow the plan's specific risks wherever they lead. Your critique must account for requirement coverage, assumptions, decisions and their rejected alternatives, task boundaries and dependencies, verification adequacy, task sizing, and conflicts with the project rules. Read the rule files named in the plan's Project rules section. An unjustified conflict with a project rule is `BLOCKING`. Pursue any other credible failure mode the plan reveals.
 
 When you need repository evidence, use native subagents for read-only scouting. Do not create Orca tasks, dispatches, or terminals. You own and must clean up any subagents you start.
 

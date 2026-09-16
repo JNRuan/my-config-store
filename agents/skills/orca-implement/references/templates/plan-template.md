@@ -47,6 +47,10 @@ Give every acceptance criterion an id: `AC-1`, `AC-2`, and so on. Every criterio
 
 What this run deliberately does not touch.
 
+## Constraints
+
+Take the constraints from the approved brief and cite each by its `C-n` id. Every constraint must have a verification method. Write `none` when the brief has no constraints.
+
 ## Assumptions
 
 - **Validated**: state the confirmed assumption and cite `path:line` evidence.
@@ -59,6 +63,20 @@ Do not leave a known human-owned decision as an open assumption.
 Interfaces shared across tasks, pinned before dispatch: signatures, schemas,
 routes, types. Parallel tasks build against these as written. Only the
 coordinator changes a contract, by re-pinning it.
+
+## Project rules
+
+The rule files that govern this change.
+
+- **Files**: each rule file the scouts found, with its path and one sentence on what it requires of this task.
+- **Deviations**: each rule the plan cannot follow, with its `path:line`, the reason, and the simpler alternative rejected. Write `none` when the plan follows every rule.
+- **Contradictions**: each rule the existing code already breaks, with the rule's `path:line`, the code's `path:line`, and which one the plan follows. Write `none` when there are none.
+
+A source requirement that a rule forbids is a scope question for the brief, not a deviation.
+
+## Decisions
+
+Each design choice a competent engineer could have made differently: the decision, the alternative rejected, and why. Write `none` when the plan makes no such choice.
 
 ## Tasks
 
@@ -87,6 +105,14 @@ independent of `plan_review_tier` and `run_complexity`.
   3. Edge cases to cover
   4. Manual/visual checks (if applicable)
 - **Covers**: acceptance criteria this task satisfies.
+
+## Coverage
+
+One row per requirement: its `R-n` id, the `AC-n` ids that express it, and the tasks that cover them. An empty cell is a plan defect.
+
+| R   | AC          | Tasks   |
+|-----|-------------|---------|
+| R-1 | AC-1, AC-2  | 01, 02  |
 
 ## Orchestration
 

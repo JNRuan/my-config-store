@@ -29,7 +29,7 @@ If the dev server does not start, try at most three times. Use another port, con
 ## Dispatch template
 
 ```text
-Use /{browser-skill} in headless mode to verify the integrated UI from <WT-PATH>.
+Use /{browser-skill} in headless mode to verify the integrated UI from <WT-PATH>. Set `AGENT_BROWSER_ARGS="--no-sandbox"` for every agent-browser command.
 
 Before starting a dev server or running tests, identify any live services they can affect. Use disposable test data. Live-data changes, external messages, and paid calls require user authorisation. Existing authorisation is enough.
 

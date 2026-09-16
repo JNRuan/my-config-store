@@ -26,13 +26,14 @@ Decisions the coordinator made that no other artifact records, each with its rea
 
 - {decision}: {reason}
 
-## Acceptance criteria
+## Acceptance criteria and constraints
 
-One row per criterion in the plan. Result is `verified`, `not met`, or `not verified`. Evidence is a command and its result, a test name, a screenshot path, or `path:line`. For `not verified`, give the reason instead.
+One row per criterion and constraint in the plan. Result is `verified`, `not met`, or `not verified`. Evidence is a command and its result, a test name, a screenshot path, or `path:line`. For `not verified`, give the reason instead.
 
 | AC   | Result   | Evidence               |
 |------|----------|------------------------|
 | AC-1 | {result} | {evidence, or reason}  |
+| C-1  | {result} | {evidence, or reason}  |
 
 ## Incidents
 

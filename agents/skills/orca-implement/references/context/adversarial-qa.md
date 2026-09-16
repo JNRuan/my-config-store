@@ -9,6 +9,7 @@ Read this file in Phase 8 after creating and verifying the disposable QA worktre
 Resolve:
 
 - `{adversarial-qa-skill}` from `references/skill-map.md`;
+- `{browser-skill}` from `references/skill-map.md`;
 - `<BASE_SHA>`;
 - `<QA_HEAD>`;
 - `<RUNDIR>`;
@@ -30,7 +31,7 @@ Context:
 - Review findings and fixes so far, treat as evidence:
 <REVIEW_PATHS>
 
-Inspect the repository independently. Exclude .agents/orca/orchestration/ because it contains run bookkeeping, not the implementation. Run browser work headlessly. This worktree is your isolated review worktree at verified post-review HEAD <QA_HEAD>. Do not create another worktree and do not remove this one. Save screenshots under <RUNDIR>/screenshots/.
+Inspect the repository independently. Exclude .agents/orca/orchestration/ because it contains run bookkeeping, not the implementation. Run browser work headlessly with /{browser-skill}. Set `AGENT_BROWSER_ARGS="--no-sandbox"` for every agent-browser command. Give that instruction to every subagent that runs a browser. This worktree is your isolated review worktree at verified post-review HEAD <QA_HEAD>. Do not create another worktree and do not remove this one. Save screenshots under <RUNDIR>/screenshots/.
 
 Do not limit testing to the plan's happy path. Retest paths changed by review fixes and explore adjacent failure paths that affect the PR result. Stay within the approved scope unless an adjacent failure directly affects the PR result.
 
