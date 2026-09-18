@@ -12,10 +12,6 @@ Resolve:
 - `<ROUND>`;
 - `<RUNDIR>`.
 
-## Context rules
-
-The critic challenges the plan rather than approving it. It may use native subagents for read-only repository scouting. It must not create Orca tasks, dispatches, or terminals and must clean up its native subagents.
-
 ## Dispatch template
 
 ```text

@@ -18,14 +18,6 @@ Resolve:
 
 The subagent runs on the model in `references/routing.md`.
 
-## Context rules
-
-Before starting a dev server or running tests, identify any live services they can affect. Use disposable test data. Live-data changes, external messages, and paid calls require user authorisation. Existing authorisation is enough.
-
-Run headlessly. Require screenshots for passing and failing checks. Undo interactions that change real data. Stop every dev server you start.
-
-If the dev server does not start, try at most three times. Use another port, confirm that `.env` exists, and run the project's recorded install command when needed. After the third failure, report `not verified: dev server unavailable` with every startup error.
-
 ## Dispatch template
 
 ```text
@@ -40,4 +32,6 @@ Interactions: <INTERACTIONS>
 Expected results: <EXPECTED_RESULTS>
 
 Save screenshots to <RUNDIR>/screenshots/ as {description}_{sequence}.png. Capture screenshots for passing and failing checks. Undo any interaction that changes real data. Stop every dev server you start. Report the checks performed, actual results, screenshot paths, and any unverified behaviour.
+
+If the dev server does not start, try at most three times: another port, confirm that .env exists, run the recorded install command when a dependency is missing. After the third failure, report `not verified: dev server unavailable` with every startup error.
 ```

@@ -86,8 +86,8 @@ independent of `plan_review_tier` and `run_complexity`.
 
 | seq | slug | deps | complexity | builder | covers |
 |-----|------|------|------------|---------|--------|
-| 01  | ...  | —    | medium     | codex sol · high | AC-1 |
-| 02  | ...  | 01   | high       | claude fable · high | AC-2 |
+| 01  | ...  | —    | medium     | codex gpt-6-astra · high | AC-1 |
+| 02  | ...  | 01   | high       | codex gpt-6-astra · xhigh | AC-2 |
 | 03  | ...  | 02   | xhigh      | claude fable · xhigh | AC-3 |
 
 ### {seq}-{slug}

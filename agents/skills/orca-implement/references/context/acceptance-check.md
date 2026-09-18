@@ -37,10 +37,6 @@ Pass 1 covers every criterion and constraint. A later pass covers one when:
 
 Every other criterion and constraint keeps its previous verdict, evidence, and reason. A `not verifiable here` verdict carries forward unless a fix targeted it.
 
-## Context rules
-
-The worker verifies each acceptance criterion and constraint against the integrated HEAD in `<WT>`. It reads code, runs the recorded project commands and the tests that cover each one, and exercises the behaviour when a command can exercise it. It judges only whether each is met. In pass 1 it also traces every change in the diff to a task.
-
 ## Dispatch template
 
 ```text

@@ -15,10 +15,6 @@ Resolve:
 - `<RUNDIR>`;
 - `<REVIEW_PATHS>`: every completed `<RUNDIR>/review/review-r*.md`, one per line.
 
-## Context rules
-
-The worker attacks behaviour beyond the plan's happy path and retests every path that review fixes changed. It stays within the approved scope unless an adjacent failure directly affects the PR result.
-
 ## Dispatch template
 
 ```text

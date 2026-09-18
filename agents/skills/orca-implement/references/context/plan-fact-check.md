@@ -13,14 +13,10 @@ Resolve:
 - `<SCOPE>`: empty before critique. After it:
 
   ```text
-  Limit the check to the sections changed since <PRE_CRITIQUE_SHA>, listed by `git diff <PRE_CRITIQUE_SHA> -- <RUNDIR>/plan/plan.md`.
+  Limit the check to the sections that differ between <RUNDIR>/scratch/plan-pre-critique.md and <RUNDIR>/plan/plan.md.
   ```
 
 The task is `plan-fact-check<SUFFIX>` and the report is `<RUNDIR>/scratch/fact-check<SUFFIX>.md`.
-
-## Context rules
-
-Verify only checkable repository claims. Do not assess planning judgement, decomposition, scope, or complexity.
 
 ## Dispatch template
 

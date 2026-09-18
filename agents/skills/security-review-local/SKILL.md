@@ -20,7 +20,7 @@ You scout first, fan the review across security-lens subagents, then adversarial
 - Report only Medium, High, or Critical findings.
 - Report a finding only when you can state a concrete attack path or a concrete exposure the diff introduces.
 
-Never report:
+Hard exclusions. Never report:
 
 - denial of service, resource exhaustion, rate limiting, or memory or CPU consumption;
 - memory safety in memory-safe languages (Rust, Go, Java, Python, JS/TS), except where the changed code uses unsafe operations or native interfaces;
@@ -36,7 +36,7 @@ Every subagent spawn uses this table. Choose the column for the harness you are 
 
 | Role                             | Claude                                                  | Codex                                | Other harness   |
 | -------------------------------- | ------------------------------------------------------- | ------------------------------------ | --------------- |
-| Scouts (Step 1)                  | Sonnet, high effort                                     | gpt-5.6-luna, high reasoning effort  | session default |
+| Scouts (Step 1)                  | Opus, low effort                                        | gpt-5.6-luna, xhigh reasoning effort | session default |
 | Security lens reviewers (Step 2) | Fable, xhigh effort; Opus if the Fable limit is reached | gpt-6-astra, xhigh reasoning effort  | session default |
 
 If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a review over it.
@@ -199,10 +199,7 @@ If a subagent fails or returns garbage, restart it with the same package, up to 
 
 ### Security lenses
 
-Each lens below is a starting point, not a checklist, and none is complete.
-Read the changed code for any way an attacker could reach a sink or an
-exposure through your lens, whether or not a bullet names it. Covering every
-bullet is not the goal. A finding off the list counts the same as one on it.
+Each lens below is a starting point, not a checklist. A finding off the list counts the same as one on it.
 
 **Injection and code execution**
 
@@ -245,7 +242,7 @@ bullet is not the goal. A finding off the list counts the same as one on it.
 
 **Agentic**
 
-Reference the OWASP Agentic Top 10. Flag prompt injection when untrusted content can cause a concrete security impact. Examples include unauthorised tool use, file writes, memory changes, or disclosure of private data through generated text. Harmless wording changes are not findings.
+Apply the OWASP Agentic Top 10. Flag prompt injection when untrusted content can cause a concrete security impact. Examples include unauthorised tool use, file writes, memory changes, or disclosure of private data through generated text. Harmless wording changes are not findings.
 
 - Untrusted content (user input, fetched pages, file contents) flowing into agent instructions that can redirect the task, escalate access, or exfiltrate data.
 - Model output used as input to a sink without validation: executed as a command, run as a query, used as a file path or URL, or rendered as HTML.
@@ -338,7 +335,7 @@ cursor.execute(f"SELECT ... ORDER BY {order}", params)
 
 - Precision over recall. A shorter report with only real, exploitable issues beats a longer one with noise.
 - Defend findings with evidence when challenged, and withdraw when the evidence is not there.
-- Report fixable vulnerabilities only. Skip hardening commentary, general quality remarks, and PR summaries.
+- Skip general quality remarks and PR summaries.
 - Do not explain findings you investigated and dropped.
 
 ## Safety

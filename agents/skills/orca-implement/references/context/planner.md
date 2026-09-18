@@ -49,20 +49,4 @@ Write `<RUNDIR>/plan/plan.md` as one coherent document that follows `references/
 
 ## Required final-plan content
 
-The final plan must contain:
-
-- frontmatter with pinned `base_sha`, captured `<RUN-BRANCH>`, `plan_review_tier`, and `run_complexity: pending`;
-- pending code-review and QA policy until critique determines `run_complexity`;
-- requirements and acceptance criteria with `AC-n` ids;
-- constraints cited by `C-n` id, each with a verification method;
-- at least one task covering every acceptance criterion;
-- a coverage table from every requirement to its criteria and tasks, with no empty cell;
-- a task table with explicit dependencies, complexity, and builder routing;
-- the smallest workable task set;
-- every interface shared across tasks as a pinned contract;
-- a Project rules section summarising every rule file, with deviations and contradictions;
-- a Decisions section recording each design choice with the alternative rejected and why;
-- validated assumptions with evidence;
-- open assumptions assigned to the task that must verify them;
-- project tooling verbatim, including Build, Format check, and Format write;
-- verification requirements for important behaviour and edge cases.
+The final plan follows `references/templates/plan-template.md` exactly, with `run_complexity` and the downstream policy fields `pending` until critique, and the smallest workable task set.

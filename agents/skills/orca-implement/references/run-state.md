@@ -152,8 +152,8 @@ Phase 0 creates the manifest with these top-level fields:
   },
   "integration_worktree": {
     "id": "<WT>",
-    "path": "<WT_PATH>",
-    "branch": "<RUN_BRANCH>",
+    "path": "<WT-PATH>",
+    "branch": "<RUN-BRANCH>",
     "origin": "created"
   },
   "build_owned_task_ids": [],
@@ -197,8 +197,8 @@ Phase 0 creates the manifest with these top-level fields:
     "worktrees": [
       {
         "id": "<WT>",
-        "path": "<WT_PATH>",
-        "branch": "<RUN_BRANCH>",
+        "path": "<WT-PATH>",
+        "branch": "<RUN-BRANCH>",
         "kind": "integration",
         "status": "active"
       }
@@ -252,12 +252,7 @@ A task with no dependencies starts `ready`. A task with unmerged dependencies st
 
 A fix task uses `"kind": "fix"` and records the phase and round that produced it.
 
-`worker_attempt` is 1 for the original worker and 2 for its single replacement.
-`verify_fix_cycles` counts cycles for the current attempt.
-When moving from attempt 1 to 2, reset `verify_fix_cycles` to 0.
-Save both values before starting the replacement.
-Resuming an attempt preserves both values.
-After attempt 2 exhausts its three cycles, follow the permanent-failure path.
+`worker_attempt` is 1 for the original worker and 2 for its single replacement. `verify_fix_cycles` counts cycles for the current attempt. When moving from attempt 1 to 2, reset `verify_fix_cycles` to 0. Save both values before starting the replacement. Resuming an attempt preserves both values.
 
 Increment `resolve_verify_cycles` on the original task for each conflict-resolution task registered for it.
 
@@ -312,7 +307,7 @@ Set `accepted_findings` at triage to the counts of findings you accepted, by sev
 
 `verification.fix_waves` counts Phase 6 fix waves. `verification.post_review_fix_waves` counts the post-review verification fix waves in Phase 7. Each has its own limit of three.
 
-`run_page.goal` and `run_page.outcome` are prose written for the run page only, each under 512 characters. Set `goal` when the brief is approved: a summary of the brief's Problem and Goal sections. Set `outcome` when the run ends: what the PR delivers, or what failed. Neither is a copy of a brief or summary section.
+`run_page.goal` and `run_page.outcome` are prose written for the run page only, each under 512 characters. Set `goal` when the brief is approved: a summary of the brief's Problem and Goal sections. Set `outcome` when the run ends: what the PR delivers, or what failed, for the person who asked for the work. Neither is a copy of a brief or summary section.
 
 `browser_verification.policy` accepts `pending`, `run`, or `not_needed`. Set it in Phase 6. `browser_verification.result` accepts `null`, `passed`, `failed`, or `not verified`, recorded from the round 1 browser report or the latest scoped rerun.
 
@@ -344,7 +339,7 @@ Each entry in `review_rounds` contains:
 
 Set `accepted_findings` at triage to the counts of findings you accepted, by source and severity; a browser failure counts once. Add a lens to `missing_lenses` when its in-round retry fails. Set `security_lenses_run=false` with `security_skip_reason` when `run_complexity` is `low`, or when the Phase 7 security trigger does not fire for a later round. Set `browser_result` in round 1 only. `stop_reason` accepts `no accepted fixes`, `no severe findings`, or `cap reached`.
 
-`fix_waves` counts the round's review fix waves. Set `review_fixes_applied=true` after any review fix, Medium included, merges and passes verification. Only a Critical or High fix sets `severe_fix_merged`, and only `severe_fix_merged` continues the loop.
+`fix_waves` counts the round's review fix waves. Set `review_fixes_applied=true` after any review fix, Medium included, merges and passes verification. Only a Critical or High fix sets `severe_fix_merged`.
 
 Set `code_review_complete=true` only after the review loop and any required post-review verification finish.
 
@@ -462,13 +457,4 @@ On failure or blockage:
 
 ## Recovery authority
 
-The manifest owns resource identity and coordinator intent. Git and Orca own live execution facts.
-
-During recovery:
-
-- Git establishes which task branches have merged;
-- the manifest's `merged` status also requires successful integration verification;
-- live Orca dispatch state overrides stale dispatch status;
-- recorded round and fix-wave counts preserve spent limits;
-- collect pending `worker_done` deliveries before any new dispatch;
-- work already committed or merged must not run again.
+The manifest owns resource identity and coordinator intent. Git and Orca own live execution facts. Resume a run as SKILL.md describes.

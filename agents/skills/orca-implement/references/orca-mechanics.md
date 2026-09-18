@@ -11,16 +11,12 @@ This file defines how to run shared Orca operations for `/orca-implement`. Phase
 
 ## 2.0 Follow the live Orca contract
 
-Load the version-matched `orchestration` and `orca-cli` guides before the first Orca mutation.
-
-The guides own command names, flags, capabilities, response fields, and recovery commands. The skill owns workflow, resource ownership, and safety policy.
-
 Do not guess syntax or repeat a mutation from memory. When a guide does not support a required operation, stop through the current phase's failure path.
 
 ## 3.0 Receive orchestration messages
 
 1. Run `check --wait` in slices of at most 540000 ms. Use a shorter slice when the coordinator runtime's command timeout is lower.
-2. Treat a timeout or empty delivery as a checkpoint.
+2. Treat a timeout or empty delivery as a signal to wait again.
 3. Process every message in a delivery before acknowledging it.
 4. Correlate `payload.taskId` and `payload.dispatchId` with an active manifest dispatch. Log and ignore messages for another run or a superseded dispatch.
 5. Use `dispatch-show` when dispatch state is uncertain.
@@ -73,7 +69,7 @@ git -C <WT-PATH> status --porcelain --ignored=matching -- .agents/orca/orchestra
 git -C <WT-PATH> rev-parse HEAD
 ```
 
-The first command must return no output. The second must list only reports expected from the worker or whole panel being collected, including retries, and the coordinator's own manifest and artifact edits. HEAD must equal `<H>`.
+The first command must return no output. The second must list only reports expected from the worker or whole panel being collected, including retries, and the coordinator's own manifest and artifact edits. HEAD must equal `<H>`. Do not commit anything between recording `<H>` and running the check.
 
 Before deleting files or restoring the worktree, stop any workers that can
 still write to it. Confirm that the changes and files to be discarded come
@@ -126,4 +122,3 @@ Retry each worker once. The phase says what happens when the retry also fails.
   - `<RUNDIR>/scratch/qa-findings.md`;
   - `<RUNDIR>/screenshots/`.
 - Never merge the QA branch.
-- Act only on runtime-global state that the manifest assigns to this run.

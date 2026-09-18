@@ -19,8 +19,8 @@ Every subagent spawn uses this table. Choose the column for the harness you are 
 
 | Role                       | Claude                | Codex                                | Other harness   |
 | -------------------------- | --------------------- | ------------------------------------ | --------------- |
-| Scouts (Phase 1)           | Sonnet, medium effort | gpt-5.6-luna, high reasoning effort  | session default |
-| Browser executor (Phase 4) | opus, medium effort   | gpt-5.6-sol, medium reasoning effort | session default |
+| Scouts (Phase 1)           | Opus, low effort      | gpt-5.6-luna, xhigh reasoning effort | session default |
+| Browser executor (Phase 4) | Opus, medium effort   | gpt-6-astra, medium reasoning effort | session default |
 
 
 If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a review over it.
@@ -135,6 +135,8 @@ One browser executor runs every browser vector in order and owns the dev server.
 
 Its brief:
 
+Before starting the dev server, identify any live services it can affect. Use disposable test data. Live-data changes, external messages, and paid calls require user authorisation. Existing authorisation is sufficient.
+
 1. Start the dev server from the review worktree. If it fails to start, try another port, confirm `.env` exists, and rerun the install command for a missing dependency. Stop after three attempts and report the errors from each.
 2. Confirm that each changed flow works end to end before attacking it. Do not rely on earlier verification.
 3. Run the vectors in order with agent-browser in headless mode. Screenshot every FAIL.
@@ -217,8 +219,6 @@ Finding #1
 
 - Every finding is reproducible. No speculation.
 - Report what breaks, not what could be better.
-- Never test in the developer's working tree. Write only inside the review worktree and the screenshot directory.
-- Read test output from files. Never read a full suite run into context.
-- Revert every mutation before the next vector.
+- Write only inside the review worktree and the screenshot directory.
 - Do not commit.
 

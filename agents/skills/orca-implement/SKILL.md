@@ -3,10 +3,7 @@ name: orca-implement
 description: >-
   Orca-orchestrated implementation pipeline: take a task ref (GitHub/Linear
   issue, file) or an ad-hoc prompt, plan with cross-model critique, build in
-  parallel Orca worktrees, run a cross-model review, and open a PR. Invoke
-  ONLY when the user explicitly runs /orca-implement or explicitly names this
-  pipeline. Never trigger from a general request to implement, fix, or build
-  something.
+  parallel Orca worktrees, run a cross-model review, and open a PR.
 disable-model-invocation: true
 ---
 # /orca-implement
@@ -47,7 +44,7 @@ Settle every decision the human owns by the plan gate: scope, security, destruct
 
 Report what happened, not what a worker or plan claimed would happen.
 
-`references/run-state.md` is the sole manifest schema. Update `<RUNDIR>/run-state.json` after every state transition and before the next Orca mutation. Writing it never requires or causes a commit. The run record reaches the branch only through the five checkpoints in the next rule.
+`references/run-state.md` is the sole manifest schema. Update `<RUNDIR>/run-state.json` after every state transition and before the next Orca mutation. Writing it never requires or causes a commit.
 
 ### Commit a checkpoint
 
@@ -81,9 +78,9 @@ These are the only checkpoints in a run. Make no checkpoint after a task merge, 
 
 ### Run page
 
-The run page is a read-only status page for the human, rendered from the manifest, `timeline.md`, and the brief. It is never a control surface.
+The run page is a read-only status page for the human, rendered from the manifest, `timeline.md`, and the brief. The human cannot act on the run from it.
 
-Append one line to `<RUNDIR>/timeline.md` at every transition, in the form `- <ISO 8601 UTC> <what happened>`. The newest line is the page's status sentence while the run is live, so write it for the human: what just happened, and what the run is waiting on. Once the run ends, the banner shows `run_page.outcome` instead: write it before the final render, under 512 characters, as a summary of what the PR delivers or what failed, for the person who asked for the work. It is not a copy of the summary's Outcome section.
+Append one line to `<RUNDIR>/timeline.md` at every transition, in the form `- <ISO 8601 UTC> <what happened>`. The newest line is the page's status sentence while the run is live, so write it for the human: what just happened, and what the run is waiting on. Once the run ends, the banner shows `run_page.outcome` instead. Write it before the final render, as `references/run-state.md` defines it.
 
 `<SKILL-DIR>` is the directory that holds this file. Render and publish the page whenever you update the manifest at a phase boundary, a task merge, a review round, a human touchpoint, an abort, or the PR:
 
@@ -209,11 +206,11 @@ Complete every step in order before Phase 1.
 
 7. **Choose the integration worktree.**
 
-   Adopt the current worktree when step 2 found it Orca-managed and linked, and `start_ref` is set. Take `<WT>` and `<WT-PATH>` from the `orca worktree current` output and `<CURRENT_BRANCH>` as `<RUN-BRANCH>`. Create nothing. Record only terminals this run creates. The human's existing terminals in that worktree are not run resources. Record `integration_worktree.origin` as `adopted`.
+   Adopt the current worktree when step 2 found it Orca-managed and linked, and `start_ref` is set and differs from `base_ref`. Take `<WT>` and `<WT-PATH>` from the `orca worktree current` output and `<CURRENT_BRANCH>` as `<RUN-BRANCH>`. Create nothing. Record only terminals this run creates. The human's existing terminals in that worktree are not run resources. Record `integration_worktree.origin` as `adopted`.
 
    Otherwise create the worktree named `<RUN>` with `--setup run`. Pass `--base-branch <start_ref>` when `start_ref` is set and `--base-branch <base_ref>` otherwise. Link it to the source issue when one exists. Record `integration_worktree.origin` as `created`. Wait for the setup terminal as mechanics 7.0 requires.
 
-   After creation, when the primary checkout has `.env` and the worktree does not, stop. Print this command for the human and end the run before creating anything else:
+   After creation, when the primary checkout has `.env` and the worktree does not, stop before creating anything else. Print this command for the human, wait for them to say in the conversation that they ran it, and check again with `test -f` before continuing:
 
    ```bash
    cp -n "<PRIMARY-PATH>/.env" "<WT-PATH>/.env"
@@ -266,6 +263,7 @@ Complete every step in order before Phase 1.
    scratch/planner-brief.md                   standalone brief every planner reads
    scratch/draft-<planner>.md                 one per planner on the tier's panel
    scratch/fact-check.md                      plan claim verification before critique
+   scratch/plan-pre-critique.md               the fact-checked plan before critique
    scratch/fact-check-final.md                plan claim verification after critique
    scratch/critique-<critic>-r<ROUND>.md      one per critic per round
    scratch/acceptance-check-<PASS>.md         acceptance-criteria check, one per pass
@@ -274,9 +272,7 @@ Complete every step in order before Phase 1.
    scratch/qa-findings.md                     QA worker report, when qa_policy is run
    ```
 
-   The run folder reaches git only through checkpoint commits. Append `.agents/orca/orchestration/` to the file named by `git -C <WT-PATH> rev-parse --git-path info/exclude`. That file is shared by every worktree of the repository and is never committed. Do not add a `.gitignore` rule. Write every artifact to disk as soon as you produce it. `scratch/` holds worker reports and the coordinator's working files and never reaches the branch.
-
-   Do not commit anything between recording `<WT>` HEAD for the read-only check and running that check.
+   Append `.agents/orca/orchestration/` to the file named by `git -C <WT-PATH> rev-parse --git-path info/exclude`. That file is shared by every worktree of the repository and is never committed. Do not add a `.gitignore` rule. Write every artifact to disk as soon as you produce it. `scratch/` holds worker reports and the coordinator's working files and never reaches the branch.
 
 9. **Initialise `run-state.json`.**
 
@@ -330,7 +326,7 @@ Open `brief.md` with the mapped `{human-review-skill}` and run its documented re
 
 Apply every answer and comment to the brief. Fold each answer into the section it settles and remove the question. If an answer reveals more questions, group all of them into the next version. Reopen the brief and run the printed next-round command.
 
-Continue until every question is answered and the human completes a round with no comments. Then write `run_page.goal` in the manifest: a summary of the brief's Problem and Goal sections in your own words, under 512 characters, for the run page. Treat the approved brief and every human answer as settled facts during planning. Do not carry a known question into the plan as an open assumption.
+Continue until every question is answered and the human completes a round with no comments. Then write `run_page.goal` in the manifest as `references/run-state.md` defines it. Treat the approved brief and every human answer as settled facts during planning. Do not carry a known question into the plan as an open assumption.
 
 If the mapped review skill is unavailable, run the same loop in the conversation and require explicit approval. An explicit rejection or cancellation runs the abort routine with status `blocked`. Update the manifest before Phase 3.
 
@@ -375,7 +371,7 @@ Correct every reported mismatch in `plan/plan.md` before Step 4.
 
 Read `references/context/plan-critic.md`. Start the critic panel from `references/routing.md`.
 
-Run one critique round. `<PRE_CRITIQUE_SHA>` is the round's `start_head` in the plan-review record: the `<WT>` HEAD that holds the fact-checked plan.
+Run one critique round. Copy the fact-checked plan to `<RUNDIR>/scratch/plan-pre-critique.md` first. The final fact-check scopes itself against that copy.
 
 1. Add the round to the plan-review record with `plan_changed=false` and the current `<WT>` HEAD.
 2. Dispatch `plan-critique-<M>-r1` to every critic, collect, and retry a failed lens once.
@@ -388,7 +384,7 @@ Critique runs once. No critic reviews the revised plan. The final fact-check, bu
 #### Finish plan critique
 
 1. Close every critic terminal.
-2. When `plan_changed=true`, repeat Step 3 against the revised plan as `plan-fact-check-final`, scoped to the sections changed since `<PRE_CRITIQUE_SHA>`. Correct every reported mismatch.
+2. When `plan_changed=true`, repeat Step 3 against the revised plan as `plan-fact-check-final`, scoped to the sections that differ from `scratch/plan-pre-critique.md`. Correct every reported mismatch.
 3. Assess `run_complexity` from the reviewed plan. It may be higher or lower than `plan_review_tier`.
 4. Read the downstream review and QA policy from `references/routing.md`.
 5. Update plan frontmatter, the plan's Review Policy, and `run-state.json`, including `code_review_cap` and `qa_policy`.
@@ -461,7 +457,7 @@ For each ready task:
 
 ### Collect workers
 
-Wait for `worker_done`, `escalation`, and `question` messages through the bounded wait in mechanics 3.0. A timeout is a checkpoint, not worker failure.
+Wait for `worker_done`, `escalation`, and `question` messages through the bounded wait in mechanics 3.0. A timeout means wait again. It is not worker failure.
 
 Handle each message that matches an active dispatch by type:
 
@@ -635,7 +631,7 @@ Read `references/context/acceptance-check.md`. The first pass covers every crite
 
 Dispatch the `acceptance-check-<PASS>` task to the routed worker in `<WT>`, collect, and retry once. If the retry fails, verify each in-scope criterion yourself and record the missing check in `summary.md`.
 
-Read the report. Confirm each `not met` and `not verifiable` entry against the code before acting on it. Treat each confirmed `not met` criterion or constraint as a verification failure. Confirm each reported unrequested change against the plan. Revert a confirmed one through a fix task, or keep it and record the reason under Decisions in `summary.md`. Carry forward the verdict and evidence of every criterion and constraint outside the pass's scope. Record the evidence for every criterion and constraint in `summary.md`.
+Read the report. Confirm each `not met` and `not verifiable here` entry against the code before acting on it. Treat each confirmed `not met` criterion or constraint as a verification failure. Confirm each reported unrequested change against the plan. Revert a confirmed one through a fix task, or keep it and record the reason under Decisions in `summary.md`. Carry forward the verdict and evidence of every criterion and constraint outside the pass's scope. Record the evidence for every criterion and constraint in `summary.md`.
 
 ### Decide browser verification
 
@@ -689,7 +685,10 @@ For each `<ROUND>` from 1 through `<CODE_REVIEW_CAP>`:
 
 1. Add the round to `review_rounds` with `severe_fix_merged=false` and the current `<WT>` HEAD.
 2. Resolve every required value in `references/context/review.md`. Every round reviews the whole branch against `<BASE_SHA>`. Each later round first confirms the previous round's fixes, then reports only findings the previous review did not triage.
-3. Select the security lenses for the round. At `low` complexity, set `security_lenses_run=false` with reason `run complexity policy` and dispatch none. Otherwise round 1 dispatches both. A later round dispatches them only when a previous security lens reported a finding, or when a fix wave since the previous round changed a file that handles attacker-controlled input. The trust model in the mapped `{security-review-skill}` defines that input. Otherwise set `security_lenses_run=false` and `security_skip_reason` in the round record.
+3. Select the security lenses for the round. This is the security trigger that `references/routing.md` names:
+   - At `low` complexity, set `security_lenses_run=false` with reason `run complexity policy` and dispatch none.
+   - In round 1, dispatch both.
+   - In a later round, dispatch both when a previous security lens reported a finding, or when a fix wave since the previous round changed a file that handles attacker-controlled input as the trust model in the mapped `{security-review-skill}` defines it. When neither holds, set `security_lenses_run=false` and `security_skip_reason` in the round record.
 4. Dispatch a fresh task with a unique report path to every code reviewer and each selected security reviewer. Collect, and retry a failed lens once within the round.
 5. In round 1, when `browser_verification.policy` is `run`, read `references/context/browser-verification.md` and resolve every required value. Start one native subagent in the same wave as the reviewers, on the model from `references/routing.md`. Use the dispatch template and failure policy in `references/context/browser-verification.md`. The browser subagent is not a phase worker. Its report stays in coordinator context. If it produces no report, start it once more.
 6. When a retry also fails, record the lens in the round's `missing_lenses` and in the round review, and start a fresh terminal for it before any later round. Run the abort routine if both code-review lenses are unavailable. Record every missing security lens, then continue with the surviving lenses.
@@ -798,8 +797,7 @@ When `qa_policy` is `skip`:
 
 1. Do not create a QA task, terminal, worktree, dispatch, or findings file.
 2. Set `qa.status` to `skipped` and `qa.reason` to `run complexity policy` in `run-state.json`.
-3. Record the skip in the manifest.
-4. Continue to Phase 9.
+3. Continue to Phase 9.
 
 When `qa_policy` is `run`, run the procedure below.
 
@@ -905,7 +903,7 @@ Use only handles and ids recorded in `run-state.json`.
 1. Close every recorded terminal and mark its resource record `closed`.
 2. Remove each remaining task or QA worktree by its recorded id and mark its resource record `removed`.
 3. Confirm that every removed terminal and worktree is gone.
-4. Do not act on unfiltered `terminal list` or `worktree list` output. Orca is shared with other runs.
+4. Do not act on unfiltered `terminal list` or `worktree list` output.
 5. Keep the integration worktree until the PR merges and mark it `retained`. Its later removal with `orca worktree rm` belongs to the human.
 6. Set `cleanup.status` to `complete` when no removable resource remains. Otherwise set it to `partial` and record every remaining handle or worktree id.
 
@@ -932,7 +930,7 @@ A worker may use at most three verify-to-fix cycles. Exhausting those cycles sta
 
 1. Diagnose whether the approach or its execution caused the failures.
 2. Revise implementation details only within the approved task contract.
-3. If recovery needs a decision the human owns, about scope, security, a destructive operation, or architecture, run the abort routine with status `blocked`.
+3. If recovery needs a decision the human owns, follow the Human touchpoints rule.
 4. Append a retry briefing to the agent task:
    - what each cycle attempted;
    - each failure and its output;

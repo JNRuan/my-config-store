@@ -32,8 +32,8 @@ Every subagent spawn uses this table. Choose the column for the harness you are 
 
 | Role                        | Claude                                                 | Codex                               | Other harness   |
 | --------------------------- | ------------------------------------------------------ | ----------------------------------- | --------------- |
-| Scouts (Step 1)             | Sonnet, medium effort                                  | gpt-5.6-luna, high reasoning effort | session default |
-| Category reviewers (Step 2) | Fable, high effort; Opus if the Fable limit is reached | gpt-6-astra, high reasoning effort  | session default |
+| Scouts (Step 1)             | Opus, low effort                                       | gpt-5.6-luna, xhigh reasoning effort | session default |
+| Category reviewers (Step 2) | Fable, high effort; Opus if the Fable limit is reached | gpt-6-astra, xhigh reasoning effort  | session default |
 
 If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a review over it.
 
@@ -289,7 +289,7 @@ async function refreshToken() {
 
 - Precision over recall. A shorter report with only real issues beats a longer one with noise.
 - Defend findings with evidence when challenged, and withdraw when the evidence is not there.
-- Report fixable issues only. Skip micro-optimisations, general quality commentary, and PR summaries.
+- Skip micro-optimisations and PR summaries.
 - Do not explain findings you investigated and dropped.
 
 ## Safety

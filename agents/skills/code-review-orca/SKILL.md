@@ -13,7 +13,7 @@ You coordinate. Four Orca workers review; you do not. Never substitute your own 
 diff for a worker's report.
 
 `/code-review-orca [BASE] [EFFORT]`, both optional, in any order. An argument that is an
-effort level (`low`, `medium`, `high`, `xhigh`, `max`) is `<EFFORT>`, default `high`. Any other
+effort level (`low`, `medium`, `high`, `xhigh`) is `<EFFORT>`, default `high`. Any other
 argument is `<BASE>`, a branch, tag, or SHA, default `origin/main`.
 
 ## Orca contract
@@ -28,10 +28,10 @@ shared with other runs: act only on resources this review created.
 
 ## Workers
 
-| Stream          | Skill                   | Claude  | Codex         | Fallback                               |
-| --------------- | ----------------------- | ------- | ------------- | -------------------------------------- |
-| code review     | `code-review-local`     | `fable` | `gpt-6-astra` | Codex `gpt-5.6-sol` or Claude `opus`   |
-| security review | `security-review-local` | `fable` | `gpt-6-astra` | Codex `gpt-5.6-sol` or Claude `opus`   |
+| Stream          | Skill                   | Claude  | Codex         | Fallback                                                         |
+| --------------- | ----------------------- | ------- | ------------- | ---------------------------------------------------------------- |
+| code review     | `code-review-local`     | `fable` | `gpt-6-astra` | Claude `opus` for `fable`; Codex `gpt-5.6-sol` for `gpt-6-astra` |
+| security review | `security-review-local` | `fable` | `gpt-6-astra` | Claude `opus` for `fable`; Codex `gpt-5.6-sol` for `gpt-6-astra` |
 
 All four run at `<EFFORT>`, interactively, in the current worktree, against the same `<BASE>`.
 Identical input is what makes the reports comparable.
@@ -146,7 +146,7 @@ When instructed to post comments on a PR, end each one with a divider and the si
 
 ```markdown
 ---
-:space_invader: Code Review by Claude Fable 5 & GPT-6 Astra, Security Review by Claude Fable 5 & GPT-6 Astra; with Orca
+:space_invader: Code Review by {display names of the code-review models that completed}, Security Review by {display names of the security-review models that completed}; with Orca
 ```
 
 ## Rules
