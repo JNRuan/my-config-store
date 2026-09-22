@@ -44,13 +44,18 @@ This code earns no test:
   you emit, the payload you produce). The framework's mechanics are its
   maintainers' tests to write. When upstream behaviour surprised you,
   write one narrow characterisation test that names the assumption.
-- a decision rather than a bug: a constant's value, exact message wording,
-  private structure. A test that only a redesign can fail is a **change
-  detector**: it fails on every intentional change and misses bugs.
-  Test the behaviour that depends on the decision: not "MAX_RETRIES is 5" but
-  "a failing call is retried five times and there is no sixth attempt".
-- prose for humans. Test a document that instructs agents by watching what
-  the agent does with it, not by grepping its text.
+- implementation detail: a constant's value, private structure, which
+  collaborator is called. A test that only a redesign can fail is a **change
+  detector**: it fails on every intentional change and misses bugs. Test the
+  behaviour that depends on the detail: not "MAX_RETRIES is 5" but "a failing
+  call is retried five times and there is no sixth attempt".
+- text a human reads: a label, a message, a heading, a document, a comment.
+  Spelling and wording belong to a spellchecker, a lint rule, or a reviewer.
+  A test that pins the wording is a change detector: every rewording fails it
+  and no behaviour break does. Test what the text causes: the button places
+  the order, the invalid input raises `InvalidEmailError`. Text a machine
+  parses, such as a query, a payload, or a path, is a contract and earns a
+  test.
 - a second literal through a path already tested. When two inputs matter, they
   are one parametrised case, not two tests.
 
@@ -66,13 +71,17 @@ The same break tested at three levels is two redundant tests.
 
 ## Write each test
 
-Before the body, name the production change that would make this test fail,
-and check that it is a bug rather than a decision:
+Before the body, name the production change that would make this test fail
+and the behaviour that change breaks. The test guards that behaviour: it fails
+when the behaviour changes, by mistake or on purpose, and stays green when
+only the implementation changes. Check:
 
-- Cannot name one: redesign the test around an observable behaviour.
+- Cannot name a change: redesign the test around an observable behaviour.
+- The change breaks no behaviour, as with a misspelled label or a reworded
+  message: cut the test. Spelling and wording belong to review.
 - "The source text changed": run the artefact and assert its effects.
-- Only an intentional decision: change detector. Test the behaviour that
-  depends on the decision.
+- Only an implementation detail changes: change detector. Test the
+  behaviour that depends on the detail.
 
 Then:
 
@@ -142,13 +151,16 @@ Before finishing, in this order:
 
 ## Warning signs
 
-Any of these marks a test that cannot catch a break. Fix the test or cut it.
+Any of these marks a test that cannot catch a break. First ask whether the
+test protects anything. If it protects nothing, cut it. If it protects a
+break, fix the test so the break fails it.
 
 - Setup and assertion share the same object, guaranteeing equality.
 - The test can fail only through a crash, a panic, or a missing selector.
 - The test fails on every intentional change and never on accidental breakage.
 - Expected values hide behind loops, builders, or helpers.
 - The test greps source text, or asserts a removed symbol stays removed.
+- The expected value is text a human reads: a label, a message, a heading.
 - The test would still pass if only the framework remained.
 - The test exists for coverage and checks no outcome or side effect.
 - An assertion checks a mock test ID, or fails if the mock is removed.

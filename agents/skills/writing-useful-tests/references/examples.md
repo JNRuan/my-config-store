@@ -64,11 +64,25 @@ expect(buildSearchQuery({ tag: "urgent" })).toBe('tag:"urgent"');
 // BAD: only a redesign can fail this
 expect(MAX_RETRIES).toBe(5);
 
-// GOOD: the behaviour that depends on the decision
+// GOOD: the behaviour that depends on the constant
 test("a failing call is retried five times and then gives up", async () => {
   const client = failingClient();
   await expect(fetchWithRetry(client)).rejects.toThrow();
   expect(client.attempts).toBe(6);
+});
+```
+
+## What the text causes, not the text
+
+```typescript
+// BAD: pins wording a human reads, so every rewording fails it
+test("rejects an invalid email", () => {
+  expect(() => validateEmail("bob")).toThrow("Please enter a valid email address");
+});
+
+// GOOD: the behaviour the text reports
+test("rejects an invalid email", () => {
+  expect(() => validateEmail("bob")).toThrow(InvalidEmailError);
 });
 ```
 
