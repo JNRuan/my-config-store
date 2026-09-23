@@ -52,7 +52,7 @@ sort with the latest last.
 ```bash
 [ -n "$(git diff --name-only <BASE>...HEAD)" ] || { echo "empty diff vs <BASE>: nothing to review"; exit 1; }
 git --no-pager diff --stat <BASE>...HEAD
-REVIEWDIR="$(git rev-parse --show-toplevel)/docs/review/$(date +%Y%m%dT%H%M)-$(git rev-parse --short HEAD)"
+REVIEWDIR="$(git rev-parse --show-toplevel)/.agents/review/$(date +%Y%m%dT%H%M)-$(git rev-parse --short HEAD)"
 mkdir -p "$REVIEWDIR" && echo "$REVIEWDIR"
 ```
 
