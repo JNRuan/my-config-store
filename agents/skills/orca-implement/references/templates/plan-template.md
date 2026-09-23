@@ -99,7 +99,8 @@ independent of `plan_review_tier` and `run_complexity`.
 - **Constraints & Context**: patterns to follow, invariants to preserve,
   background the builder must know.
 - **Relevant existing code**: files the builder should read first, and why.
-- **Verification requirements**: behaviours and scenarios, not test code:
+- **Verification requirements**: behaviours and scenarios, not test code. Use `{test-skill}` to
+  decide which tests the task needs:
   1. Existing coverage to run (must still pass)
   2. Tests to add or update
   3. Edge cases to cover

@@ -10,7 +10,7 @@ These roles follow the runtime that runs `/orca-implement`.
 | Role                 | Claude coordinator   | Codex coordinator      | Effort (Claude / Codex) | Notes                                                                                             |
 | -------------------- | -------------------- | ---------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
 | Coordinator          | the invoking session | the invoking session   | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only          |
-| Browser verification | `opus` subagent      | `gpt-6-astra` subagent | `medium` / `medium`     | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal |
+| Browser verification | `opus` subagent      | `gpt-6-sol` subagent   | `medium` / `medium`     | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal |
 
 
 This browser row governs the round 1 browser verification in Phase 7 and its scoped reruns. Worker-invoked skills own the routing of any subagents they spawn.

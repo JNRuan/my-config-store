@@ -51,6 +51,8 @@ Build against these as written. Do not reshape a contract to fit your implementa
 
 {From this task's plan section, plus every Integration Verification boundary in the plan's Orchestration section that this task touches.}
 
+Invoke `{test-skill}` before you write or change a test.
+
 1. Existing coverage to run (must still pass): {test files or commands}
 2. Tests to add or update: {behaviours and scenarios, not test code}
 3. Edge cases to cover: {behaviours}
