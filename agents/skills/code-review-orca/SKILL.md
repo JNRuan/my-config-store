@@ -28,10 +28,10 @@ shared with other runs: act only on resources this review created.
 
 ## Workers
 
-| Stream          | Skill                   | Claude  | Codex         | Fallback                                                         |
-| --------------- | ----------------------- | ------- | ------------- | ---------------------------------------------------------------- |
-| code review     | `code-review-local`     | `fable` | `gpt-6-astra` | Claude `opus` for `fable`; Codex `gpt-5.6-sol` for `gpt-6-astra` |
-| security review | `security-review-local` | `fable` | `gpt-6-astra` | Claude `opus` for `fable`; Codex `gpt-5.6-sol` for `gpt-6-astra` |
+| Stream          | Skill                   | Claude | Codex         | Fallback                                                       |
+| --------------- | ----------------------- | ------ | ------------- | -------------------------------------------------------------- |
+| code review     | `code-review-local`     | `opus` | `gpt-6-astra` | Claude `fable` for `opus`; Codex `gpt-6-sol` for `gpt-6-astra` |
+| security review | `security-review-local` | `opus` | `gpt-6-astra` | Claude `fable` for `opus`; Codex `gpt-6-sol` for `gpt-6-astra` |
 
 All four run at `<EFFORT>`, interactively, in the current worktree, against the same `<BASE>`.
 Identical input is what makes the reports comparable.
@@ -40,8 +40,8 @@ Boot each with `terminal create` and an explicit `--command`, titled `<stream>:<
 `nclaude` and `ncodex` aliases run the worker inside its nono sandbox profile:
 
 ```bash
-nclaude --model <fable|opus> --effort <EFFORT> --permission-mode bypassPermissions
-ncodex --model <gpt-6-astra|gpt-5.6-sol> -c 'model_reasoning_effort="<EFFORT>"' --sandbox danger-full-access --ask-for-approval never
+nclaude --model <opus|fable> --effort <EFFORT> --permission-mode bypassPermissions
+ncodex --model <gpt-6-astra|gpt-6-sol> -c 'model_reasoning_effort="<EFFORT>"' --sandbox danger-full-access --ask-for-approval never
 ```
 
 ## Phase 1: Set up

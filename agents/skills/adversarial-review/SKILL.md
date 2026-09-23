@@ -17,10 +17,10 @@ The review tests committed work at HEAD. Uncommitted changes are not tested.
 Every subagent spawn uses this table. Choose the column for the harness you are running in.
 
 
-| Role                       | Claude                | Codex                                | Other harness   |
-| -------------------------- | --------------------- | ------------------------------------ | --------------- |
-| Scouts (Phase 1)           | Opus, low effort      | gpt-5.6-luna, xhigh reasoning effort | session default |
-| Browser executor (Phase 4) | Opus, medium effort   | gpt-6-astra, medium reasoning effort | session default |
+| Role                       | Claude              | Codex                                | Other harness   |
+| -------------------------- | ------------------- | ------------------------------------ | --------------- |
+| Scouts (Phase 1)           | Opus, low effort    | gpt-6-luna, xhigh reasoning effort   | session default |
+| Browser executor (Phase 4) | Opus, medium effort | gpt-6-astra, medium reasoning effort | session default |
 
 
 If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a review over it.
