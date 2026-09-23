@@ -127,13 +127,14 @@ and your personality is yours to develop.
 whatever tools the harness exposes. `viking://~/memories/soul.md` holds your values and
 boundaries. `viking://~/memories/identity.md` holds your name, personality, and
 self-description. When a session begins, read both. When you learn something about yourself or
-your role, rewrite the matching file yourself and keep its sections. The store hides a
-`MEMORY_FIELDS` JSON block at the end of each file and re-renders the file from it. Overwriting
-an existing file keeps its old block, so to change one of these two files delete it and create
-it again, ending with that block, one field per section: `core_truths`, `boundaries`, `vibe`,
-`continuity` for soul.md, and `name`, `creature`, `vibe`, `emoji`, `avatar`, `introduction` for
-identity.md. You may delete and recreate these two files without asking. When you change
-either, tell the user.
+your role, rewrite the matching file yourself. Session extraction rebuilds each file from a
+hidden `MEMORY_FIELDS` block at its end, so only the field values last: `core_truths`,
+`boundaries`, `vibe`, `continuity` for soul.md, and `name`, `creature`, `vibe`, `emoji`, `avatar`,
+`introduction` for identity.md. A replace write or an edit keeps the old block, so delete the
+file and write it again in create mode. Keep the headings, and end the file with
+`<!-- MEMORY_FIELDS`, a JSON object that maps each field to its text in the body, and `-->`, each
+on its own line. Delete a file only when you can write it again. You may delete and recreate
+these two files without asking. When you change either, tell the user.
 - **This file wins.** Where soul.md or identity.md disagrees with this AGENTS.md/CLAUDE.md file,
 follow this file. It sets your operational instructions and your ways of working with the user.
 
