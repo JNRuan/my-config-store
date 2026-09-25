@@ -23,11 +23,11 @@ test("createUser makes user retrievable", async () => {
 ## Behaviour, not implementation
 
 ```typescript
-// BAD: names how the code works and mocks an internal collaborator
-test("checkout calls paymentService.process", async () => {
-  const mockPayment = jest.mock(paymentService);
-  await checkout(cart, payment);
-  expect(mockPayment.process).toHaveBeenCalledWith(cart.total);
+// BAD: names how the code works and spies on an internal collaborator
+test("checkout calls priceCalculator.total", async () => {
+  const spy = vi.spyOn(priceCalculator, "total");
+  await checkout(cart, paymentMethod);
+  expect(spy).toHaveBeenCalledWith(cart);
 });
 
 // GOOD: names the capability and observes the outcome
@@ -65,7 +65,7 @@ expect(buildSearchQuery({ tag: "urgent" })).toBe('tag:"urgent"');
 expect(MAX_RETRIES).toBe(5);
 
 // GOOD: the behaviour that depends on the constant
-test("a failing call is retried five times and then gives up", async () => {
+test("a failing call makes six attempts and then gives up", async () => {
   const client = failingClient();
   await expect(fetchWithRetry(client)).rejects.toThrow();
   expect(client.attempts).toBe(6);
@@ -99,13 +99,13 @@ expect(screen.getByRole("navigation")).toBeInTheDocument();
 ## Mock the level below the side effects
 
 ```typescript
-// BAD: the mock swallows the config write that duplicate detection reads
-vi.mock("ToolCatalog", () => ({
-  discoverAndCacheTools: vi.fn().mockResolvedValue(undefined),
-}));
+// BAD: the mocked store drops the first user, so the duplicate-email check
+// has nothing to find
+vi.mock("./userStore");
 
-// GOOD: mock only the slow server startup; the config write stays real
-vi.mock("MCPServerManager");
+// GOOD: mock only the external email client; the store stays real, so the
+// second registerUser call sees the first user
+vi.mock("./emailClient");
 ```
 
 ## Design boundaries for mockability

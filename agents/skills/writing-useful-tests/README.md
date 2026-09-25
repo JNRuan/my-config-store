@@ -6,10 +6,11 @@ It is not a TDD skill. It covers the test itself: which breaks earn a test, how 
 
 ## Credits
 
-The rules come from two sources, both MIT licensed:
+The rules come from three sources, all MIT licensed:
 
-- [`tdd`](https://github.com/mattpocock/skills/tree/main/skills/engineering/tdd) by Matt Pocock, from [mattpocock/skills](https://github.com/mattpocock/skills): seams as the place tests live, the anti-patterns, the good and bad test examples, and the mocking guidance in its `tests.md` and `mocking.md` references.
+- [`tdd`](https://github.com/mattpocock/skills/tree/main/skills/engineering/tdd) by Matt Pocock, from [mattpocock/skills](https://github.com/mattpocock/skills): testing through public interfaces, the anti-patterns, the good and bad test examples, and the mocking guidance in its `tests.md` and `mocking.md` references.
 - [`writing-good-tests.md`](https://github.com/obra/superpowers/blob/main/skills/test-driven-development/writing-good-tests.md) by Jesse Vincent, from [obra/superpowers](https://github.com/obra/superpowers): name the break, independent expected values, change detectors, the rules for doubles, the mutation check, and the warning signs.
+- [`claude-code-qa`](https://qaskills.sh/skills/qaskills/claude-code-qa) by The Testing Academy, from [qaskills.sh](https://qaskills.sh/): deterministic tests, locating UI elements by role, running a mutation to confirm a test fails, and the snapshot and swallowed-assertion warning signs.
 
 The skill leaves out the TDD loop on purpose: red, green, refactor, vertical slices, and agreeing seams with the user.
 

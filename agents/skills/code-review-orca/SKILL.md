@@ -3,8 +3,8 @@ name: code-review-orca
 description: >-
   Cross-model code and security review of the current branch through Orca:
   Claude and Codex each run code-review-local and security-review-local in
-  parallel, the coordinator combines the four reports mechanically, and crit
-  collects the human verdict.
+  parallel, the coordinator combines the four reports mechanically, crit
+  collects the human verdict, and the coordinator fixes the confirmed findings.
 disable-model-invocation: true
 ---
 # /code-review-orca
@@ -136,9 +136,24 @@ Add no findings of your own. Do not re-score confidence or decide which are real
 
 ## Phase 5: Human gate
 
-Invoke `/crit` on `<REVIEWDIR>/synthesis.md` and follow it. It opens the synthesis in the
-browser, blocks until the human finishes the review, then names the review output file. Read
-that file and report the unresolved comments. That is the human's verdict.
+Invoke `/crit` on `<REVIEWDIR>/synthesis.md` and follow it. Each comment is the human's ruling
+on a finding. Record the ruling in `synthesis.md` and reply to the comment. `synthesis.md` is
+the only file you revise during crit rounds.
+
+Finish Review ends a round. Approve ends the review. Run rounds until the human clicks Approve
+and crit reports the review approved. The review is then final.
+
+The approved `synthesis.md` is the verdict:
+
+- A code finding with no comment is confirmed for fixing.
+- A finding that recommends a change to a document or artifact, such as docs, specs, READMEs,
+  or generated pages, is confirmed only when a comment confirms it.
+- A commented finding stands as its thread settled it: confirmed, changed, or rejected.
+
+## Phase 6: Fix
+
+Fix every confirmed finding in the current worktree. Where a comment changed a finding, fix it
+as the comment says.
 
 ## PR sign-off
 
@@ -156,5 +171,5 @@ When instructed to post comments on a PR, end each one with a divider and the si
   wrong, weak, or one-model-only. Surface it with its attribution and let the human rule.
 - Report what happened. A failed worker, a missing lens, or a Codex auth failure is stated
   as such. A single-lens stream is not a cross-model stream.
-- Read-only end to end. The only writes are the report and synthesis files under
-  `<REVIEWDIR>`.
+- Read-only until the human approves the review in crit. Until then, the only writes are the
+  report and synthesis files under `<REVIEWDIR>`.
