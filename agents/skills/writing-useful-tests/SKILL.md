@@ -50,9 +50,6 @@ These breaks earn a test:
 - an invariant or state transition: a rule that must hold across calls, not
   just within one. For example, a balance never goes negative, an order ships
   once, and a repeated request changes nothing the second time.
-- a stored or wire format: data or messages that outlive the version of the
-  code that wrote them. For example, a record the previous release saved
-  still loads, and a request from an older client still parses.
 
 These earn no test:
 
