@@ -39,9 +39,9 @@ These breaks earn a test:
   validation that already runs. Critical means a wrong result would do harm,
   such as losing or corrupting data, charging the wrong amount, granting
   access wrongly, or breaking a path users take. For example, an empty cart at
-  checkout, a quantity one past the stock limit, or a repeated payment
-  request. An input that types, a parser, or earlier validation already
-  rejects earns no test.
+  checkout, a quantity one past the stock limit, a repeated payment request,
+  or a malformed ID a regex must reject. An input that types, a parser, or
+  earlier validation already rejects earns no test.
 - a regression: the bug this change fixes, so it cannot return;
 - a contract between modules that a change on either side would break;
 - an access rule, tested both ways: a caller the rule permits can act, and a
