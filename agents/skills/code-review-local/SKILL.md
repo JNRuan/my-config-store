@@ -32,7 +32,7 @@ Every subagent spawn uses this table. Choose the column for the harness you are 
 
 | Role                        | Claude                                          | Codex                               | Other harness   |
 | --------------------------- | ----------------------------------------------- | ----------------------------------- | --------------- |
-| Scouts (Step 1)             | Opus, low effort                                | gpt-6-luna, xhigh reasoning effort  | session default |
+| Scouts (Step 1)             | Sonnet, medium effort                           | gpt-6-luna, xhigh reasoning effort  | session default |
 | Category reviewers (Step 2) | Opus, high effort; Fable if Opus is unavailable | gpt-6-astra, high reasoning effort  | session default |
 
 If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a review over it.
