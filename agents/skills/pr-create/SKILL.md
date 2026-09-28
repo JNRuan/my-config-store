@@ -58,20 +58,52 @@ Use this when the repo has no PR template of its own. The PR **title** is separa
 
 <1-3 paragraphs max describing the PURPOSE of the PR: why it exists, what goal it achieves. Prefer one paragraph where possible. This frames the motivation, not the implementation.>
 
-## Impact
+<Optional: the smallest visual that shows the shape of the change. See Visuals.>
 
-<Include only if the change affects existing behaviour: breaking changes such as removed/renamed exports, changed API or schema shapes, migrations, behavioural shifts that affect consumers. Lead with the most disruptive item.>
+## Risk
+
+<Include only when the change is hard to roll back or could break something beyond the code it touches.>
+
+- Door: <one-way or two-way>. <For a one-way door, what makes rollback hard: data migrations, deletions, published contracts.>
+- Blast radius: <what could break and for whom, e.g. layout shift, consumers of a changed API, mobile.>
+
+<List breaking changes first when there are any: removed/renamed exports, changed API or schema shapes, migrations, behavioural shifts that affect consumers. Lead with the most disruptive item.>
 
 ## Changes
 
 <Short bullet list of what was done. Each bullet is a single line. Always group related changes under sub-headings when the PR spans multiple areas unless the PR is small and can be described by 5 or fewer bullets.>
+
+<Name anything a reviewer would expect in this PR that was left out on purpose, and why.>
+
+## Evidence
+
+<Include only when the session captured it. Show the behaviour before and after: a screenshot pair for a visual change; otherwise the test or command output that failed before and passes now, with the test's steps as pseudocode.>
 
 ## Test plan
 
 <A short checklist for validating the PR as a whole, not a check for every change. Include relevant checks such as typechecking, linting, builds, automated tests, browser verification, or human testing of affected features. Name the behaviour to verify for browser and manual checks. Only tick items actually run and verified in this session.>
 ```
 
-Treat the structure as flexible, not fixed: include a section only if it helps the reviewer understand or verify the change, and drop any that would be empty or just restate what's already clear (e.g. omit Impact when nothing breaks, omit per-area grouping on a single-area PR).
+Treat the structure as flexible, not fixed: include a section only if it helps the reviewer understand or verify the change, and drop any that would be empty or just restate what's already clear (e.g. omit Risk when the change is easy to roll back and self-contained, omit Evidence when nothing was captured, omit per-area grouping on a single-area PR).
+
+## Visuals
+
+Add a visual when the change has a shape a reviewer would otherwise rebuild in their head. Pick the smallest view that makes the point, place it next to the sentence it supports, and keep only the calls, files, states, and boundaries the reviewer needs. One visual is usually enough.
+
+- Logic or an algorithm: pseudocode.
+- Runtime control flow: an indented call tree.
+- UI structure: a component tree with the state and module boundaries that matter.
+- File responsibilities or a broad refactor: a shallow file tree with one-line comments.
+- Interaction or data flow between parts: a Mermaid `sequenceDiagram` or `flowchart`.
+- What changed inside an existing shape: a `diff` sketch of that shape, for example:
+
+```diff
+ submitForm
+   createSession
+     persistPrompt
++    expandSkillMention
+     launchAgent
+```
 
 ## PR title guidelines
 
@@ -84,8 +116,9 @@ Treat the structure as flexible, not fixed: include a section only if it helps t
 
 - Describe the delivered changes, not the process used to produce them. Omit run, orchestration, and specification artefacts unless creating or updating those artefacts is itself the purpose of the PR. They may inform the description without being discussed in it.
 - Summary paragraphs are about intent: what problem is being solved or what goal is being achieved. "Overhauls the blog to support category browsing and improve discoverability" is good. "Added filters, changed routing, updated SEO" is bad; that's just restating the bullets.
-- If the change breaks existing consumers (removed exports, changed API shapes, renamed public interfaces), lead with that in the Impact section, and flag it in the Summary.
+- If the change breaks existing consumers (removed exports, changed API shapes, renamed public interfaces), lead with that in the Risk section, and flag it in the Summary.
 - Open directly with what the change does: the PR is already the context.
+- Use the project's domain terms from `CONTEXT.md` when one exists.
 - Write in plain prose; don't decorate with bold, emoji, or badges.
 - Lead with the change, not the file. "Statically generated category routes with client-side filtering via react-query" adds useful context. "Updated `[[...slug]].tsx`" does not.
 - Include implementation details only when they help explain the change.

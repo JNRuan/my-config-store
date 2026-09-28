@@ -115,7 +115,7 @@ the behaviour breaks is noise.
 ## Subagent routing
 
 - **Scout with fast models.** Locating files, mapping structure, and gathering context do not need
-a frontier model. Use Luna on Codex and Pi, or Sonnet on Claude.
+a frontier model. Use Luna (xhigh effort) on Codex and Pi, or Opus (low effort) on Claude.
 - **Name the model on every Claude spawn.** Subagents and workflow agents inherit the session
 model, so a frontier-model session spawns frontier-model workers by default. Pass an explicit
 model and reasoning effort sized to the subagent's task. Use Fable only when the user or the
