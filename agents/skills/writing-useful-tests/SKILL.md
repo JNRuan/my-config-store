@@ -63,7 +63,9 @@ These earn no test:
   the route you register, the query you emit, or the payload you produce. The
   framework's or library's own mechanics are for its maintainers to test.
   When upstream behaviour surprises you, write one narrow characterisation
-  test that names the assumption.
+  test that names the assumption. A type-level test of your own public
+  types, such as `expectTypeOf` or a `*.test-d.ts` file, tests your contract
+  and stays.
 - implementation detail, such as a constant's value, private structure, or
   which collaborator is called. A test that only a redesign can fail is a
   **change detector**. It fails on every intentional change and misses real
@@ -78,6 +80,9 @@ These earn no test:
   payload, a path, or a structured log field, is a contract and earns a test.
   So is an accessible name, which assistive technology reads, and wording the
   product requires exactly, such as legal copy or a required disclosure.
+  A prompt a model reads is wording, not a contract. Test what the code puts
+  into it, such as the user's input or the retrieved documents, and pin none
+  of its fixed text.
 - a second literal through a path already tested. When two inputs matter, they
   are one parametrised case, not two tests.
 - a behaviour an existing test already covers. When the change alters it,
@@ -147,6 +152,9 @@ side. Read it before writing the first test in a session.
   or its helpers is **tautological**: it passes whatever the code does.
 - **One logical assertion per test.** The test fails for one reason, and its
   name says which.
+- **Pair an absence with a presence.** When a test asserts that something did
+  not happen, such as no email sent or an empty result, the same test asserts
+  that the other input does cause it. Code that does nothing fails the pair.
 - **Same result every run.** Fix the clock, seed randomness, and give each
   test its own data. Each test runs alone and in any order. Wait for the
   condition the test needs, never for a fixed time.
@@ -221,6 +229,8 @@ nothing, cut it. If it protects a break, fix it so that break turns it red.
 
 - Setup and assertion share the same object, guaranteeing equality.
 - The test can fail only through a crash, a panic, or a missing selector.
+- The only assertion accepts almost any result, such as defined, truthy, an
+  instance of the type, or a count above zero.
 - A try/catch, conditional, or early return lets the test pass without
   reaching its assertion.
 - A snapshot of large or volatile output that nobody reviews line by line.
