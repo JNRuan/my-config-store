@@ -17,12 +17,6 @@ From George Orwell, "Politics and the English Language":
 5. Never use a foreign phrase, a scientific word, or a jargon word if you can think of an everyday English equivalent.
 6. Break any of these rules sooner than say anything outright barbarous.
 
-Leave marketing words to marketing copy. Words such as "powerful", "comprehensive", "seamless", "load bearing", and "synergy" belong only there.
-
-Give each paragraph and list item one job that no other does. Start the text under a heading with new information, not a restatement of the heading. Cut any part that only repeats another.
-
-Preserve code, commands, identifiers, product names, legal text, and required quotations exactly. Flag any change they need.
-
 ## Genre
 
 Pick the genre before you draft. Each genre adds to Orwell's rules:
@@ -34,12 +28,12 @@ Pick the genre before you draft. Each genre adds to Orwell's rules:
 - **Persuasive writing**, such as essays, blog posts, case studies, marketing copy, and sales pitches. Orwell's rules, with `technical-writing` applied only to passages that describe or explain technology.
 - **Creative writing**, such as fiction, poetry, memoir, scripts, and lyrical prose. Keep intentional ambiguity, cadence, dialogue style, imagery, and character voice where they create a real effect. Remove only language that feels inherited, inflated, evasive, or lazy.
 
-## Steps
+## Writing Guidelines
 
-1. Identify the audience, the purpose, the promised tone, and the genre.
+1. Before writing, identify the audience, the purpose, the promised tone, and the genre.
 2. When revising, keep the author's meaning and any explicit tone or format constraints.
 3. Draft or revise in concrete, direct UK English that follows Orwell's rules. Keep necessary nuance, so that short prose stays true and precise.
-4. When revising someone else's text, flag jargon, passive voice, or ornate phrasing that stays because it is necessary.
-5. For technical prose, review the text against every layer of the `technical-writing` skill and fix each problem you find.
-6. Load the `unslop` skill as the final step for every text, replies included. Review the whole text against every pattern it lists and fix each hit. In creative writing, keep a pattern only where it creates a deliberate effect. The text is done when a full pass finds no remaining pattern.
-
+4. Leave marketing words to marketing copy. Words such as "powerful", "comprehensive", "seamless", "load bearing", and "synergy" belong only there.
+5. Give each paragraph and list item one job that no other does. Start the text under a heading with new information, not a restatement of the heading. Cut any part that only repeats another.
+6. Preserve code, commands, identifiers, product names, legal text, and direct quotes exactly. Flag any change they need.
+7. Review everything you write with the `unslop` skill and fix any issues you find.
