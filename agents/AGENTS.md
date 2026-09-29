@@ -40,6 +40,8 @@ right beats polished and wrong.
 
 ## Output and writing style
 
+- **Follow `writing-standards`.** Load the `writing-standards` skill before you write or edit
+prose, replies to the user included.
 - **Lead with the conclusion.** Give the decision or key point first, then the evidence and
 alternatives. Write for someone who did not watch the work, in terms they already know.
 - **Show proposed edits as diffs.** When an edit needs review or approval, show a unified diff with
@@ -48,16 +50,7 @@ key hunks and summarise the rest.
 - **Keep rationale out of the file.** The reason for an edit, and the fact that it happened, go
 in your reply, never in the file you are editing. History belongs to git: leave no note that code
 was added, moved, or removed, no account of what it used to do, and no commented-out code.
-- **Keep your writing direct.** State what the reader needs and stop. Marketing words such as
-"powerful", "comprehensive", "seamless", "load bearing", and "synergy" belong only in marketing
-copy. Do not repeat a heading in the text under it or a function signature in its docstring, add
-an "In summary" recap, or use decorative emoji.
-- **Write plain English.** Apply Orwell's six rules to all prose, replies included. Keep a
-technical term when it is the precise word, and keep the context the reader needs when you cut.
-Creative and marketing writing, text the user asked for in another voice, quoted material, and
-code and structured data keep their own form.
-- **Use the literal phrase where one exists.** Replace a figure of speech with the plain words it
-stands for, whether the figure is fresh or familiar.
+- **Skip decorative emoji.**
 - **Avoid em dashes.** Quoted and verbatim text keeps its own punctuation.
 - **Use UK English.** A project, product, API, identifier, or quotation keeps its own spelling.
 - **Cite sources.** Use `path:line` for claims about repository content. Mark words taken from a
@@ -72,7 +65,7 @@ plain code even when the idea is inventive.
 only when it gives the reader one of these:
   - a reason that the function definition or code does not explain;
   - a constraint, invariant, or important trade-off;
-  - the contract of a public API;
+  - a contract the code does not make self-evident, such as side effects;
   - behaviour forced by a dependency, platform, or protocol you cannot change;
   - a link to the issue or RFC that explains a constraint.
 - **Suppress a check only when the rule is wrong.** A lint, type, or formatter suppression stays
@@ -93,24 +86,16 @@ them silently.
 
 ## Verification and testing
 
-- **Keep verification proportionate.** Match the effort to the task and the consequences of
-failure. Repeat or broaden a check only when a failure, a new change, or an unresolved concern
-gives you a concrete reason. Examples:
-  - For prose, reports, and slides, checking that the result matches the request is enough.
-  - Frontend work may need a visual check in the browser. Size it to the task.
-  - Code changes need type checks, linting, passing tests, and build checks where applicable.
-- **Test what is worth protecting.** Add a test where a failure would be hard to catch by reading.
-Branching logic, comparisons, regex, reachable edge cases, and a regression you are fixing
-usually qualify.
-- **Skip tests for the obvious.** Trivial wrappers, config, getters, and code whose correctness
-is clear by inspection need no test. Scratch checks you ran to verify your work are not tests.
-Delete them.
-- **Keep tests focused.** At every level, from unit to end-to-end, tests cover a feature's
-critical happy paths and failure cases and catch regressions in that behaviour as you build more.
-Use the fewest that do.
-- **Tests must pass because the code is correct.** Derive the test and the code separately from what
-the behaviour must be, so each catches the other's mistakes. A test that could stay green while
-the behaviour breaks is noise.
+- **Keep verification proportionate.** Choose checks that fit what the work is for and what a
+failure would cost, not the file format it is written in. Repeat or broaden a check only when a
+failure, a new change, or an unresolved concern gives you a concrete reason. As a guide:
+  - Documents, such as prose, reports, and slides, need one read against the request, even when
+    written in HTML. They need no test, build, or browser cycle unless requested.
+  - Code needs at least the type checks, linters, tests, and build the project has.
+  - A non-trivial change to what a user sees or does in an app may be worth a visual check of the
+    affected pages in the browser.
+- **Follow `writing-useful-tests`.** Load the `writing-useful-tests` skill when a change adds or
+alters behaviour, and before you write, change, or review a test.
 
 ## Subagent routing
 
@@ -147,9 +132,6 @@ enough.
 - **Protect the user's work.** Do not revert or discard it without authorisation. Uncommitted
 changes may be unrecoverable. If changes you did not make overlap or conflict with yours, ask
 the user.
-- **Edit in place.** When you change an existing file, change the lines the task needs and leave
-the rest as they are. Rewrite a whole file only when most of it changes. If that file is untracked
-or has uncommitted changes, copy it to a temp directory first.
 - **Ask before installing packages.** If a package would help, recommend it and explain why.
 - **Protect installed skills.** Do not delete a skill without authorisation. Never mirror-sync over
 installed skill directories such as `~/.agents/skills` or `~/.claude/skills`. Sync by copying named
