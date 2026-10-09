@@ -41,7 +41,7 @@ A claim changes only through the human, in the Step 3 review loop. When a claim 
 
 | Role              | Claude          | Codex                  | Other harness   |
 | ----------------- | --------------- | ---------------------- | --------------- |
-| Scouts (Step 2)   | Sonnet, medium  | gpt-6-luna, xhigh      | session default |
+| Scouts (Step 2)   | Haiku, high     | gpt-6-luna, high       | session default |
 
 Triage, drafting, proving, and the report stay in your own context on the session model. If the harness cannot set model or effort per subagent, spawn with defaults.
 

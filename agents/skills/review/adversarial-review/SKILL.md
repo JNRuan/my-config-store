@@ -19,7 +19,7 @@ Every subagent spawn uses this table. Choose the column for the harness you are 
 
 | Role                       | Claude                | Codex                                | Other harness   |
 | -------------------------- | --------------------- | ------------------------------------ | --------------- |
-| Scouts (Phase 1)           | Sonnet, medium effort | gpt-6-luna, xhigh reasoning effort   | session default |
+| Scouts (Phase 1)           | Haiku, high effort    | gpt-6-luna, high reasoning effort    | session default |
 | Browser executor (Phase 4) | Opus, medium effort   | gpt-6.1-sol, medium reasoning effort | session default |
 
 
