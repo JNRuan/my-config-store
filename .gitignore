@@ -1,6 +1,7 @@
 # Python caches
 __pycache__/
 *.pyc
+.ruff_cache/
 
 # Claude audit logs
 .claude/rm-audit.log
