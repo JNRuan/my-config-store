@@ -1,39 +1,49 @@
 # Orca runtime mechanics
 
-This file defines how to run shared Orca operations for `/orca-implement`. Phase instructions define what happens and when. The version-matched Orca guides own command syntax, capabilities, response fields, and recovery commands.
+This file defines how to run shared Orca operations for `/orca-implement`. Phase instructions define
+what happens and when. The version-matched Orca guides own command syntax, capabilities, response
+fields, and recovery commands.
 
 ## 1.0 Record run ownership
 
 1. Record every handle, id, path, branch, and dispatch id in `run-state.json` when Orca creates it.
 2. Use the manifest rather than deriving identifiers later.
-3. After an Orca restart, treat terminal handles as stale. Reacquire them by matching the recorded terminal title and worktree with live terminal state.
+3. After an Orca restart, treat terminal handles as stale. Reacquire them by matching the recorded
+   terminal title and worktree with live terminal state.
 4. Act on a live resource only when the manifest proves that this run owns it.
 
 ## 2.0 Follow the live Orca contract
 
-Do not guess syntax or repeat a mutation from memory. When a guide does not support a required operation, stop through the current phase's failure path.
+Do not guess syntax or repeat a mutation from memory. When a guide does not support a required
+operation, stop through the current phase's failure path.
 
 ## 3.0 Receive orchestration messages
 
-1. Run `check --wait` in slices of at most 540000 ms. Use a shorter slice when the coordinator runtime's command timeout is lower.
+1. Run `check --wait` in slices of at most 540000 ms. Use a shorter slice when the coordinator
+   runtime's command timeout is lower.
 2. Treat a timeout or empty delivery as a signal to wait again.
 3. Process every message in a delivery before acknowledging it.
-4. Correlate `payload.taskId` and `payload.dispatchId` with an active manifest dispatch. Log and ignore messages for another run or a superseded dispatch.
+4. Correlate `payload.taskId` and `payload.dispatchId` with an active manifest dispatch. Log and
+   ignore messages for another run or a superseded dispatch.
 5. Use `dispatch-show` when dispatch state is uncertain.
-6. Mark a collected task complete in the manifest only after confirming that its required report is non-empty.
+6. Mark a collected task complete in the manifest only after confirming that its required report is
+   non-empty.
 
-A valid `worker_done` completes its task and dispatch in Orca automatically. Do not follow it with a manual completion update.
+A valid `worker_done` completes its task and dispatch in Orca automatically. Do not follow it with a
+manual completion update.
 
 Use manual task updates only for recovery:
 
 - `ready` for a fix cycle;
 - `failed` for a confirmed failure.
 
-Orca task state records the worker signal. The manifest records whether the coordinator verified and merged the result.
+Orca task state records the worker signal. The manifest records whether the coordinator verified and
+merged the result.
 
 ## 4.0 Dispatch a phase worker
 
-Phase workers are scouts, fact checks, planners, critics, the acceptance check, reviewers, and QA. Builders follow Phase 5 and the rules for every worker below.
+Phase workers are scouts, fact checks, planners, critics, the acceptance check, reviewers, and QA.
+Builders follow Phase 5 and the rules for every worker below.
 
 1. For a worker in `<WT>`, record `<WT>` HEAD as `<H>`.
 2. Create the task under this run.
@@ -41,21 +51,29 @@ Phase workers are scouts, fact checks, planners, critics, the acceptance check, 
 4. Wait for `tui-idle`. A terminal that is still starting drops injected input.
 5. Resolve every required value in the role context and dispatch its template.
 6. Record the task id, terminal handle, and dispatch id in the manifest.
-7. Confirm receipt from the terminal and dispatch state. If the prompt left no trace, wait for readiness and inject it once more.
+7. Confirm receipt from the terminal and dispatch state. If the prompt left no trace, wait for
+   readiness and inject it once more.
 
 For every worker, including builders:
 
 - If readiness times out, inspect the terminal before deciding whether the worker failed.
-- If an Orca CLI command returns an error, or returns no response, inspect its structured result and live Orca state to determine whether the command had an effect. Retry only when the live guide permits it or state proves that no effect occurred.
-- After one confirmed recovery failure, follow the current phase's failure path. Builders enter fix or retry handling.
+- If an Orca CLI command returns an error, or returns no response, inspect its structured result and
+  live Orca state to determine whether the command had an effect. Retry only when the live guide
+  permits it or state proves that no effect occurred.
+- After one confirmed recovery failure, follow the current phase's failure path. Builders enter fix
+  or retry handling.
 
-Prefer structured `worker_done` payloads and report files. Read terminal output for status only. Never treat it as the worker's result.
+Prefer structured `worker_done` payloads and report files. Read terminal output for status only.
+Never treat it as the worker's result.
 
 ## 5.0 Collect a phase worker
 
-1. Wait through 3.0 until the dispatch is terminal. A worker is overdue after two consecutive slices with no message for it. Read its terminal. If it is active, keep waiting. Otherwise treat it as failed.
+1. Wait through 3.0 until the dispatch is terminal. A worker is overdue after two consecutive slices
+   with no message for it. Read its terminal. If it is active, keep waiting. Otherwise treat it as
+   failed.
 2. Require a non-empty report.
-3. For a worker in `<WT>`, run the read-only check. For a parallel panel, defer the check until every worker and allowed retry has reached a terminal outcome, then check the whole panel once.
+3. For a worker in `<WT>`, run the read-only check. For a parallel panel, defer the check until
+   every worker and allowed retry has reached a terminal outcome, then check the whole panel once.
 4. Record the collected reports in the manifest after the check passes.
 5. Close the terminal unless the phase keeps it across rounds.
 
@@ -69,7 +87,9 @@ git -C <WT-PATH> status --porcelain --ignored=matching -- .agents/orca/orchestra
 git -C <WT-PATH> rev-parse HEAD
 ```
 
-The first command must return no output. The second must list only reports expected from the worker or whole panel being collected, including retries, and the coordinator's own manifest and artifact edits. HEAD must equal `<H>`. Do not commit anything between recording `<H>` and running the check.
+The first command must return no output. The second must list only reports expected from the worker
+or whole panel being collected, including retries, and the coordinator's own manifest and artifact
+edits. HEAD must equal `<H>`. Do not commit anything between recording `<H>` and running the check.
 
 Before deleting files or restoring the worktree, stop any workers that can
 still write to it. Confirm that the changes and files to be discarded come
@@ -87,14 +107,16 @@ git -C <WT-PATH> restore --worktree -- . ':!.agents/orca/orchestration'
 git -C <WT-PATH> clean -fd -- ':!.agents/orca/orchestration'
 ```
 
-Rerun all three checks. They must pass before recording any report. Record the incident in the manifest and `summary.md`.
+Rerun all three checks. They must pass before recording any report. Record the incident in the
+manifest and `summary.md`.
 
 ## 6.0 Retry a phase worker
 
 For a failed, overdue, or reportless worker:
 
 1. Mark its task `failed` and close its terminal.
-2. Start a fresh routed terminal. Use the listed fallback when the model is unavailable. Never substitute one panel member for another.
+2. Start a fresh routed terminal. Use the listed fallback when the model is unavailable. Never
+   substitute one panel member for another.
 3. Create a fresh task with the same prompt, then dispatch and collect it.
 
 Retry each worker once. The phase says what happens when the retry also fails.
@@ -102,17 +124,29 @@ Retry each worker once. The phase says what happens when the retry also fails.
 ## 7.0 Manage terminals and worktrees
 
 - `worktree create` controls the requested worktree name. Record the actual branch returned by Orca.
-- Inspect any terminal that worktree creation starts. A running setup terminal is the repository's `orca.yaml` setup script. Wait for it to exit before booting a worker there. A non-zero exit is a worktree-setup failure. Read its output, remove the worktree, and retry the create once. If it fails again, follow the current phase's failure path. Close any other terminal only when it is an unused shell. Record any terminal you keep.
-- Record the integration worktree's default terminal in the manifest and keep it until teardown. For an adopted integration worktree, record no pre-existing terminal. Teardown touches only recorded terminals. Close every terminal recorded for a task or QA worktree before removing that worktree.
-- After accepting `worker_done`, follow the live guide's release or reuse procedure. Keep a terminal only for reuse. A builder keeps its terminal through fix cycles. Reviewers keep theirs through the review round loop.
+- Inspect any terminal that worktree creation starts. A running setup terminal is the repository's
+  `orca.yaml` setup script. Wait for it to exit before booting a worker there. A non-zero exit is a
+  worktree-setup failure. Read its output, remove the worktree, and retry the create once. If it
+  fails again, follow the current phase's failure path. Close any other terminal only when it is an
+  unused shell. Record any terminal you keep.
+- Record the integration worktree's default terminal in the manifest and keep it until teardown. For
+  an adopted integration worktree, record no pre-existing terminal. Teardown touches only recorded
+  terminals. Close every terminal recorded for a task or QA worktree before removing that worktree.
+- After accepting `worker_done`, follow the live guide's release or reuse procedure. Keep a terminal
+  only for reuse. A builder keeps its terminal through fix cycles. Reviewers keep theirs through the
+  review round loop.
 - Remove task worktrees after their branches merge.
-- If a failed task's worktree contains uncommitted or untracked changes, retain it. Record its id and path in the manifest and `summary.md`, and mark cleanup `partial`.
-- Before removing a failed task's worktree, confirm that removal preserves its branch. If it does not, create the local tag `orca-run/<RUN>/{slug}` at the branch tip first. Never push the tag.
-- Apply the concurrency cap only to builders. Scout, fact-check, planner, critic, acceptance-check, reviewer, and QA terminals are additional phase-bound resources.
+- If a failed task's worktree contains uncommitted or untracked changes, retain it. Record its id
+  and path in the manifest and `summary.md`, and mark cleanup `partial`.
+- Before removing a failed task's worktree, confirm that removal preserves its branch. If it does
+  not, create the local tag `orca-run/<RUN>/{slug}` at the branch tip first. Never push the tag.
+- Apply the concurrency cap only to builders. Scout, fact-check, planner, critic, acceptance-check,
+  reviewer, and QA terminals are additional phase-bound resources.
 
 ## 8.0 Operational safety
 
-- Code reaches the target branch only through a human-approved PR. The human owns approval and merge.
+- Code reaches the target branch only through a human-approved PR. The human owns approval and
+  merge.
 - Only `<RUN-BRANCH>` may reach the remote, and only in Phase 9.
 - Workers write code only in their assigned worktree.
 - Workers write under `<RUNDIR>` only to their designated files.

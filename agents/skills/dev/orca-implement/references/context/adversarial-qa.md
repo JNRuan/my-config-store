@@ -18,7 +18,8 @@ Resolve:
 ## Dispatch template
 
 ```text
-Run /{adversarial-qa-skill} against the current branch and base commit <BASE_SHA>. The skill exists. Do not check for it. Attack the implementation through code-level and browser-based testing.
+Run /{adversarial-qa-skill} against the current branch and base commit <BASE_SHA>. The skill exists.
+Do not check for it. Attack the implementation through code-level and browser-based testing.
 
 Context:
 - <RUNDIR>/plan/brief.md is the task contract.
@@ -27,11 +28,22 @@ Context:
 - Review findings and fixes so far, treat as evidence:
 <REVIEW_PATHS>
 
-Inspect the repository independently. Exclude .agents/orca/orchestration/ because it contains run bookkeeping, not the implementation. Run browser work headlessly with /{browser-skill}. Set `AGENT_BROWSER_ARGS="--no-sandbox"` for every agent-browser command. Give that instruction to every subagent that runs a browser. This worktree is your isolated review worktree at verified post-review HEAD <QA_HEAD>. Do not create another worktree and do not remove this one. Save screenshots under <RUNDIR>/screenshots/.
+Inspect the repository independently. Exclude .agents/orca/orchestration/ because it contains run
+bookkeeping, not the implementation. Run browser work headlessly with /{browser-skill}. Set
+`AGENT_BROWSER_ARGS="--no-sandbox"` for every agent-browser command. Give that instruction to every
+subagent that runs a browser. This worktree is your isolated review worktree at verified post-review
+HEAD <QA_HEAD>. Do not create another worktree and do not remove this one. Save screenshots under
+<RUNDIR>/screenshots/.
 
-Do not limit testing to the plan's happy path. Retest paths changed by review fixes and explore adjacent failure paths that affect the PR result. Stay within the approved scope unless an adjacent failure directly affects the PR result.
+Do not limit testing to the plan's happy path. Retest paths changed by review fixes and explore
+adjacent failure paths that affect the PR result. Stay within the approved scope unless an adjacent
+failure directly affects the PR result.
 
-Write the full report to <RUNDIR>/scratch/qa-findings.md. For each finding, include a reproducible test scenario or screenshot. When no finding holds, still report what you attacked, how you tested it, and that it held.
+Write the full report to <RUNDIR>/scratch/qa-findings.md. For each finding, include a reproducible
+test scenario or screenshot. When no finding holds, still report what you attacked, how you tested
+it, and that it held.
 
-The report and screenshots under <RUNDIR>/screenshots/ are the only paths you may write outside the QA worktree. Remove throwaway test files. Before removing a failing test, record its exact scenario in the finding. Then report completion.
+The report and screenshots under <RUNDIR>/screenshots/ are the only paths you may write outside the
+QA worktree. Remove throwaway test files. Before removing a failing test, record its exact scenario
+in the finding. Then report completion.
 ```

@@ -1,6 +1,7 @@
 # Plan template
 
-Write `<RUNDIR>/plan/plan.md` in exactly this shape. The plan is the run's spec of record. Workers and reviewers never need the original ticket.
+Write `<RUNDIR>/plan/plan.md` in exactly this shape. The plan is the run's spec of record. Workers
+and reviewers never need the original ticket.
 
 ```markdown
 ---
@@ -23,9 +24,12 @@ What to build and why, briefly.
 
 ## Review Policy
 
-- **Run-complexity rationale**: {aggregate risk, blast radius, coupling, failure impact, and observability evidence from the reviewed plan}
+- **Run-complexity rationale**: {aggregate risk, blast radius, coupling, failure impact, and
+  observability evidence from the reviewed plan}
 - **Code-review cap**: {pending before critique | 1 | 2 | 3 | 5 after critique}
-- **Adversarial QA**: {pending before critique | skip for low | run after all code review for medium/high/xhigh}
+- **Adversarial QA**: {pending before critique | skip for low | run after all code review for
+  medium/high/xhigh}
+- **Critique**: {complete | missing lenses: <lens names> | not critiqued: all critics failed}
 
 Leave every downstream field `pending` before critique.
 After critique, replace every pending downstream field from
@@ -33,11 +37,14 @@ After critique, replace every pending downstream field from
 
 ## Requirements & Acceptance Criteria
 
-Take the requirements from the approved brief. Cite each by its `R-n` id, and cite the intake source as the brief does.
+Take the requirements and acceptance criteria from the approved brief. Cite each by its `R-n` or
+`AC-n` id, and cite the intake source as the brief does. Keep each criterion's meaning as the brief
+states it.
 
 Write each requirement so a worker can build and verify it without opening the source.
 
-Give every acceptance criterion an id: `AC-1`, `AC-2`, and so on. Every criterion must:
+Add a criterion only when the design needs one the brief does not state, such as an integration
+boundary. Continue the brief's numbering and mark it `(plan)`. Every criterion must:
 
 - state observable behaviour;
 - have at least one task that covers it;
@@ -49,7 +56,8 @@ What this run deliberately does not touch.
 
 ## Constraints
 
-Take the constraints from the approved brief and cite each by its `C-n` id. Every constraint must have a verification method. Write `none` when the brief has no constraints.
+Take the constraints from the approved brief and cite each by its `C-n` id. Every constraint must
+have a verification method. Write `none` when the brief has no constraints.
 
 ## Assumptions
 
@@ -68,15 +76,19 @@ coordinator changes a contract, by re-pinning it.
 
 The rule files that govern this change.
 
-- **Files**: each rule file the scouts found, with its path and one sentence on what it requires of this task.
-- **Deviations**: each rule the plan cannot follow, with its `path:line`, the reason, and the simpler alternative rejected. Write `none` when the plan follows every rule.
-- **Contradictions**: each rule the existing code already breaks, with the rule's `path:line`, the code's `path:line`, and which one the plan follows. Write `none` when there are none.
+- **Files**: each rule file the scouts found, with its path and one sentence on what it requires of
+  this task.
+- **Deviations**: each rule the plan cannot follow, with its `path:line`, the reason, and the
+  simpler alternative rejected. Write `none` when the plan follows every rule.
+- **Contradictions**: each rule the existing code already breaks, with the rule's `path:line`, the
+  code's `path:line`, and which one the plan follows. Write `none` when there are none.
 
 A source requirement that a rule forbids is a scope question for the brief, not a deviation.
 
 ## Decisions
 
-Each design choice a competent engineer could have made differently: the decision, the alternative rejected, and why. Write `none` when the plan makes no such choice.
+Each design choice a competent engineer could have made differently: the decision, the alternative
+rejected, and why. Write `none` when the plan makes no such choice.
 
 ## Tasks
 
@@ -92,7 +104,9 @@ independent of `plan_review_tier` and `run_complexity`.
 
 ### {seq}-{slug}
 
-- **What**: the required result and its boundaries. Prescribe an implementation detail only when correctness depends on it. The builder may make local choices within the approved contracts and constraints.
+- **What**: the required result and its boundaries. Prescribe an implementation detail only when
+  correctness depends on it. The builder may make local choices within the approved contracts and
+  constraints.
 - **Why**: what purpose it serves.
 - **Deps / Inputs**: dependency tasks and what their output feeds into this task.
 - **Contracts**: which pinned contracts this task obeys or produces.
@@ -109,7 +123,8 @@ independent of `plan_review_tier` and `run_complexity`.
 
 ## Coverage
 
-One row per requirement: its `R-n` id, the `AC-n` ids that express it, and the tasks that cover them. An empty cell is a plan defect.
+One row per requirement: its `R-n` id, the `AC-n` ids that express it, and the tasks that cover
+them. An empty cell is a plan defect.
 
 | R   | AC          | Tasks   |
 |-----|-------------|---------|
@@ -131,7 +146,8 @@ relay, and why it is a sync point.
 
 ### Integration Verification
 
-List the cross-task boundaries to verify after each merge. Use the affected area found during scouting, not only each task's own tests.
+List the cross-task boundaries to verify after each merge. Use the affected area found during
+scouting, not only each task's own tests.
 
 ### Post-Merge Validation
 
@@ -154,7 +170,8 @@ Record these commands verbatim:
 
 Write `none` when the repository has no command.
 
-Keep Format check and Format write separate. Verification may run the check form. The write form changes files.
+Keep Format check and Format write separate. Verification may run the check form. The write form
+changes files.
 
 Record the repository's commit-message convention.
 ```

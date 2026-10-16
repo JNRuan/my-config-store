@@ -2,7 +2,8 @@
 
 ## Load when
 
-Read this file in Phase 5 before registering build tasks or writing an agent task. Reuse it for every build and fix task.
+Read this file in Phase 5 before registering build tasks or writing an agent task. Reuse it for
+every build and fix task.
 
 ## Required values
 
@@ -13,7 +14,7 @@ Resolve:
 - `{seq}` and `{slug}`;
 - the task worktree's absolute path and captured branch;
 - dependency outputs;
-- the approved plan and pinned contracts;
+- the plan and pinned contracts;
 - project commands and commit style;
 - verification requirements;
 - the absolute report path.
@@ -29,7 +30,9 @@ Run <RUN> task {seq}-{slug}. Read your full agent task first:
 
 ## Create the agent task
 
-Create `<RUNDIR>/tasks/{seq}-{slug}-agent-task.md` in the shape of `references/templates/agent-task-template.md` immediately before dispatch. Wait until the task worktree exists and every dependency output is known.
+Create `<RUNDIR>/tasks/{seq}-{slug}-agent-task.md` in the shape of
+`references/templates/agent-task-template.md` immediately before dispatch. Wait until the task
+worktree exists and every dependency output is known.
 
 Resolve every value before writing:
 

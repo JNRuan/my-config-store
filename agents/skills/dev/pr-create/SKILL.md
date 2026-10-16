@@ -1,6 +1,9 @@
 ---
 name: pr-create
-description: Draft a PR description or create/update a pull request via `gh`. Use when the user asks to create, open, or update a PR, or to write a PR description or summary. Writing requests produce a draft; create, open, or update requests authorise publication.
+description: >-
+  Draft a PR description or create/update a pull request via `gh`. Use when the user asks to create,
+  open, or update a PR, or to write a PR description or summary. Writing requests produce a draft;
+  create, open, or update requests authorise publication.
 ---
 
 # PR Create
@@ -16,12 +19,15 @@ Follow this skill's rules for PR structure and content.
 
 ### Repository safety check
 
-Before reading commits or diffs, verify the repository from the same tool that will run the git commands:
+Before reading commits or diffs, verify the repository from the same tool that will run the git
+commands:
 
-1. Run `git rev-parse --show-toplevel && git branch --show-current && git remote -v` in a single call
+1. Run `git rev-parse --show-toplevel && git branch --show-current && git remote -v` in a single
+   call
 2. Confirm the repo root, branch, and remote match the user's intended project
 3. If any value looks wrong, stop and ask the user before continuing
-4. For tools that may run from a different default cwd, run every git command as `git -C <verified-repo-root> ...`
+4. For tools that may run from a different default cwd, run every git command as
+   `git -C <verified-repo-root> ...`
 
 Do not trust the chat/session cwd alone. The command runner's cwd is the source of truth.
 
@@ -33,7 +39,8 @@ Before choosing a structure, check whether the repo defines its own PR template:
 - `PULL_REQUEST_TEMPLATE.md` at the repo root or under `docs/`
 - multiple templates under `.github/PULL_REQUEST_TEMPLATE/`
 
-If one exists, fill it in and follow its sections instead of the default structure below. If several exist, pick the best fit for the change or ask the user. If none exists, use the default structure.
+If one exists, fill it in and follow its sections instead of the default structure below. If several
+exist, pick the best fit for the change or ask the user. If none exists, use the default structure.
 
 ### Branch diff
 
@@ -43,52 +50,74 @@ If one exists, fill it in and follow its sections instead of the default structu
 otherwise `main`.
 2. If the current branch is the base branch, stop and ask which branch the PR should be created from
 3. Run `git log <base>..HEAD --oneline` to see all commits
-4. Run `git diff <base>...HEAD` to read the actual diff: understand what changed, not just which files. Three dots diffs from the merge-base, matching GitHub's PR view. For large PRs, run with `--stat` first, then read the full diff.
+4. Run `git diff <base>...HEAD` to read the actual diff: understand what changed, not just which
+   files. Three dots diffs from the merge-base, matching GitHub's PR view. For large PRs, run with
+   `--stat` first, then read the full diff.
 5. Read changed files for additional context if the diff alone doesn't tell the full story
-6. Check `git status --short` separately and distinguish uncommitted working-tree changes from the PR branch
+6. Check `git status --short` separately and distinguish uncommitted working-tree changes from the
+   PR branch
 
-If `<base>...HEAD` has no commits or diff, do not invent a PR summary from unrelated working-tree changes. Ask whether the user wants a working-tree summary instead.
+If `<base>...HEAD` has no commits or diff, do not invent a PR summary from unrelated working-tree
+changes. Ask whether the user wants a working-tree summary instead.
 
 ## Summary structure
 
-Use this when the repo has no PR template of its own. The PR **title** is separate from the body: it goes in GitHub's title field, so don't repeat it as a heading inside the body.
+Use this when the repo has no PR template of its own. The PR **title** is separate from the body: it
+goes in GitHub's title field, so don't repeat it as a heading inside the body.
 
 ```
 ## Summary
 
-<1-3 paragraphs max describing the PURPOSE of the PR: why it exists, what goal it achieves. Prefer one paragraph where possible. This frames the motivation, not the implementation.>
+<1-3 paragraphs max describing the PURPOSE of the PR: why it exists, what goal it achieves. Prefer
+one paragraph where possible. This frames the motivation, not the implementation.>
 
 <Optional: the smallest visual that shows the shape of the change. See Visuals.>
 
 ## Risk
 
-<Include only when the change is hard to roll back or could break something beyond the code it touches.>
+<Include only when the change is hard to roll back or could break something beyond the code it
+touches.>
 
-- Door: <one-way or two-way>. <For a one-way door, what makes rollback hard: data migrations, deletions, published contracts.>
-- Blast radius: <what could break and for whom, e.g. layout shift, consumers of a changed API, mobile.>
+- Door: <one-way or two-way>. <For a one-way door, what makes rollback hard: data migrations,
+  deletions, published contracts.>
+- Blast radius: <what could break and for whom, e.g. layout shift, consumers of a changed API,
+  mobile.>
 
-<List breaking changes first when there are any: removed/renamed exports, changed API or schema shapes, migrations, behavioural shifts that affect consumers. Lead with the most disruptive item.>
+<List breaking changes first when there are any: removed/renamed exports, changed API or schema
+shapes, migrations, behavioural shifts that affect consumers. Lead with the most disruptive item.>
 
 ## Changes
 
-<Short bullet list of what was done. Each bullet is a single line. Always group related changes under sub-headings when the PR spans multiple areas unless the PR is small and can be described by 5 or fewer bullets.>
+<Short bullet list of what was done. Each bullet is a single line. Always group related changes
+under sub-headings when the PR spans multiple areas unless the PR is small and can be described by 5
+or fewer bullets.>
 
 <Name anything a reviewer would expect in this PR that was left out on purpose, and why.>
 
 ## Evidence
 
-<Include only when the session captured it. Show the behaviour before and after: a screenshot pair for a visual change; otherwise the test or command output that failed before and passes now, with the test's steps as pseudocode.>
+<Include only when the session captured it. Show the behaviour before and after: a screenshot pair
+for a visual change; otherwise the test or command output that failed before and passes now, with
+the test's steps as pseudocode.>
 
 ## Test plan
 
-<A short checklist for validating the PR as a whole, not a check for every change. Include relevant checks such as typechecking, linting, builds, automated tests, browser verification, or human testing of affected features. Name the behaviour to verify for browser and manual checks. Only tick items actually run and verified in this session.>
+<A short checklist for validating the PR as a whole, not a check for every change. Include relevant
+checks such as typechecking, linting, builds, automated tests, browser verification, or human
+testing of affected features. Name the behaviour to verify for browser and manual checks. Only tick
+items actually run and verified in this session.>
 ```
 
-Treat the structure as flexible, not fixed: include a section only if it helps the reviewer understand or verify the change, and drop any that would be empty or just restate what's already clear (e.g. omit Risk when the change is easy to roll back and self-contained, omit Evidence when nothing was captured, omit per-area grouping on a single-area PR).
+Treat the structure as flexible, not fixed: include a section only if it helps the reviewer
+understand or verify the change, and drop any that would be empty or just restate what's already
+clear (e.g. omit Risk when the change is easy to roll back and self-contained, omit Evidence when
+nothing was captured, omit per-area grouping on a single-area PR).
 
 ## Visuals
 
-Add a visual when the change has a shape a reviewer would otherwise rebuild in their head. Pick the smallest view that makes the point, place it next to the sentence it supports, and keep only the calls, files, states, and boundaries the reviewer needs. One visual is usually enough.
+Add a visual when the change has a shape a reviewer would otherwise rebuild in their head. Pick the
+smallest view that makes the point, place it next to the sentence it supports, and keep only the
+calls, files, states, and boundaries the reviewer needs. One visual is usually enough.
 
 - Logic or an algorithm: pseudocode.
 - Runtime control flow: an indented call tree.
@@ -110,17 +139,25 @@ Add a visual when the change has a shape a reviewer would otherwise rebuild in t
 - Keep under 70 characters
 - Use imperative mood ("Add blog navigation" not "Added blog navigation")
 - Summarize the whole PR, not just one change
-- Don't prefix with type tags like `feat:` by default; that's for commits. But follow the project's convention when its PR titles use them (e.g. squash-merge repos where the PR title becomes the commit subject); check recent merged PRs (`gh pr list --state merged --limit 10`).
+- Don't prefix with type tags like `feat:` by default; that's for commits. But follow the project's
+  convention when its PR titles use them (e.g. squash-merge repos where the PR title becomes the
+  commit subject); check recent merged PRs (`gh pr list --state merged --limit 10`).
 
 ## Writing principles
 
-- Describe the delivered changes, not the process used to produce them. Omit run, orchestration, and specification artefacts unless creating or updating those artefacts is itself the purpose of the PR. They may inform the description without being discussed in it.
-- Summary paragraphs are about intent: what problem is being solved or what goal is being achieved. "Overhauls the blog to support category browsing and improve discoverability" is good. "Added filters, changed routing, updated SEO" is bad; that's just restating the bullets.
-- If the change breaks existing consumers (removed exports, changed API shapes, renamed public interfaces), lead with that in the Risk section, and flag it in the Summary.
+- Describe the delivered changes, not the process used to produce them. Omit run, orchestration, and
+  specification artefacts unless creating or updating those artefacts is itself the purpose of the
+  PR. They may inform the description without being discussed in it.
+- Summary paragraphs are about intent: what problem is being solved or what goal is being achieved.
+  "Overhauls the blog to support category browsing and improve discoverability" is good. "Added
+  filters, changed routing, updated SEO" is bad; that's just restating the bullets.
+- If the change breaks existing consumers (removed exports, changed API shapes, renamed public
+  interfaces), lead with that in the Risk section, and flag it in the Summary.
 - Open directly with what the change does: the PR is already the context.
 - Use the project's domain terms from `CONTEXT.md` when one exists.
 - Write in plain prose; don't decorate with bold, emoji, or badges.
-- Lead with the change, not the file. "Statically generated category routes with client-side filtering via react-query" adds useful context. "Updated `[[...slug]].tsx`" does not.
+- Lead with the change, not the file. "Statically generated category routes with client-side
+  filtering via react-query" adds useful context. "Updated `[[...slug]].tsx`" does not.
 - Include implementation details only when they help explain the change.
 - Prefer one strong sentence over two weak ones.
 
@@ -135,16 +172,24 @@ Append this sign-off as the final lines of the PR body:
 
 ## Creating the PR
 
-For create mode, write the body to `/tmp/pr-body-{branch-slug}.md` using the Write tool (e.g. `/tmp/pr-body-fix-auth-flow.md`), then:
+For create mode, write the body to `/tmp/pr-body-{branch-slug}.md` using the Write tool (e.g.
+`/tmp/pr-body-fix-auth-flow.md`), then:
 
-1. **Ensure the branch is pushed.** If it has no upstream, push it: `git -C <root> push -u origin HEAD`.
-2. **Check for an existing open PR** for this branch: `gh pr view --json number,url,state,body 2>/dev/null`. `gh pr view` also resolves closed and merged PRs, so check `state`:
-   - **No PR, or state is not `OPEN`** → open one: `gh pr create --base <base> --title "<title>" --body-file <body-file>`
+1. **Ensure the branch is pushed.** If it has no upstream, push it:
+   `git -C <root> push -u origin HEAD`.
+2. **Check for an existing open PR** for this branch:
+   `gh pr view --json number,url,state,body 2>/dev/null`. `gh pr view` also resolves closed and
+   merged PRs, so check `state`:
+   - **No PR, or state is not `OPEN`** → open one:
+     `gh pr create --base <base> --title "<title>" --body-file <body-file>`. Add `--draft` when the
+     request asks for a draft PR.
    - **State is `OPEN`** → retain relevant decisions, issue links and validation notes from the
-     existing body in the draft, then update its title and body: `gh pr edit --title "<title>" --body-file <body-file>`
+     existing body in the draft, then update its title and body:
+     `gh pr edit --title "<title>" --body-file <body-file>`
 3. Report the PR URL.
 
-If `gh` is not installed or not authenticated, report it and fall back to Summary-only mode so the work isn't lost.
+If `gh` is not installed or not authenticated, report it and fall back to Summary-only mode so the
+work isn't lost.
 
 ## Summary-only mode
 
@@ -156,4 +201,6 @@ In summary-only mode, run no push or `gh` create/edit commands. Instead:
   - Linux (Wayland): `wl-copy < <file>`, (X11): `xclip -selection clipboard < <file>`
   - Windows/WSL: `clip.exe < <file>`
 
-If no clipboard tool is available, skip copying and give the user the file path and copy command instead. Copying from the file (not from an inline code block) ensures clean formatting when pasted into GitHub's PR editor.
+If no clipboard tool is available, skip copying and give the user the file path and copy command
+instead. Copying from the file (not from an inline code block) ensures clean formatting when pasted
+into GitHub's PR editor.

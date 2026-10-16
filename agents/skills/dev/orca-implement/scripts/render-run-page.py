@@ -9,6 +9,7 @@ tool, which wraps it. With --standalone it is a complete HTML document for
 `orca artifacts` or a browser.
 Standard library only.
 """
+
 import html
 import json
 import os
@@ -19,6 +20,7 @@ from pathlib import Path
 
 try:
     from zoneinfo import ZoneInfo
+
     LOCAL_TZ = ZoneInfo("Australia/Brisbane")  # AEST all year, no daylight shift
 except Exception:  # no tz database on this host
     LOCAL_TZ = timezone(timedelta(hours=10), "AEST")
@@ -36,6 +38,7 @@ PHASES = [
     ("pr", "PR"),
 ]
 WAITING_PHASES = {"understanding", "plan_gate"}
+WAITING_STATUSES = {"awaiting_input"}
 TERMINAL_OK = {"pr"}
 TERMINAL_BAD = {"failed", "blocked"}
 TEMPLATE = Path(__file__).resolve().parent.parent / "references" / "templates" / "run-page.html"
@@ -49,11 +52,11 @@ def short(sha):
     return sha[:7] if isinstance(sha, str) else ""
 
 
-def rail(phase, status):
-    keys = [k for k, _ in PHASES]
+def rail(phase, status, phases):
+    keys = [k for k, _ in phases]
     current = keys.index(phase) if phase in keys else -1
     out = []
-    for i, (key, label) in enumerate(PHASES):
+    for i, (key, label) in enumerate(phases):
         if status in TERMINAL_OK:
             cls = "done"
         elif i < current:
@@ -61,26 +64,28 @@ def rail(phase, status):
         elif i == current:
             if status in TERMINAL_BAD:
                 cls = "failed"
-            elif key in WAITING_PHASES:
+            elif key in WAITING_PHASES or status in WAITING_STATUSES:
                 cls = "waiting"
             else:
                 cls = "active"
         else:
             cls = "pending"
-        state = {"failed": status, "waiting": "waiting on you", "active": "in progress"}.get(cls, "")
+        state = {"failed": status, "waiting": "waiting on you", "active": "in progress"}.get(
+            cls, ""
+        )
         small = f"<small>{esc(state)}</small>" if state else ""
         out.append(f'<li class="{cls}"><span>{esc(label)}{small}</span></li>')
     return "".join(out)
 
 
-def now_state(phase, status):
+def now_state(phase, status, draft):
     if phase not in {k for k, _ in PHASES} and status not in TERMINAL_OK | TERMINAL_BAD:
         return "active", f"In progress, phase {phase!r} not recognised"
     if status in TERMINAL_OK:
-        return "done", "Delivered"
+        return "done", "Delivered as a draft PR" if draft else "Delivered"
     if status in TERMINAL_BAD:
         return "failed", status.capitalize()
-    if phase in WAITING_PHASES:
+    if phase in WAITING_PHASES or status in WAITING_STATUSES:
         return "waiting", "Waiting on you"
     return "active", "In progress"
 
@@ -121,7 +126,10 @@ def fmt_time(stamp):
     if dt is None:
         return esc(stamp)
     local = dt.astimezone(LOCAL_TZ)
-    return f"{esc(dt.strftime('%d %b %H:%M'))} UTC<small>{esc(local.strftime('%d %b %H:%M %Z'))}</small>"
+    return (
+        f"{esc(dt.strftime('%d %b %H:%M'))} UTC"
+        f"<small>{esc(local.strftime('%d %b %H:%M %Z'))}</small>"
+    )
 
 
 def elapsed(started, until):
@@ -158,7 +166,11 @@ def first_paragraph(path, heading):
     """The first paragraph under `## <heading>` in a Markdown file, or an empty string."""
     if not path.exists():
         return ""
-    m = re.search(r"^## " + re.escape(heading) + r"\s*$(.*?)(?=^## |\Z)", path.read_text(encoding="utf-8"), re.S | re.M)
+    m = re.search(
+        r"^## " + re.escape(heading) + r"\s*$(.*?)(?=^## |\Z)",
+        path.read_text(encoding="utf-8"),
+        re.S | re.M,
+    )
     if not m:
         return ""
     para = []
@@ -187,7 +199,13 @@ def task_rows(tasks):
     rows = []
     for t in sorted(tasks, key=lambda t: (len(str(t.get("seq") or "")), str(t.get("seq") or ""))):
         status = t.get("status") or "pending"
-        cls = {"merged": "done", "completed": "active", "dispatched": "active", "failed": "failed", "ready": "waiting"}.get(status, "pending")
+        cls = {
+            "merged": "done",
+            "completed": "active",
+            "dispatched": "active",
+            "failed": "failed",
+            "ready": "waiting",
+        }.get(status, "pending")
         if t.get("kind") == "fix":
             origin = f"fix · {t.get('origin_phase', '')}"
             if t.get("origin_round"):
@@ -199,7 +217,9 @@ def task_rows(tasks):
         if (t.get("worker_attempt") or 1) > 1:
             retries.append("replacement worker")
         if t.get("verify_fix_cycles"):
-            retries.append(f"{t['verify_fix_cycles']} fix cycle" + ("s" if t["verify_fix_cycles"] != 1 else ""))
+            retries.append(
+                f"{t['verify_fix_cycles']} fix cycle" + ("s" if t["verify_fix_cycles"] != 1 else "")
+            )
         rows.append(
             "<tr>"
             f'<td class="mono">{esc(t.get("seq"))}</td>'
@@ -234,7 +254,18 @@ def review_rows(manifest):
     if pr.get("rounds_run") or crit.get("start_head"):
         reason = pr.get("stop_reason")
         cls = "done" if reason == "critique complete" else "failed" if reason else "active"
-        rows.append(("Plan critique", short(crit.get("start_head")), "", with_counts(reason or "in progress", counts(crit.get("accepted_findings"), ("blocking", "risky", "note"))), cls))
+        rows.append(
+            (
+                "Plan critique",
+                short(crit.get("start_head")),
+                "",
+                with_counts(
+                    reason or "in progress",
+                    counts(crit.get("accepted_findings"), ("blocking", "risky", "note")),
+                ),
+                cls,
+            )
+        )
     bv = manifest.get("browser_verification") or {}
     for r in manifest.get("review_rounds") or []:
         n = r.get("round")
@@ -252,27 +283,85 @@ def review_rows(manifest):
             reason, cls = "in progress", "active"
         af = r.get("accepted_findings") or {}
         sev = ("critical", "high", "medium")
-        rows.append((f"Code review r{n}", head, r.get("fix_waves") or 0, with_counts(reason, counts(af.get("code"), sev)), cls))
+        rows.append(
+            (
+                f"Code review r{n}",
+                head,
+                r.get("fix_waves") or 0,
+                with_counts(reason, counts(af.get("code"), sev)),
+                cls,
+            )
+        )
         if r.get("security_lenses_run", True):
             done = len(r.get("security_reviewer_reports") or [])
             sec_counts = counts(af.get("security"), sev)
-            sec_cls = "failed" if (af.get("security") or {}).get("critical") or (af.get("security") or {}).get("high") else ("done" if done else "active")
-            rows.append((f"Security review r{n}", head, "", with_counts("completed" if done else "in progress", sec_counts if done else ""), sec_cls))
+            sec_cls = (
+                "failed"
+                if (af.get("security") or {}).get("critical")
+                or (af.get("security") or {}).get("high")
+                else ("done" if done else "active")
+            )
+            rows.append(
+                (
+                    f"Security review r{n}",
+                    head,
+                    "",
+                    with_counts("completed" if done else "in progress", sec_counts if done else ""),
+                    sec_cls,
+                )
+            )
         else:
-            rows.append((f"Security review r{n}", head, "", "skipped" + (f", {r['security_skip_reason']}" if r.get("security_skip_reason") else ""), "pending"))
+            rows.append(
+                (
+                    f"Security review r{n}",
+                    head,
+                    "",
+                    "skipped"
+                    + (f", {r['security_skip_reason']}" if r.get("security_skip_reason") else ""),
+                    "pending",
+                )
+            )
         if n == 1 and bv.get("policy") == "run":
             result = r.get("browser_result") or bv.get("result")
-            cls = {"passed": "done", "failed": "failed", "not verified": "pending"}.get(result, "active")
+            cls = {"passed": "done", "failed": "failed", "not verified": "pending"}.get(
+                result, "active"
+            )
             bcount = af.get("browser")
-            rows.append((f"Browser verification r{n}", head, "", with_counts(result or "in progress", f"{bcount} finding" + ("s" if bcount != 1 else "") if bcount else ""), cls))
+            rows.append(
+                (
+                    f"Browser verification r{n}",
+                    head,
+                    "",
+                    with_counts(
+                        result or "in progress",
+                        f"{bcount} finding" + ("s" if bcount != 1 else "") if bcount else "",
+                    ),
+                    cls,
+                )
+            )
         elif n == 1 and bv.get("policy") == "not_needed":
             rows.append((f"Browser verification r{n}", head, "", "not needed", "pending"))
     qa = manifest.get("qa") or {}
     if qa.get("status") not in (None, "pending") or qa.get("head"):
         status = qa.get("status") or "pending"
         text = status + (f", {qa['reason']}" if qa.get("reason") else "")
-        cls = {"completed": "done", "not_verified": "failed", "skipped": "pending"}.get(status, "active")
-        rows.append(("Adversarial QA", short(qa.get("head")), qa.get("fix_waves") or 0, with_counts(text, counts(qa.get("accepted_findings"), ("critical", "high", "medium")) if status == "completed" else ""), cls))
+        cls = {"completed": "done", "not_verified": "failed", "skipped": "pending"}.get(
+            status, "active"
+        )
+        rows.append(
+            (
+                "Adversarial QA",
+                short(qa.get("head")),
+                qa.get("fix_waves") or 0,
+                with_counts(
+                    text,
+                    counts(qa.get("accepted_findings"), ("critical", "high", "medium"))
+                    if status == "completed"
+                    else "",
+                ),
+                cls,
+            )
+        )
     html_rows = "".join(
         f'<tr><td>{esc(stage)}</td><td class="mono">{esc(head)}</td><td>{esc(waves)}</td>'
         f'<td><span class="pill {cls}">{esc(text)}</span></td></tr>'
@@ -296,7 +385,8 @@ def main(argv):
     page_text = manifest.get("run_page") or {}
     phase = manifest.get("phase", "setup")
     status = manifest.get("status", "active")
-    cls, state = now_state(phase, status)
+    phases = [p for p in PHASES if p[0] != "plan_gate" or manifest.get("plan_gate", True)]
+    cls, state = now_state(phase, status, manifest.get("pr_draft"))
     now_html = "<p>" + esc(events[-1][1] if events else "Run started.") + "</p>"
     if status in TERMINAL_OK | TERMINAL_BAD:
         outcome = page_text.get("outcome") or first_paragraph(rundir / "summary.md", "Outcome")
@@ -317,13 +407,29 @@ def main(argv):
     wt = manifest.get("integration_worktree") or {}
     ver = manifest.get("verification") or {}
 
-    stats = "".join([
-        stat(f"{merged}/{len(build)}", "build tasks merged"),
-        stat(str(len(fixes)), "fix tasks"),
-        stat(f"{len(rounds)}/{manifest.get('code_review_cap', '?')}", "review rounds used" + (f" · {rounds[-1].get('stop_reason')}" if rounds and rounds[-1].get("stop_reason") else "")),
-        stat(str(sum(1 for r in rounds if r.get("security_lenses_run", True))), "security reviews run"),
-        stat(str(qa.get("status", "pending")), f"adversarial QA · policy {manifest.get('qa_policy', 'pending')}"),
-    ])
+    stats = "".join(
+        [
+            stat(f"{merged}/{len(build)}", "build tasks merged"),
+            stat(str(len(fixes)), "fix tasks"),
+            stat(
+                f"{len(rounds)}/{manifest.get('code_review_cap', '?')}",
+                "review rounds used"
+                + (
+                    f" · {rounds[-1].get('stop_reason')}"
+                    if rounds and rounds[-1].get("stop_reason")
+                    else ""
+                ),
+            ),
+            stat(
+                str(sum(1 for r in rounds if r.get("security_lenses_run", True))),
+                "security reviews run",
+            ),
+            stat(
+                str(qa.get("status", "pending")),
+                f"adversarial QA · policy {manifest.get('qa_policy', 'pending')}",
+            ),
+        ]
+    )
 
     started = parse_time(manifest.get("started_at") or "")
     last_event = parse_time(events[-1][0]) if events else None
@@ -333,32 +439,73 @@ def main(argv):
         ended = max(t for t in (datetime.now(timezone.utc), last_event) if t)
     started_text = ""
     if started:
-        started_text = f"{esc(started.strftime('%d %b %H:%M'))} UTC, {esc(started.astimezone(LOCAL_TZ).strftime('%H:%M %Z'))} · {esc(elapsed(started, ended))} " + ("so far" if status == "active" else "total")
+        started_text = (
+            f"{esc(started.strftime('%d %b %H:%M'))} UTC, "
+            f"{esc(started.astimezone(LOCAL_TZ).strftime('%H:%M %Z'))} · "
+            f"{esc(elapsed(started, ended))} "
+            + ("total" if status in TERMINAL_OK | TERMINAL_BAD else "so far")
+        )
     details = "".join(
-        f"<dt>{esc(k)}</dt><dd>{v}</dd>" for k, v in [
+        f"<dt>{esc(k)}</dt><dd>{v}</dd>"
+        for k, v in [
             ("Source", esc(manifest.get("source") or "ad-hoc")),
             ("Started", started_text or "unknown"),
-            ("Target", f'<span class="mono">{esc(manifest.get("base_ref"))}</span> at <span class="mono">{esc(short(manifest.get("base_sha")))}</span>'),
+            (
+                "Target",
+                f'<span class="mono">{esc(manifest.get("base_ref"))}</span> at '
+                f'<span class="mono">{esc(short(manifest.get("base_sha")))}</span>',
+            ),
             ("Start ref", f'<span class="mono">{esc(manifest.get("start_ref") or "none")}</span>'),
-            ("Worktree", f'{esc(wt.get("origin", "created"))} · <span class="mono">{esc(wt.get("branch"))}</span> · <span class="mono">{esc(wt.get("path"))}</span>'),
-            ("Tiers", f'plan review {esc(manifest.get("plan_review_tier"))} · run complexity {esc(manifest.get("run_complexity"))}'),
-            ("Fix waves", f'verification {esc(ver.get("fix_waves") or 0)} · post-review {esc(ver.get("post_review_fix_waves") or 0)} · QA {esc(qa.get("fix_waves") or 0)}'),
+            (
+                "Worktree",
+                f"{esc(wt.get('origin', 'created'))} · "
+                f'<span class="mono">{esc(wt.get("branch"))}</span> · '
+                f'<span class="mono">{esc(wt.get("path"))}</span>',
+            ),
+            (
+                "Tiers",
+                f"plan review {esc(manifest.get('plan_review_tier'))} · "
+                f"run complexity {esc(manifest.get('run_complexity'))}",
+            ),
+            (
+                "Fix waves",
+                f"verification {esc(ver.get('fix_waves') or 0)} · "
+                f"post-review {esc(ver.get('post_review_fix_waves') or 0)} · "
+                f"QA {esc(qa.get('fix_waves') or 0)}",
+            ),
         ]
     )
 
-    goal = page_text.get("goal") or first_paragraph(brief, "Goal") or first_paragraph(rundir / "plan" / "plan.md", "Overview")
+    goal = (
+        page_text.get("goal")
+        or first_paragraph(brief, "Goal")
+        or first_paragraph(rundir / "plan" / "plan.md", "Overview")
+    )
     if len(goal) > 512:
         goal = goal[:511].rstrip() + "…"
     goal_html = f'<p class="goal"><span class="eyebrow">Goal</span>{esc(goal)}</p>' if goal else ""
     decisions = read_decisions(brief)
-    decisions_html = "<ul>" + "".join(f"<li>{esc(d)}</li>" for d in decisions) + "</ul>" if decisions else '<p class="muted">None recorded yet. Decisions appear here once the brief is approved.</p>'
+    decisions_html = (
+        "<ul>" + "".join(f"<li>{esc(d)}</li>" for d in decisions) + "</ul>"
+        if decisions
+        else '<p class="muted">None recorded yet. '
+        "Decisions appear here once the brief is approved.</p>"
+    )
 
-    timeline_html = "".join(
-        f"<li><time>{fmt_time(ts)}</time><p>{esc(text)}</p></li>" for ts, text in reversed(events)
-    ) or '<li><time></time><p class="muted">No events yet.</p></li>'
+    timeline_html = (
+        "".join(
+            f"<li><time>{fmt_time(ts)}</time><p>{esc(text)}</p></li>"
+            for ts, text in reversed(events)
+        )
+        or '<li><time></time><p class="muted">No events yet.</p></li>'
+    )
 
     pr_url = manifest.get("pr_url")
-    pr_link = f' · <a href="{esc(pr_url)}">PR</a>' if isinstance(pr_url, str) and pr_url.startswith("https://") else ""
+    pr_link = (
+        f' · <a href="{esc(pr_url)}">PR</a>'
+        if isinstance(pr_url, str) and pr_url.startswith("https://")
+        else ""
+    )
 
     values = {
         "title": esc(read_title(brief, manifest.get("run_name", "Orca run"))),
@@ -367,7 +514,7 @@ def main(argv):
         "updated": esc(fmt_updated(datetime.now(timezone.utc))),
         "pr_link": pr_link,
         "goal": goal_html,
-        "rail": rail(phase, status),
+        "rail": rail(phase, status, phases),
         "now_class": cls,
         "now_state": esc(state),
         "now": now_html,
@@ -378,14 +525,21 @@ def main(argv):
         "decisions": decisions_html,
         "timeline": timeline_html,
     }
-    page = re.sub(r"\{\{(\w+)\}\}", lambda m: values.get(m.group(1), m.group(0)), TEMPLATE.read_text(encoding="utf-8"))
+    page = re.sub(
+        r"\{\{(\w+)\}\}",
+        lambda m: values.get(m.group(1), m.group(0)),
+        TEMPLATE.read_text(encoding="utf-8"),
+    )
 
     if standalone:
         head, _, body = page.partition("<main>")
         page = (
-            "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
-            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n"
-            + head + "</head>\n<body>\n<main>" + body + "\n</body>\n</html>\n"
+            '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+            + head
+            + "</head>\n<body>\n<main>"
+            + body
+            + "\n</body>\n</html>\n"
         )
     out = rundir / "run-page.html"
     tmp = out.with_suffix(".html.tmp")

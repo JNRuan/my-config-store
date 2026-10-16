@@ -1,8 +1,10 @@
 # Run state
 
-`<RUNDIR>/run-state.json` is the durable manifest for one `/orca-implement` run. It records coordinator decisions, Orca resource ownership, task progress, review progress, and cleanup.
+`<RUNDIR>/run-state.json` is the durable manifest for one `/orca-implement` run. It records
+coordinator decisions, Orca resource ownership, task progress, review progress, and cleanup.
 
-Update it after every state transition and before the next Orca mutation. The checkpoint rule in SKILL.md commits it at five boundaries.
+Update it after every state transition and before the next Orca mutation. The checkpoint rule in
+SKILL.md commits it at the boundaries it lists.
 
 ## Run phases
 
@@ -12,7 +14,7 @@ Update it after every state transition and before the next Orca mutation. The ch
 | `scout` | Phase 1 starts |
 | `understanding` | Phase 2 starts |
 | `plan` | Phase 3 starts |
-| `plan_gate` | Phase 4 starts |
+| `plan_gate` | Phase 4 starts; skipped when `plan_gate` is false |
 | `build` | Phase 5 starts |
 | `verification` | Phase 6 starts |
 | `code_review` | Phase 7 starts |
@@ -23,18 +25,21 @@ Set `phase` before starting that phase's work.
 
 Fix tasks do not change the phase. A review fix remains in `code_review`; a QA fix remains in `qa`.
 
-On failure or blockage, preserve the phase where the run stopped. Use `status` to record the outcome.
+On failure or blockage, preserve the phase where the run stopped. Use `status` to record the
+outcome.
 
 ## Run statuses
 
 | Status | Meaning |
 |---|---|
 | `active` | The pipeline is still running |
+| `awaiting_input` | The run is paused for a critical decision recorded in `decisions` |
 | `pr` | The PR is open and its URL is recorded |
-| `failed` | Implementation or verification could not complete |
-| `blocked` | Progress needs a human-owned decision or external prerequisite |
+| `failed` | Setup failed, or no build task merged |
+| `blocked` | The human rejected the brief or cancelled the run |
 
-`pr`, `failed`, and `blocked` are terminal pipeline statuses.
+`pr`, `failed`, and `blocked` are terminal pipeline statuses. `awaiting_input` is not; `resume`
+continues it.
 
 Do not use `shipped`. The pipeline does not observe merge or deployment.
 
@@ -65,7 +70,10 @@ Keep plan frontmatter, the plan's Review Policy, and these manifest fields synch
 
 ## Base and start refs
 
-`base_ref` is the PR target. `start_ref` is the branch the run built on, or null when the run started from `base_ref`. `base_sha` is `git rev-parse base_ref` when `start_ref` is null or equal to `base_ref`, and `git merge-base base_ref start_ref` otherwise. `integration_worktree.origin` is `created` or `adopted`.
+`base_ref` is the PR target. `start_ref` is the branch the run built on, or null when the run
+started from `base_ref`. `base_sha` is `git rev-parse base_ref` when `start_ref` is null or equal to
+`base_ref`, and `git merge-base base_ref start_ref` otherwise. `integration_worktree.origin` is
+`created` or `adopted`.
 
 ## Build-task statuses
 
@@ -97,11 +105,13 @@ completed -> failed
 
 `merged` and `failed` are terminal task states.
 
-A dependant becomes `ready` only when every dependency is `merged` in the manifest. Orca's completed status alone is not enough.
+A dependant becomes `ready` only when every dependency is `merged` in the manifest. Orca's completed
+status alone is not enough.
 
 ## Phase-dispatch statuses
 
-Scout, fact-check, planner, critic, acceptance-check, reviewer, and security-reviewer dispatch records, and `qa.dispatch_status`, use:
+Scout, fact-check, planner, critic, acceptance-check, reviewer, and security-reviewer dispatch
+records, and `qa.dispatch_status`, use:
 
 - `pending`;
 - `dispatched`;
@@ -109,7 +119,8 @@ Scout, fact-check, planner, critic, acceptance-check, reviewer, and security-rev
 - `failed`;
 - `superseded`.
 
-A completed phase dispatch requires its designated report to exist and be non-empty. Record a QA policy skip in the QA record, not as a fake dispatch.
+A completed phase dispatch requires its designated report to exist and be non-empty. Record a QA
+policy skip in the QA record, not as a fake dispatch.
 
 ## Initial manifest
 
@@ -131,6 +142,10 @@ Phase 0 creates the manifest with these top-level fields:
   "run_complexity": "pending",
   "code_review_cap": "pending",
   "qa_policy": "pending",
+  "plan_gate": false,
+  "pr_draft": false,
+  "replans": 0,
+  "decisions": [],
   "review_fixes_applied": false,
   "code_review_complete": false,
   "plan_review": {
@@ -213,7 +228,8 @@ Phase 0 creates the manifest with these top-level fields:
 }
 ```
 
-Repeat the terminal record for every terminal returned by integration-worktree creation. If creation returns none, use an empty array. Update a terminal to `closed` after closing it.
+Repeat the terminal record for every terminal returned by integration-worktree creation. If creation
+returns none, use an empty array. Update a terminal to `closed` after closing it.
 
 ## Build-task record
 
@@ -252,11 +268,16 @@ A task with no dependencies starts `ready`. A task with unmerged dependencies st
 
 A fix task uses `"kind": "fix"` and records the phase and round that produced it.
 
-`worker_attempt` is 1 for the original worker and 2 for its single replacement. `verify_fix_cycles` counts cycles for the current attempt. When moving from attempt 1 to 2, reset `verify_fix_cycles` to 0. Save both values before starting the replacement. Resuming an attempt preserves both values.
+`worker_attempt` is 1 for the original worker and 2 for its single replacement. `verify_fix_cycles`
+counts cycles for the current attempt. When moving from attempt 1 to 2, reset `verify_fix_cycles`
+to 0. Save both values before starting the replacement. Resuming an attempt preserves both values.
 
-Increment `resolve_verify_cycles` on the original task for each conflict-resolution task registered for it.
+Increment `resolve_verify_cycles` on the original task for each conflict-resolution task registered
+for it.
 
-Fill resource, routing, dispatch, and artifact fields when those values become known. Never derive them later from names. Set `merge_commit` to the merge commit on `<RUN-BRANCH>` when the task is finalised.
+Fill resource, routing, dispatch, and artifact fields when those values become known. Never derive
+them later from names. Set `merge_commit` to the merge commit on `<RUN-BRANCH>` when the task is
+finalised.
 
 ## Phase-dispatch record
 
@@ -279,7 +300,9 @@ Each entry in `phase_dispatches` contains:
 }
 ```
 
-Use `round` for critic and reviewer rounds. Leave it `null` for unrounded roles. Record a fact check's `role` as `plan-fact-check` or `plan-fact-check-final`, and an acceptance check's `role` as `acceptance-check-<PASS>`.
+Use `round` for critic and reviewer rounds. Leave it `null` for unrounded roles. Record a fact
+check's `role` as `plan-fact-check` or `plan-fact-check-final`, and an acceptance check's `role` as
+`acceptance-check-<PASS>`.
 
 For a worker in `<WT>`, save the collection baseline `<H>` as `start_head` before dispatch.
 Use the same baseline for every worker and retry in one collection batch.
@@ -301,15 +324,23 @@ Each entry in `plan_review.rounds` contains:
 }
 ```
 
-Set `accepted_findings` at triage to the counts of findings you accepted, by severity. Add a lens to `missing_lenses` when its in-round retry fails. Critique runs one round, so `rounds_run` is `1` when it finishes. `stop_reason` accepts `critique complete` or `all critics failed`.
+Set `accepted_findings` at triage to the counts of findings you accepted, by severity. Add a lens to
+`missing_lenses` when its in-round retry fails. Critique runs one round, so `rounds_run` is `1` when
+it finishes. `stop_reason` accepts `critique complete` or `all critics failed`.
 
 ## Verification record
 
-`verification.fix_waves` counts Phase 6 fix waves. `verification.post_review_fix_waves` counts the post-review verification fix waves in Phase 7. Each has its own limit of three.
+`verification.fix_waves` counts Phase 6 fix waves. `verification.post_review_fix_waves` counts the
+post-review verification fix waves in Phase 7. Each has its own limit of three.
 
-`run_page.goal` and `run_page.outcome` are prose written for the run page only, each under 512 characters. Set `goal` when the brief is approved: a summary of the brief's Problem and Goal sections. Set `outcome` when the run ends: what the PR delivers, or what failed, for the person who asked for the work. Neither is a copy of a brief or summary section.
+`run_page.goal` and `run_page.outcome` are prose written for the run page only, each under 512
+characters. Set `goal` when the brief is approved: a summary of the brief's Problem and Goal
+sections. Set `outcome` when the run ends: what the PR delivers, or what failed, for the person who
+asked for the work. Neither is a copy of a brief or summary section.
 
-`browser_verification.policy` accepts `pending`, `run`, or `not_needed`. Set it in Phase 6. `browser_verification.result` accepts `null`, `passed`, `failed`, or `not verified`, recorded from the round 1 browser report or the latest scoped rerun.
+`browser_verification.policy` accepts `pending`, `run`, or `not_needed`. Set it in Phase 6.
+`browser_verification.result` accepts `null`, `passed`, `failed`, or `not verified`, recorded from
+the round 1 browser report or the latest scoped rerun.
 
 ## Review-round record
 
@@ -337,11 +368,18 @@ Each entry in `review_rounds` contains:
 }
 ```
 
-Set `accepted_findings` at triage to the counts of findings you accepted, by source and severity; a browser failure counts once. Add a lens to `missing_lenses` when its in-round retry fails. Set `security_lenses_run=false` with `security_skip_reason` when `run_complexity` is `low`, or when the Phase 7 security trigger does not fire for a later round. Set `browser_result` in round 1 only. `stop_reason` accepts `no accepted fixes`, `no severe findings`, or `cap reached`.
+Set `accepted_findings` at triage to the counts of findings you accepted, by source and severity; a
+browser failure counts once. Add a lens to `missing_lenses` when its in-round retry fails. Set
+`security_lenses_run=false` with `security_skip_reason` when `run_complexity` is `low`, or when the
+Phase 7 security trigger does not fire for a later round. Set `browser_result` in round 1 only.
+`stop_reason` accepts `no accepted fixes`, `no severe findings`, or `cap reached`.
 
-`fix_waves` counts the round's review fix waves. Set `review_fixes_applied=true` after any review fix, Medium included, merges and passes verification. Only a Critical or High fix sets `severe_fix_merged`.
+`fix_waves` counts the round's review fix waves. Set `review_fixes_applied=true` after any review
+fix, Medium included, merges and passes verification. Only a Critical or High fix sets
+`severe_fix_merged`.
 
-Set `code_review_complete=true` only after the review loop and any required post-review verification finish.
+Set `code_review_complete=true` only after the review loop and any required post-review verification
+finish.
 
 ## QA record
 
@@ -361,9 +399,12 @@ For a policy skip:
 }
 ```
 
-For a QA run, record `head`, task, worktree, branch, terminal, dispatch, report, review, and fix-wave count as each becomes known. `qa.dispatch_status` uses the phase-dispatch statuses and tracks the worker dispatch separately from the QA outcome.
+For a QA run, record `head`, task, worktree, branch, terminal, dispatch, report, review, and
+fix-wave count as each becomes known. `qa.dispatch_status` uses the phase-dispatch statuses and
+tracks the worker dispatch separately from the QA outcome.
 
-Set `completed` only after report collection, triage, accepted fixes, and required verification finish.
+Set `completed` only after report collection, triage, accepted fixes, and required verification
+finish.
 
 Use `not_verified` when the worker fails or the required report is missing. Record the exact reason.
 
@@ -417,9 +458,32 @@ At PR state, the integration worktree is `retained`. Task and QA worktrees must 
 - `complete`;
 - `partial`.
 
-Set `complete` when every run-owned terminal is closed and every removable worktree is gone. The retained integration worktree does not make cleanup partial.
+Set `complete` when every run-owned terminal is closed and every removable worktree is gone. The
+retained integration worktree does not make cleanup partial.
 
 Record unresolved terminal handles or worktree ids when cleanup is partial.
+
+## Decision record
+
+Each entry in `decisions` records one critical decision:
+
+```json
+{
+  "id": "D-1",
+  "raised_at": "<ISO_8601_UTC>",
+  "source": "<task title, phase, or review round>",
+  "question": "<the question as presented>",
+  "held_tasks": [],
+  "answer": null,
+  "answered_at": null
+}
+```
+
+`held_tasks` lists the build-owned task ids the decision holds. Release them when the answer is
+recorded.
+
+A manifest without `plan_gate`, `pr_draft`, `replans`, or `decisions` predates them. Read
+`plan_gate` as true, the others as their initial values.
 
 ## PR state
 
@@ -438,9 +502,14 @@ After the PR opens and teardown completes:
 {
   "phase": "pr",
   "status": "pr",
-  "pr_url": "<URL>"
+  "pr_url": "<URL>",
+  "pr_draft": false
 }
 ```
+
+Set `pr_draft` to true whenever the run lists an item under Remaining because a fix-wave limit was
+reached, a task failed permanently, or code review could not run. Phase 9 then opens the PR as a
+draft.
 
 The integration worktree remains retained until the human removes it after merge.
 
@@ -457,4 +526,5 @@ On failure or blockage:
 
 ## Recovery authority
 
-The manifest owns resource identity and coordinator intent. Git and Orca own live execution facts. Resume a run as SKILL.md describes.
+The manifest owns resource identity and coordinator intent. Git and Orca own live execution facts.
+Resume a run as SKILL.md describes.
