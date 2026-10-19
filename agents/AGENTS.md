@@ -100,7 +100,8 @@ alters behaviour, and before you write, change, or review a test.
 ## Subagent routing
 
 - **Scout with fast models.** Locating files, mapping structure, and gathering context do not need
-a frontier model. Use Luna (high effort) on Codex and Pi, or Haiku (high effort) on Claude.
+a frontier model. Use Luna on Codex and Pi, or Haiku on Claude, at medium or high effort to match
+how broad and open-ended the search is.
 When scouting needs synthesis, such as tracing a flow across modules or explaining how a subsystem
 fits together, use Sol (medium effort) on Codex and Pi, or Sonnet (medium effort) on Claude.
 - **Name the model on every Claude spawn.** Subagents and workflow agents inherit the session
