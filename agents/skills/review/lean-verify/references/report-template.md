@@ -1,6 +1,7 @@
 # Report template
 
-Write `<RUNDIR>/report.md` in exactly this shape. Report what the checks showed, with their output as evidence.
+Write `<RUNDIR>/report.md` in exactly this shape. Report what the checks showed, with their output
+as evidence.
 
 ```markdown
 ---
@@ -15,7 +16,8 @@ created: {ISO 8601 UTC}
 
 ## Result
 
-One line per outcome kind with its count: proved, false, stuck, declined. Then one sentence per **false** claim and per link-test mismatch, since each points at a likely bug.
+One line per outcome kind with its count: proved, false, stuck, declined. Then one sentence per
+**false** claim and per link-test mismatch, since each points at a likely bug.
 
 ## Claims
 
@@ -26,15 +28,21 @@ One section per claim, in brief order:
 - Outcome: proved / false / stuck
 - Theorem: `{Full.Lean.Name}` in `lean/Proofs/...:line`
 - Evidence:
-  - proved: the `#print axioms` output, verbatim;
+  - proved: the `lean_verify` output, verbatim;
   - false: the breaking input, the model's output, and the real code's output;
   - stuck: the open goal, verbatim, and the approaches tried.
+- Stronger than claimed: for a proved claim, each hypothesis `lean_minimal_hypotheses` found
+  unused, and which reading applies: the claim holds without it, or the model ignores a precondition
+  the source relies on. Otherwise "none".
 
 ## Link tests
 
-| Target | Test file | Inputs run | Result |
-| --- | --- | --- | --- |
-| `name` | `path` | {count} | pass / mismatch |
+| Target | Test file | Inputs run | Seed | Result |
+| --- | --- | --- | --- | --- |
+| `name` | `path` | {count} | {seed} | pass / mismatch |
+
+Under the table, for each test: the tally of branches the inputs reached, and the change to
+`Model.lean` that turned it red.
 
 For each mismatch: the input, both outputs, and which side is wrong with the evidence.
 
@@ -44,11 +52,18 @@ Each target triage routed to none, with its reason.
 
 ## Coverage gaps
 
-What the proofs do not cover: each model note from the brief the link test cannot check, and every precondition a caller does not enforce, with `path:line`.
+What the proofs do not cover: each model note from the brief the link test cannot check, and every
+precondition a caller does not enforce, with `path:line`.
 
 ## Follow-up targets
 
-Functions this run suggests proving next: lemmas a proof needed, callers that inherit a proved property, and siblings with the same shape. One line each, with the reason.
+Functions this run suggests proving next: lemmas a proof needed, callers that inherit a proved
+property, and siblings with the same shape. One line each, with the reason.
+
+## Run notes
+
+What the next run needs to know: environment fixes made or still needed, steps declined or skipped
+with the reason, and what a test runner needs to run the link tests, such as `lake` on its PATH.
 
 ## Files
 
