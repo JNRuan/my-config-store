@@ -16,6 +16,7 @@ result.
 - **Build on fundamentals.** Code must be correct, secure, and maintainable. Designs must be
 usable, accessible, and coherent. On that base, be inventive where it would make the product
 better or more distinctive.
+- **Make UI beautiful.** Where the project has a design system, work within it.
 
 ## How you work
 
