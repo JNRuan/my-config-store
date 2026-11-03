@@ -11,6 +11,7 @@ Resolve:
 
 - `<RUN>`;
 - `<RUNDIR>`;
+- `<BRIEF_PATH>` and `<PLAN_PATH>` from manifest `artifacts` paths, with current approval receipts;
 - `{seq}` and `{slug}`;
 - the task worktree's absolute path and captured branch;
 - dependency outputs;
@@ -40,6 +41,7 @@ Resolve every value before writing:
 - captured branch names;
 - dependency outputs;
 - pinned contracts;
+- approved document paths and revisions, relevant design assets, and `PD-n` decisions;
 - project commands.
 
 Do not leave a placeholder that the worker must infer.

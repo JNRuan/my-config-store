@@ -7,53 +7,45 @@ until you write the final plan.
 
 ## Required values
 
-Resolve:
-
-- `<P>`: the stable planner label;
-- `<RUNDIR>`.
+Resolve `<P>` as the stable planner label, `<RUNDIR>`, and `<BRIEF_PATH>` and `<PLAN_PATH>` from
+manifest `artifacts` paths.
 
 ## Prepare the planner brief
 
-Write the planner brief to `<RUNDIR>/scratch/planner-brief.md`. It stands alone and contains:
+Write `<RUNDIR>/scratch/planner-brief.md` as a self-contained packet with:
 
-- the approved `plan/brief.md`;
-- confirmed scout evidence;
-- open assumptions;
-- project tooling verbatim;
-- the project-rules paths from scouting, with the instruction to read every file before drafting;
-- the selected `plan_review_tier`, with downstream policy fields left `pending`;
-- the task-complexity rubric and builder routing rows from `references/routing.md`;
-- the required structure from `references/templates/plan-template.md`.
+- the approved brief's content, path, and revision, including supplied design sources and constraints;
+- confirmed scout evidence and open assumptions;
+- project tooling verbatim and project-rule paths, with an instruction to read every rule file;
+- the selected plan-review tier, with downstream policy fields left `pending`;
+- task-complexity and builder-routing guidance from `references/routing.md`;
+- the content guidance from `references/templates/plan-template.md`;
+- any existing `PD-n` decisions and `PF-n` findings with their dispositions when revising a plan.
 
-Planners cannot read the coordinator's skill files. Include every instruction they need in the
-planner brief. Every planner reads the same file.
+Planners cannot read coordinator skill files. Include every instruction they need in the packet.
+Both planners, when routed, read the same packet and independently assess feasibility and coverage.
+A full supplied specification and design shifts the work to implementation mapping and genuine gaps.
+Reuse adequate designs and visuals. Create new design work only when needed to resolve a gap or
+explain unclear behaviour. Flag material departures from supplied designs for human approval.
 
 ## Dispatch template
 
 ```text
 Read <RUNDIR>/scratch/planner-brief.md. Independently write a complete implementation plan to
-<RUNDIR>/scratch/draft-<P>.md following the plan structure given in that file. Do not read any other
-draft-*.md file. Your draft is the only file you may write. Then report completion.
+<RUNDIR>/scratch/draft-<P>.html using the content guidance in that file. Choose an HTML layout that
+suits the task, with stable anchors. Reuse supplied designs and explain only genuine gaps. Keep any
+new diagrams inline and link existing assets so your draft remains the only file you write.
+Do not read any other draft-*.html file. Then report completion.
 ```
 
-## Assess drafts
+## Assess drafts and write the final plan
 
-Assess each complete draft against:
+Assess each draft for fidelity to the approved brief and supplied design, requirement coverage,
+feasibility, assumptions and their failure consequences, task boundaries and dependencies,
+verification, task sizing, and project rules. Select the strongest base and use stronger parts of
+another draft where useful. Correct unsupported claims and write one coherent `<PLAN_PATH>`.
+Preserve stable anchors and IDs rather than concatenating drafts.
 
-- task boundaries;
-- requirement coverage;
-- correctness;
-- verification;
-- task sizing;
-- any other risk raised by the requirements or scout evidence.
-
-Select the strongest draft as the base. Correct claims that conflict with the approved brief or
-repository evidence. Use stronger parts from another draft where they improve the plan.
-
-Write `<RUNDIR>/plan/plan.md` as one coherent document that follows
-`references/templates/plan-template.md`. Do not concatenate drafts.
-
-## Required final-plan content
-
-The final plan follows `references/templates/plan-template.md` exactly, with `run_complexity` and
-the downstream policy fields `pending` until critique, and the smallest workable task set.
+Cover every requirement of `references/templates/plan-template.md`. Leave run complexity and
+policy fields pending until critique. Choose the smallest workable task set. The coordinator owns
+final asset placement under `plan/assets/` and relative links from the canonical plan.

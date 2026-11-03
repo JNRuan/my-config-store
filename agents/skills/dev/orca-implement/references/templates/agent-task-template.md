@@ -30,15 +30,19 @@ command, its output, and the reproduction.}
 
 ## Plan excerpt
 
-{The `### {seq}-{slug}` section of `plan/plan.md`, copied verbatim: What, Why, Deps / Inputs,
-Contracts, Constraints & Context, Relevant existing code, Verification requirements, Covers. Nothing
-else from the plan: no task table, no other task's section, no Orchestration section.}
+{This task's content from the approved plan, faithfully transcribed into Markdown: What, Why,
+Dependencies and Inputs, Contracts, Constraints and Context, Relevant existing code, Verification
+requirements, Covers. Preserve code, identifiers, and commands exactly. Include relevant `PD-n`
+rationale, supplied-design constraints, asset paths, and the source anchor and approved revision.
+Exclude HTML markup, other tasks, and coordinator-only orchestration instructions.}
 
 {For a fix task: the plan material the fix touches, copied verbatim. The original task's section
 when fixing that task's code. The acceptance criterion a verification failure traced to.}
 
-The full plan is at `<RUNDIR>/plan/plan.md` and the approved brief at `<RUNDIR>/plan/brief.md`. Read
-them for context. Build only this task.
+The full plan is at `<PLAN_PATH>` and the approved brief at `<BRIEF_PATH>`, resolved from the
+manifest's artefact paths. Read them and relevant design assets for context. Build only this task.
+Escalate a required material change to features, approach, fixes, or pinned contracts before
+implementing it. The coordinator must revise, critique, and obtain approval of the changed plan.
 
 ## Inputs from completed tasks
 

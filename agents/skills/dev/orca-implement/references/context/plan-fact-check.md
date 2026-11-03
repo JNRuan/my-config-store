@@ -2,30 +2,30 @@
 
 ## Load when
 
-Read this file in Phase 3 immediately before creating a plan fact-check task.
+Read this file in Phase 3 before each plan fact-check, including changed claims after critique or
+human feedback.
 
 ## Required values
 
 Resolve:
 
 - `<RUNDIR>`;
-- `<SUFFIX>`: empty for the check before critique; `-final` for the check after it;
-- `<SCOPE>`: empty before critique. After it:
+- `<PLAN_PATH>` from manifest `artifacts.plan`;
+- `<CHECK>`: a unique label, such as `initial`, `r1-final`, or `r2-before`;
+- `<SCOPE>`: empty for the initial check. For later checks, name the changed sections and the
+  previous snapshot, such as `<RUNDIR>/scratch/plan-pre-critique-r1.html`. Resolve any asset paths
+  from the canonical plan, not the scratch snapshot.
 
-  ```text
-  Limit the check to the sections that differ between <RUNDIR>/scratch/plan-pre-critique.md and
-  <RUNDIR>/plan/plan.md.
-  ```
-
-The task is `plan-fact-check<SUFFIX>` and the report is `<RUNDIR>/scratch/fact-check<SUFFIX>.md`.
+The task is `plan-fact-check-<CHECK>` and the report is `<RUNDIR>/scratch/fact-check-<CHECK>.md`.
 
 ## Dispatch template
 
 ```text
-Read <RUNDIR>/plan/plan.md and verify every checkable claim against the repository: file paths,
-path:line evidence, command names, symbols, and interfaces cited in contracts. Verify that every id
-in the Coverage table exists in the plan and that the table lists every requirement, criterion, and
-task. <SCOPE> Report mismatches only. Do not assess reasoning, decomposition, scope, or the
-run-complexity judgement. Write the full report to <RUNDIR>/scratch/fact-check<SUFFIX>.md. That
-report is the only file you may write. Then report completion.
+Read <PLAN_PATH> and verify every checkable claim against the repository: file paths, path:line
+citations, commands, symbols, contracts, and claimed mitigation mechanisms. Verify that the coverage
+mapping lists every requirement, criterion, and task, and that each referenced ID exists.
+<SCOPE>
+Report mismatches only. Do not assess reasoning, decomposition, scope, or run complexity. HTML
+layout does not change the claims to check. Write the full report to
+<RUNDIR>/scratch/fact-check-<CHECK>.md. That is the only file you may write. Then report completion.
 ```

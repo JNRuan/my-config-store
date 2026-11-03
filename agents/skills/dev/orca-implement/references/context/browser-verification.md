@@ -38,7 +38,9 @@ Expected results: <EXPECTED_RESULTS>
 
 Save screenshots to <RUNDIR>/screenshots/ as {description}_{sequence}.png. Capture screenshots for
 passing and failing checks. Undo any interaction that changes real data. Stop every dev server you
-start. Report the checks performed, actual results, screenshot paths, and any unverified behaviour.
+start. Report the checks performed, actual results, screenshot paths, actual code HEAD and any dirty
+implementation state, and any unverified behaviour. Distinguish observed screenshots from supplied
+designs or mockups.
 
 If the dev server does not start, try at most three times: another port, confirm that .env exists,
 run the recorded install command when a dependency is missing. After the third failure, report

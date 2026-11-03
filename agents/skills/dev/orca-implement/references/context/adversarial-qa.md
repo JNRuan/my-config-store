@@ -13,6 +13,7 @@ Resolve:
 - `<BASE_SHA>`;
 - `<QA_HEAD>`;
 - `<RUNDIR>`;
+- `<BRIEF_PATH>` and `<PLAN_PATH>` from manifest `artifacts` paths;
 - `<REVIEW_PATHS>`: every completed `<RUNDIR>/review/review-r*.md`, one per line.
 
 ## Dispatch template
@@ -22,9 +23,10 @@ Run /{adversarial-qa-skill} against the current branch and base commit <BASE_SHA
 Do not check for it. Attack the implementation through code-level and browser-based testing.
 
 Context:
-- <RUNDIR>/plan/brief.md is the task contract.
-- <RUNDIR>/plan/plan.md is the intended design, not proof that the design is correct.
-- <RUNDIR>/summary.md holds the verification results. Treat them as evidence, not proof.
+- <BRIEF_PATH> is the task contract.
+- <PLAN_PATH> is the intended design, not proof that the design is correct.
+- <RUNDIR>/summary.md holds revision-bound verification results. Treat them as evidence, not proof
+  of later changes. Preserve existing finding IDs when a previous finding persists.
 - Review findings and fixes so far, treat as evidence:
 <REVIEW_PATHS>
 

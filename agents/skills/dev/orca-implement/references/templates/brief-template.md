@@ -1,80 +1,69 @@
 # Brief template
 
-Write `<RUNDIR>/plan/brief.md` in exactly this shape. The brief is the task contract the human
-approves before planning starts.
+Write `<RUNDIR>/plan/brief.html`. This Markdown template describes required content, not a fixed
+HTML layout. The brief is the task contract the human approves before planning starts.
 
-```markdown
----
-run: {RUN}
-source: {gh-123 | lin-abc-123 | path@<BASE_SHA> | "ad-hoc"}
-created: {ISO 8601 UTC}
-modified: {ISO 8601 UTC}
----
+Choose the layout, typography, diagrams, and disclosure that suit the task. Use semantic HTML,
+readable contrast, and stable section and requirement anchors for review comments. Keep substantive
+content readable without scripts. Link to the plan when it exists. Keep assets under
+`<RUNDIR>/plan/assets/` and use relative links.
 
-# Brief: {title}
+## Metadata and decision request
 
-## Request
+Identify the title, run, intake source, creation time, and modification time. Summarise the problem,
+recommended scope, and what the human is being asked to approve. Approval receipts belong in the
+manifest, as `references/run-state.md` defines them.
+
+## Request and supplied material
 
 For an issue or a file, cite it and quote only the text that carries a requirement or constraint.
+For an ad-hoc prompt, record the prompt verbatim except for secrets and private data. Replace those
+values with `[REDACTED]` before writing the brief.
 
-For an ad-hoc prompt, record the prompt verbatim except for secrets and private data.
-Replace those values with `[REDACTED]` before writing the brief.
+Identify supplied specifications, designs, screenshots, and prototypes, their source and status,
+and which requirements they settle. Assess coverage, conflicts, and gaps before deciding whether
+further design work is needed. Reuse adequate material. Create designs only to resolve genuine gaps.
+Seek human approval before materially departing from supplied designs.
 
-## Goal
+## Goal, problem, and visuals
 
-What this run builds and what it changes for the people in the Problem section. Be concise.
+Explain what is wrong or missing today, for whom, and the intended outcome. Use the source's terms.
+Show a concrete current-to-intended example when it helps the human assess the change.
 
-## Problem
+Assess whether diagrams would clarify the journey, process, system context, or scope, and include
+them where useful. Reuse supplied diagrams and design screenshots where adequate. Add missing
+visual explanations only when useful. Label supplied designs, observed screenshots, and proposed
+mockups distinctly, with their provenance. A mockup is not evidence of running behaviour.
 
-What is wrong or missing today, and for whom. Use the source's terms, not the repository's. Be
-concise.
+## Requirements and acceptance criteria
 
-## Requirements
+Number requirements `R-1`, `R-2`, and so on. Each states behaviour an acceptance criterion can test
+without reopening the source. Show how the request and subsequent human steering map to them.
 
-What the change must do. Number each one `R-1`, `R-2`, and so on. Write each so an acceptance
-criterion can test it without reopening the source.
+Number acceptance criteria `AC-1`, `AC-2`, and so on. Each states observable behaviour, cites the
+`R-n` it proves, and names how it will be verified, such as a test, command, or browser check.
 
-## Acceptance criteria
+## Scope and constraints
 
-The definition of done. Number each one `AC-1`, `AC-2`, and so on. Each states observable behaviour,
-cites the `R-n` it proves, and names how it will be verified, such as a test, a command, or a
-browser check.
+State what is in and out of scope. Number constraints `C-1`, `C-2`, and so on, and make each
+verifiable. Include security, data handling, architecture, compatibility, and process limits.
+Fold human answers into the requirements or constraints they settle while preserving their source.
 
-## Scope
+## Repository findings and assumptions
 
-- **In**: what this run builds.
-- **Out**: work this run deliberately excludes.
+Cite repository claims with `path:line`. Include findings that affect the approach: current
+behaviour, affected code, coverage, and tooling. Distinguish observed facts from recommendations.
 
-## Constraints
-
-Limits the implementation must obey: security, data handling, architecture, compatibility, process.
-Number each one `C-1`, `C-2`, and so on. Record every human-owned decision here once the human makes
-it.
-
-## Repository findings
-
-Scout findings that change the approach: current behaviour, affected code, existing coverage,
-tooling. Cite all claims with `path:line`.
-
-## Assumptions
-
-Details the source leaves open that a sane default settles. Number each one `A-1`, `A-2`, and so on,
-and give the default and its reasoning. A human-owned decision is never an assumption. It goes in
-Questions.
+Number assumptions `A-1`, `A-2`, and so on. Give each default, its reasoning, the evidence or check
+that could confirm it, and the consequence if it is false. A human-owned decision belongs in
+Questions rather than Assumptions.
 
 ## Questions
 
-Every ambiguity, missing acceptance criterion, and conflict between the source and the repository
-that no default settles. Number each one `Q-1`, `Q-2`, and so on. Order them by impact: scope first,
-then security and data handling, then user-facing behaviour, then technical detail.
+Number questions `Q-1`, `Q-2`, and so on. Include ambiguities, missing acceptance criteria, and
+source/repository conflicts no reasonable default settles. Order by impact: scope, security and
+data handling, user-facing behaviour, then technical detail.
 
-Write each question as a full question ending in `?`, then one sentence on what the answer decides.
-Give one to three suggested answers and mark the recommended one:
-
-**Q-1**: Does the export include archived reports?
-Decides whether R-2 covers the `archived_reports` table.
-- A (recommended): No. The reports page already hides archived rows, and the source does not mention
-  them.
-- B: Yes, behind the existing "include archived" filter.
-```
-
+Write each as a full question ending in `?`, followed by what the answer decides. Give one to three
+suggested answers and mark the recommended one with its reason. After the answer, retain the ID
+and resolution at a stable anchor, link to the section it settled, and remove it from open questions.

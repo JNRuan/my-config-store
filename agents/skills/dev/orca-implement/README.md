@@ -40,12 +40,14 @@ assignments. This README describes roles and phases without repeating them.
 2. **Setup**: settles the role of the current branch, pins the base, adopts the current Orca
    worktree or creates one, and initialises the manifest.
 3. **Scout**: sends routed read-only workers to inspect the affected code and project practices.
-4. **Understanding check**: presents the task contract and all known questions through the mapped
-   human review interface.
-5. **Plan**: drafts and fact-checks the implementation plan, critiques it once, then fact-checks the
-   revised sections.
-6. **Plan gate**, only when requested at invocation or during the understanding check: repeats human
-   review until the plan has no unresolved comments.
+4. **Brief approval**: presents `plan/brief.html` and all known questions through the mapped human
+   review interface, then records approval of the exact document and referenced assets.
+5. **Plan**: drafts and fact-checks `plan/plan.html`, then runs two independent critics per round.
+   Material changes to features, approach, proposed fixes, contracts, scope, or safety assumptions
+   trigger another round, including changes addressing the critics' own findings. Fact-check changed
+   claims after revisions. Wording changes alone do not trigger another round.
+6. **Plan approval**: resolves human feedback and obtains approval of the final plan and referenced
+   assets before implementation. Material revisions return through critique before approval.
 7. **Build**: registers the build tasks and their dependencies, then dispatches workers as
    dependencies merge.
 8. **Verify and integrate**: checks, fixes, and merges each task before releasing its dependants.
@@ -59,11 +61,20 @@ assignments. This README describes roles and phases without repeating them.
     fixes.
 12. **PR**: pushes only the run branch, opens a PR, then commits the final checkpoint.
 
-The human touchpoints are invocation, the understanding check, and review of the resulting PR, plus
-the plan gate when requested. After that the coordinator runs autonomously. It pauses only for a
-critical decision, such as an off-brief security-posture change or destructive operation outside the
-run branch, or for recovery authorisation required by Orca Orchestration. A run that cannot finish
-cleanly ends in a draft PR that states what remains unresolved.
+The human approves both the brief and final plan, then the coordinator runs autonomously to the PR.
+Material changes to the approved plan return through critique and human approval before affected
+work proceeds. It also pauses for critical decisions or recovery authorisation required by Orca
+Orchestration. A run that cannot finish cleanly ends in a draft PR that states what remains.
+
+Supplied specifications and designs are the design basis. The coordinator assesses coverage and gaps,
+reuses adequate diagrams and screenshots, and creates further design work only where needed. Both
+HTML authoring templates call for useful visuals and preserve supplied-design provenance. Their
+Markdown files describe required content while leaving page layout to the author. Worker tasks and
+reports stay in Markdown. There is no separate `proposal.html`.
+
+Approval receipts identify the exact documents and asset revisions. Changed artefacts need renewed
+approval; verification and review records identify the code actually checked. Stable decision and
+finding IDs preserve reasoning and resolutions across rounds.
 
 ## Requirements
 
@@ -114,7 +125,9 @@ which never reaches the branch.
 The artifact set is closed. A run writes these and nothing else:
 
 - `run-state.json`, the run manifest for state transitions and recovery
-- `plan/`, the approved brief and the specification of record
+- `plan/brief.html` and `plan/plan.html`, the approved task contract and specification of record
+- `plan/assets/`, supplied designs and selected durable visual evidence with provenance
+- `review.html`, approved versus delivered behaviour, review coverage, evidence, and remaining work
 - `tasks/`, worker agent tasks and reports
 - `review/`, the review of record for every round run, and the QA review when QA runs
 - `summary.md`, the run narrative: what happened, acceptance evidence, incidents, lessons for later
@@ -125,9 +138,10 @@ The artifact set is closed. A run writes these and nothing else:
 - `screenshots/`, browser-verification evidence when applicable
 - `scratch/`, scout, fact-check, planner, critic, acceptance-check, review-lens, and QA reports
 
-Browser verification stores screenshots when applicable. Its report stays in coordinator context.
-The brief records the request and distils it into requirements and acceptance criteria. The plan
-turns the approved brief into tasks.
+Browser verification stores raw screenshots when applicable. Its report stays in coordinator
+context. Selected images used by durable human documents are copied into `plan/assets/` and included
+in checkpoint commits. Raw screenshots, scratch files, and the status page remain uncommitted.
+The final `review.html` supports PR review without adding a pre-PR approval gate.
 
 The integration worktree and run branch survive until the PR merges. The coordinator removes task
 and QA worktrees using only the ids recorded in the manifest.
@@ -138,8 +152,8 @@ and QA worktrees using only the ids recorded in the manifest.
 - [`references/routing.md`](./references/routing.md), model routing, complexity tiers, and worker
   boot recipes
 - [`references/skill-map.md`](./references/skill-map.md), the skill each role invokes
-- [`references/templates/`](./references/templates/), the brief, plan, agent-task, and summary
-  formats
+- [`references/templates/`](./references/templates/), HTML authoring guidance for the brief, plan,
+  and final review, plus Markdown agent-task and summary formats
 - [`references/context/`](./references/context/), role contexts and dispatch templates loaded by
   phase
 - [`references/run-state.md`](./references/run-state.md), the manifest schema and lifecycle states

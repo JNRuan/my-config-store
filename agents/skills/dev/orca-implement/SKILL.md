@@ -33,17 +33,16 @@ Workers do not create Orca tasks, dispatches, or terminals. You own all Orca coo
 The run has these human touchpoints:
 
 1. invocation, including the branch-role question when the run starts on a non-default branch;
-2. understanding check;
-3. plan gate, only when the human asks to review the plan, at invocation or during the understanding
-   check;
+2. human approval of the brief;
+3. human approval of the final plan before implementation;
 4. a critical decision or a recovery decision required by Orca Orchestration, only when one arises;
 5. PR review.
 
-After the understanding check, and the plan gate when it runs, continue autonomously to the PR.
+After human approval of the brief and final plan, continue autonomously to the PR.
 Record each judgement in `summary.md`.
 
-You own every decision within the approved brief, including architecture, task boundaries,
-contracts, and review depth. The human reviews them in the PR.
+Propose architecture, task boundaries, contracts, and review depth in the plan for human approval.
+During implementation, make local choices within the approved plan and its constraints.
 
 A critical decision is an off-brief change to security posture, such as the auth model or exposing
 data that was not exposed before, or an off-brief destructive operation outside the run branch, such
@@ -66,12 +65,31 @@ Report what happened, not what a worker or plan claimed would happen.
 `references/run-state.md` is the sole manifest schema. Update `<RUNDIR>/run-state.json` after every
 state transition and before the next Orca mutation. Writing it never requires or causes a commit.
 
+### Planning artefacts and revisions
+
+Human approval of both the brief and final plan is required. Use the mapped `{human-review-skill}`
+for each gate. Record approval receipts and invalidate changed approvals as
+`references/run-state.md` defines. Resolve `<BRIEF_PATH>` and `<PLAN_PATH>` from the manifest's
+`artifacts` fields for every worker packet, review, and resume. New runs use HTML; Markdown files
+under `references/templates/` describe content and leave page design to the author.
+
+Treat supplied specifications, designs, screenshots, and prototypes as the design basis. Assess
+coverage, conflicts, and gaps before creating further design work. Reuse adequate material and
+create only what resolves a genuine gap or explains something still unclear. Obtain human approval
+before materially departing from a supplied design.
+
+Before assigning a proposed feature, approach, or fix that materially changes the plan, pause
+affected work and revise the plan through Phase 3 and Phase 4. This applies regardless of whether
+critics, human feedback, implementation discoveries, or verification and review findings prompted
+the change. Changes to the task contract first return to Phase 2. Local implementation fixes within
+the approved plan continue through their existing verification and code-review policy.
+
 ### Commit a checkpoint
 
-The run record is `plan/`, `tasks/`, `review/`, `summary.md`, `timeline.md`, and `run-state.json`. A
-checkpoint commits the run record to `<RUN-BRANCH>` at one of the boundaries below. Between
-checkpoints, the files on disk are current and the last checkpoint is behind them. Never amend a
-checkpoint.
+The run record is `plan/`, `tasks/`, `review/`, `review.html` when present, `summary.md`,
+`timeline.md`, and `run-state.json`. A checkpoint commits the run record to `<RUN-BRANCH>` at one
+of the boundaries below. Between checkpoints, the files on disk are current and the last checkpoint
+is behind them. Never amend a checkpoint.
 
 Commit a checkpoint only when no task is dispatched and no phase worker is running.
 
@@ -81,11 +99,16 @@ Commit a checkpoint only when no task is dispatched and no phase worker is runni
    ```bash
    git -C <WT-PATH> add -f -- "$RUNDIR/plan" "$RUNDIR/tasks" "$RUNDIR/review" \
      "$RUNDIR/summary.md" "$RUNDIR/timeline.md" "$RUNDIR/run-state.json"
+   if [ -f "$RUNDIR/review.html" ]; then
+     git -C <WT-PATH> add -f -- "$RUNDIR/review.html"
+   fi
    git -C <WT-PATH> diff --cached --quiet \
      || git -C <WT-PATH> commit -m "checkpoint: <desc>" -m "Run: <RUN>"
    ```
 
-   `scratch/`, `screenshots/`, and `run-page.html` never reach the branch.
+   `scratch/`, raw `screenshots/`, and `run-page.html` never reach the branch. Copy selected images
+   used in durable human artefacts into `plan/assets/` with their source and code revision. Keep
+   approval asset inventories limited to each approved document's dependencies.
 3. Append the checkpoint commit to `timeline.md`. The next checkpoint commits it.
 
 Use exactly these subjects:
@@ -106,8 +129,9 @@ The run record reaches it only through these checkpoints.
 
 ### Run page
 
-The run page is a read-only status page for the human, rendered from the manifest, `timeline.md`,
-and the brief. The human cannot act on the run from it.
+The run page is a read-only status page for the human, rendered from the manifest and `timeline.md`.
+The manifest's `run_page` fields supply its display text independently of the HTML document layout.
+The human cannot approve the brief or plan from it.
 
 Append one line to `<RUNDIR>/timeline.md` at every transition, in the form
 `- <ISO 8601 UTC> <what happened>`. The newest line is the page's status sentence while the run is
@@ -155,9 +179,8 @@ identifies this run's tasks and messages.
 
 `/orca-implement {TASK-REF | prompt | resume <RUN | RUNDIR>}`
 
-The invocation may ask, in any wording, to review the plan before the build, such as "let me see the
-plan first" or `--plan-gate`. Record that request as `plan_gate` when you initialise the manifest. A
-request made during the understanding check sets it too.
+Human approval of the brief and final plan is mandatory for every run. Follow the Planning
+artefacts and revisions rule throughout the run.
 
 Use Orca Orchestration to register and manage supervised workers. Load the `orchestration` skill
 and follow its instructions for assignment, messages, follow-ups, recovery, and cleanup. Launch
@@ -331,7 +354,7 @@ Complete every step in order before Phase 1.
 
    ```bash
    RUNDIR="<WT-PATH>/.agents/orca/orchestration/<RUN>"
-   mkdir -p "$RUNDIR/plan" "$RUNDIR/tasks" "$RUNDIR/review" \
+   mkdir -p "$RUNDIR/plan/assets" "$RUNDIR/tasks" "$RUNDIR/review" \
      "$RUNDIR/screenshots" "$RUNDIR/scratch"
    ```
 
@@ -344,8 +367,10 @@ Complete every step in order before Phase 1.
    timeline.md                                one event per line, appended at every transition
    run-page.html                              status page rendered from the manifest, never
                                               committed
-   plan/brief.md                              human-approved task contract
-   plan/plan.md                               spec of record
+   plan/brief.html                            human-approved task contract
+   plan/plan.html                             human-approved spec of record
+   plan/assets/                               supplied designs and selected durable visual evidence
+   review.html                                final human review, written in Phase 9
    tasks/{seq}-{slug}-agent-task.md           coordinator to builder
    tasks/{seq}-{slug}-report.md               builder to coordinator
    review/review-r<ROUND>.md                  review of record for the round
@@ -353,10 +378,9 @@ Complete every step in order before Phase 1.
    screenshots/{description}_{sequence}.png
    scratch/scout-<slug>.md                    one per scouting lens
    scratch/planner-brief.md                   standalone brief every planner reads
-   scratch/draft-<planner>.md                 one per planner on the tier's panel
-   scratch/fact-check.md                      plan claim verification before critique
-   scratch/plan-pre-critique.md               the fact-checked plan before critique
-   scratch/fact-check-final.md                plan claim verification after critique
+   scratch/draft-<planner>.html               one per planner on the tier's panel
+   scratch/fact-check-<CHECK>.md              one per initial or revision fact-check
+   scratch/plan-pre-critique-r<ROUND>.html    the exact input to each critic round
    scratch/critique-<critic>-r<ROUND>.md      one per critic per round
    scratch/acceptance-check-<PASS>.md         acceptance-criteria check, one per pass
    scratch/<claude|codex>-review-r<ROUND>.md  one per code reviewer per round
@@ -424,7 +448,8 @@ The understanding check settles the task contract before planning. It reconciles
 repository evidence, and human intent. Before autonomous work begins, it puts every decision the
 coordinator must not make alone to the human.
 
-Write `<RUNDIR>/plan/brief.md` in the shape of `references/templates/brief-template.md`.
+Write `<BRIEF_PATH>` using the content guidance in `references/templates/brief-template.md`.
+Preserve stable anchors and supplied design provenance while choosing an appropriate HTML layout.
 
 Put every known question in the first version. Before opening the brief, and before reopening each
 revised version, check it and fix what fails:
@@ -439,15 +464,17 @@ revised version, check it and fix what fails:
 - every `A-n` gives its default and reasoning, and none is a human-owned decision;
 - every repository claim cites `path:line`.
 
-Open `brief.md` with the mapped `{human-review-skill}` and run its documented review loop.
+Open `<BRIEF_PATH>` with the mapped `{human-review-skill}` and run its documented review loop.
+For HTML, use its local-page review mode. The mapped skill owns review commands and receipts.
 
-Apply every answer and comment to the brief. Fold each answer into the section it settles and remove
-the question. If an answer reveals more questions, group all of them into the next version. Reopen
+Apply every answer and comment to the brief. Fold each answer into the section it settles. Retain
+its question ID, source, and resolution at a stable anchor and remove it from open questions. If an answer reveals more questions, group all of them into the next version. Reopen
 the brief and run the printed next-round command.
 
-Continue until every question is answered and the human completes a round with no comments. Then
-write `run_page.goal` in the manifest as `references/run-state.md` defines it. Treat the approved
-brief and every human answer as settled facts during planning. Do not carry a known question into
+Continue until every question is answered and the human completes a round with no comments.
+Record approval of that exact document and its referenced assets as `references/run-state.md`
+defines. Set `run_page.title`, `run_page.goal`, and `run_page.constraints` from the approved brief.
+Treat the approved brief and every human answer as settled facts during planning. Do not carry a known question into
 the plan as an open assumption.
 
 If the mapped review skill is unavailable, run the same loop in the conversation and require
@@ -482,97 +509,94 @@ After collection:
 
 - With two drafts, assess both.
 - With one draft, use it as the base.
-- With no drafts, write `<RUNDIR>/plan/plan.md` yourself and follow
-  `references/templates/plan-template.md` exactly.
+- With no drafts, write `<PLAN_PATH>` yourself using the content guidance in
+  `references/templates/plan-template.md`.
 
 #### Build the final plan
 
 Assess and combine the drafts as `references/context/planner.md` describes. Write one coherent
-`<RUNDIR>/plan/plan.md` that follows `references/templates/plan-template.md`.
+`<PLAN_PATH>` that covers `references/templates/plan-template.md`, with stable anchors and
+faithful use of the supplied designs.
 
 ### Step 3: Fact-check the plan
 
-Read `references/context/plan-fact-check.md`. Dispatch the `plan-fact-check` task, collect, and
-retry once. If the retry fails, verify the plan's repository claims yourself and record the missing
-fact-check in `summary.md`.
+Read `references/context/plan-fact-check.md`. Resolve a unique `<CHECK>` for this pass, initially
+`initial`, and dispatch `plan-fact-check-<CHECK>`. Collect and retry once. If the retry fails,
+verify the claims yourself and record the missing fact-check in `summary.md`.
 
-Correct every reported mismatch in `plan/plan.md` before Step 4.
+Correct every reported mismatch before critique. On later revisions, scope the check to changed
+claims and use a new check label, such as `r2-final`, so earlier reports and task identities survive.
 
 ### Step 4: Critique the plan
 
-Read `references/context/plan-critic.md`. Start the critic panel from `references/routing.md`.
+Read `references/context/plan-critic.md`. Use both independent critics from `references/routing.md`
+in each round. Number rounds consecutively across the run, including later plan revisions.
 
-Run one critique round. Copy the fact-checked plan to `<RUNDIR>/scratch/plan-pre-critique.md` first.
-The final fact-check scopes itself against that copy.
+1. Set `<ROUND>` to the next plan-review round number. Copy the fact-checked plan to
+   `<RUNDIR>/scratch/plan-pre-critique-r<ROUND>.html` and record its document and asset digests,
+   the round's trigger, and the current `<WT>` HEAD in `plan_review.rounds`.
+2. Dispatch `plan-critique-<M>-r<ROUND>` to every critic against the same unchanged plan. Collect
+   both reports before editing the plan and retry a failed lens once.
+3. When a retry fails, record the missing lens in the round and the plan's Review Policy. Continue
+   with surviving critics. If all critics fail, record `all critics failed`, make the absence
+   visible at the human gate, and stop automated critique of this revision.
+4. Triage every finding on its evidence. Give it a stable `PF-n` ID, retain that ID across rounds,
+   and record its source, evidence, disposition, and resolution in the plan's Decisions section.
+   Link any affected `PD-n` decision. Critic verdicts are evidence rather than approval.
+5. Apply accepted changes. Record accepted counts, whether the plan changed, whether features,
+   approach, proposed fixes, contracts, scope, or safety assumptions changed materially, and why.
+6. Fact-check changed repository claims through Step 3, scoped against this round's snapshot.
+   Include any corrections from that check when assessing material change. Save the output
+   document and asset digests and update `rounds_run` and the manifest.
+7. Clean up the round's workers through Orca Orchestration and their recorded terminals through
+   [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
+8. If the revision materially changed features, approach, proposed fixes, contracts, scope, or
+   safety assumptions, run another round against that revision. This includes changes made to fix
+   the critics' own findings. Wording and presentation changes alone do not trigger another round.
+   Otherwise record `critique complete` and finish critique.
 
-1. Add the round to the plan-review record with `plan_changed=false` and the current `<WT>` HEAD.
-2. Dispatch `plan-critique-<M>-r1` to every critic, collect, and retry a failed lens once.
-3. When a retry also fails, record the lens in the round's `missing_lenses` and in the plan's Review
-   Policy, and continue with the surviving critics. If every critic fails, record stop reason
-   `all critics failed`, record in the plan's Review Policy that the plan was not critiqued, and
-   continue.
-4. Assess every finding on its merits. Severity and verdict are evidence, not decisions. Revise
-   `plan/plan.md` for each accepted finding. Record the accepted counts by severity in the round's
-   `accepted_findings`. Set `plan_changed=true` only when plan content changes.
-5. Save the revised plan and update the manifest.
-
-Critique runs once. No critic reviews the revised plan. The final fact-check, build verification,
-and code review cover it. Set `rounds_run=1` and record stop reason `critique complete` or
-`all critics failed` in the plan-review record.
+There is no fixed round count. Continue while material revisions require another round. If the
+process repeats the same unresolved disagreement without new evidence or progress, record it and
+pause for a human decision rather than cycling. Resume the required critique after that decision.
+A human choice to proceed without a missing lens must remain explicit in the plan and receipt.
 
 #### Finish plan critique
 
-1. Clean up the critic workers through Orca Orchestration and their recorded run-owned terminals
-   through [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
-2. When `plan_changed=true`, repeat Step 3 against the revised plan as `plan-fact-check-final`,
-   scoped to the sections that differ from `scratch/plan-pre-critique.md`. Correct every reported
-   mismatch.
-3. Assess `run_complexity` from the reviewed plan. It may be higher or lower than
-   `plan_review_tier`.
-4. Read the downstream review and QA policy from `references/routing.md`.
-5. Update plan frontmatter, the plan's Review Policy, and `run-state.json`, including
-   `code_review_cap` and `qa_policy`.
-6. Keep the original plan-review tier and stop reason in the manifest.
-7. Update the manifest. When `plan_gate` is true, start Phase 4. Otherwise commit the `plan ready`
-   checkpoint and start Phase 5.
+1. Assess `run_complexity` from the reviewed plan. It may differ from `plan_review_tier`.
+2. Set the code-review cap and QA policy from `references/routing.md` in the plan's metadata,
+   Review Policy, and `run-state.json`. Keep the original plan-review tier and round history.
+3. If this finalisation itself changes the substantive approach or proposed fixes, fact-check the
+   changed claims and return to Step 4. Otherwise update the manifest and start Phase 4.
 
 ## Phase 4: Plan gate
 
-Run this phase only when `plan_gate` is true.
+Run this phase for every plan before implementation. The human approves the scope, approach,
+task boundaries, contracts, open assumptions, and review cost.
 
-The plan gate gives the human final control before implementation starts. The human approves the
-scope, task boundaries, contracts, open assumptions, and review cost.
+Present `<PLAN_PATH>` through the mapped `{human-review-skill}`. Use local-page review for HTML
+and document review for retained legacy Markdown. Link to the approved brief and identify the
+plan-review tier, critic rounds and outcome, missing lenses, final run complexity, code-review cap,
+QA policy, and every open assumption.
 
-Changes at the plan gate do not reopen critique.
-Before presenting an updated plan for approval, verify new or changed
-repository claims against the repository.
+Run the mapped skill's review loop and address every unresolved comment. Verify new or changed
+repository claims before presenting a revised plan. Material changes to features, approach,
+proposed fixes, contracts, scope, or safety assumptions return through Phase 3 Step 4. Wording-only
+changes need renewed human approval but no further critique. Changes to the approved task contract
+first return to Phase 2.
 
-Present through the mapped `{human-review-skill}`:
+A completed round with no comments approves the exact page and referenced assets presented. Record
+its receipt as `references/run-state.md` defines, including the approved brief revision. If the
+review skill is unavailable, require explicit conversational approval and record that evidence.
+Critic verdicts, silence, an empty unrelated session, and an unfinished round are not approval.
 
-- `plan/plan.md`;
-- `plan_review_tier` and the critique outcome;
-- final `run_complexity`;
-- the code-review cap and QA policy for that complexity;
-- every open assumption.
-
-Run the review loop:
-
-1. Address every unresolved comment.
-2. Update the live plan.
-3. Reopen the plan through the mapped `{human-review-skill}`.
-4. Run the printed next-round command.
-5. Continue until the human completes a round with no comments.
-
-A round with no comments approves the plan. If the review skill is unavailable, run the loop in the
-conversation and require explicit approval. Critic verdicts, silence, and an unfinished round are
-not approval.
-
-After approval, update the manifest and commit the `plan ready` checkpoint. Then start Phase 5. An
-explicit rejection or cancellation runs the abort routine with status `blocked`.
+Confirm both receipts still match the current documents and assets. Update the manifest, commit the
+`plan ready` checkpoint, and start or resume affected work. An explicit rejection or cancellation
+runs the abort routine with status `blocked`.
 
 ## Phase 5: Build
 
-Read `references/context/builder.md`.
+Read `references/context/builder.md`. Confirm both approvals are current before dispatching build
+work. Before any material plan change, follow Planning artefacts and revisions.
 
 Register the build tasks and their dependencies. Orca task specs are immutable, and a task's
 worktree path and dependency outputs are unknown until it becomes ready. Each task spec therefore
@@ -839,9 +863,10 @@ If the implementation carries more risk than the approved `run_complexity` assum
 
 1. Raise `run_complexity`.
 2. Recalculate the code-review cap and QA policy from `references/routing.md`.
-3. Update plan frontmatter, the plan's Review Policy, and `run-state.json`.
+3. Revise the plan's metadata and Review Policy and `run-state.json`.
 4. Record the evidence and reason in `summary.md`.
-5. Confirm that all three policy records agree.
+5. Follow Phase 4 for approval of the revised policy before continuing. A material approach or fix
+   change also receives the required critique. Confirm that all three policy records agree.
 
 ### Fix verification failures
 
@@ -869,7 +894,8 @@ reached.
 
 Update `<RUNDIR>/summary.md` with the implementation decisions so far, the evidence for each
 acceptance criterion, every incident, and every unverified gap with its reason. Reviewers and QA
-read this file. Save it. Commit the `build verified` checkpoint. Then start Phase 7. Review round 1
+read this file. Record check revisions, scope, results, and report paths in `verification.evidence`
+as `references/run-state.md` defines. Save it. Commit the `build verified` checkpoint. Then start Phase 7. Review round 1
 reviews that commit.
 
 ## Phase 7: Code review
@@ -948,8 +974,9 @@ Combining the lens reports is mechanical:
    name both sources, and keep each source's severity and confidence.
 4. Carry each surviving finding over in the lens skill's own format, complete and unedited: Issue,
    Severity, Confidence, Category, File, Findings, Attack path where the lens gives one, Evidence,
-   and Fix. Renumber issues across lenses and add a `**Source:**` line. Do not reduce a finding to a
-   title or a checklist line.
+   and Fix. Add a stable run-wide `F-n` ID and a `**Source:**` line. Reuse that ID for the same
+   finding in later rounds or QA and link its prior disposition. Do not reduce a finding to a title
+   or a checklist line.
 5. Carry each lens's documentation and artifact recommendations over as written.
 6. Carry each browser-verification failure over as a finding with `**Source:** browser` and the
    screenshot path as evidence. Severity follows the observed impact. High when a core flow is
@@ -972,7 +999,9 @@ does not settle, follow the Human touchpoints rule.
 Record an excluded finding under Remaining in `summary.md` with the reason it remains.
 
 Append a Triage section to `review/review-r<ROUND>.md`. For each finding, record the outcome, the
-evidence you checked, and the reason. Record the accepted counts by source and severity in the
+evidence you checked, and the reason under its stable finding ID. Preserve prior dispositions,
+fix commits, reproduction results, and any superseding finding. Identify a workaround, accepted
+risk, or deferred item explicitly. Record the accepted counts by source and severity in the
 round's `accepted_findings`. Update the manifest before starting a fix wave.
 
 If no finding needs a code or test fix:
@@ -1027,7 +1056,9 @@ When `severe_fix_merged=false`, stop the review loop.
    own three-wave limit, recorded in `verification.post_review_fix_waves`. Do not reopen code
    review.
 4. If no review fix changed the implementation, retain the existing Phase 6 evidence.
-5. Require current verification evidence or an explicit reason for every remaining unverified gap.
+5. Require current revision-bound verification evidence or an explicit reason for every remaining
+   unverified gap. Record new checks in `verification.evidence`; preserve earlier evidence's scope
+   and code revision rather than relabelling it as verification of the latest HEAD.
 6. Set `code_review_complete=true` in `run-state.json`.
 7. Confirm that the final round's stop reason is recorded.
 8. Update the manifest with the final round review and verification evidence.
@@ -1116,8 +1147,9 @@ Write `<RUNDIR>/review/qa-review.md`. It is the QA review of record and stands a
 not need the worker report. Carry every finding from `scratch/qa-findings.md` over in the QA skill's
 own format, complete and unedited: Severity, Category, Type, Location, Finding, Reproduction,
 Expected, Actual, Evidence, and Regression test. Carry the coverage list and verdict as written.
-Then append a Triage section: for each finding, the outcome, the evidence you checked, and the
-reason. Record the accepted counts by severity in `qa.accepted_findings`. Update the manifest before
+Then append a Triage section: for each finding, a stable run-wide `F-n` ID, the outcome, the
+evidence you checked, and the reason. Reuse an existing finding's ID and preserve its resolution
+history. Distinguish a verified fix, workaround, accepted risk, and deferred item. Record the accepted counts by severity in `qa.accepted_findings`. Update the manifest before
 starting fixes.
 
 Create accepted fixes as Phase 5 fix tasks from the current `<RUN-BRANCH>`. Never make lasting fixes
@@ -1129,7 +1161,8 @@ For every fix wave:
 2. Rerun each finding's exact reproduction.
 3. Rerun the Phase 6 project checks and the acceptance check for affected criteria. Rerun browser
    verification only when a fix changed UI files, and only for the pages it touched.
-4. Record the fix commit and its verification evidence against the finding in the QA review.
+4. Record the fix commit and revision-bound verification evidence against the finding in the QA
+   review and `verification.evidence`.
 5. Start another wave if a finding still reproduces.
 
 Allow at most three QA fix waves. After the third failed wave, record each unresolved finding under
@@ -1145,6 +1178,13 @@ evidence before Phase 9.
 Update `<RUNDIR>/summary.md` in the shape of `references/templates/summary-template.md`.
 Fill every section with the results so far. Leave `finished` as `pending`
 and record publication as pending in Outcome.
+
+Write `<RUNDIR>/review.html` using `references/templates/review-template.md`. Show approved versus
+delivered behaviour, design deviations, stable decision and finding IDs, selected visual evidence,
+reviewed and verified code revisions, missing coverage, and remaining work. Link the approved brief,
+plan, and round reviews. Copy selected screenshots into `plan/assets/` with provenance, without
+changing assets referenced by an approved document. This page supports PR review and adds no
+pre-PR approval gate. Link it from `summary.md`.
 
 Run this command:
 
@@ -1193,7 +1233,7 @@ Use only handles and ids recorded in `run-state.json`.
 ### Record PR state
 
 1. Set `run-state.json` status to `pr`.
-2. Record the PR URL in the manifest and `summary.md`.
+2. Record the PR URL in the manifest, `summary.md`, and `review.html`.
    Set the summary's `finished` timestamp.
 3. Commit the `PR opened` checkpoint. Leave the exclude entry in place.
 4. Push `<RUN-BRANCH>`.
@@ -1308,11 +1348,14 @@ appear false, and your assessment of what is feasible.
 
 When `replans` is 0, replan once:
 
-1. Revise `plan/plan.md` within the brief, using that evidence.
-2. Fact-check the revised sections as Phase 3 Step 3 describes.
-3. Mark the superseded unmerged tasks `failed` with reason `replanned`, and register the revised
-   tasks under the continuing sequence numbering.
-4. Set `replans` to 1 and continue Phase 5.
+1. Pause affected work and resolve any active writers through Orca Orchestration before replacing
+   task contracts. Revise the plan using the evidence and invalidate its approval. If the brief
+   must change, revise it and obtain approval through Phase 2 first.
+2. Fact-check the revised sections, run the required critic rounds in Phase 3, and obtain human
+   approval through Phase 4. Preserve prior decisions and finding resolutions.
+3. Mark superseded unmerged tasks `failed` with reason `replanned`, and register revised tasks under
+   the continuing sequence numbering. Preserve existing task and attempt history.
+4. Set `replans` to 1 and resume Phase 5 only with current approvals.
 
 When the revised plan fails the same way, treat each failing task as permanently failed under the
 retry protocol.
@@ -1337,9 +1380,9 @@ artifacts from completed steps before continuing.
 
 1. `run-state.json`;
 2. `summary.md`;
-3. `plan/brief.md` and `plan/plan.md`;
+3. the brief and plan at their recorded `artifacts` paths, including referenced design assets;
 4. every agent task and report under `tasks/`;
-5. every review under `review/`;
+5. every review under `review/` and `review.html` when present;
 6. the `scratch/` reports of the recorded phase.
 
 Then reconcile the manifest with live state:
@@ -1354,7 +1397,12 @@ Then reconcile the manifest with live state:
    assigning more work. Record any follow-up task and dispatch identities.
 5. Dispatch only unfinished work, using existing task-branch commits as context. Merge only branches
    not yet merged.
-6. In Phases 6 through 8, resume from the recorded round and fix-wave counts.
+6. Resume plan critique from recorded input/output digests and consecutive round numbers. Complete
+   any pending material revision's critique before approval. In Phases 6 through 8, retain the
+   recorded round and fix-wave counts.
+7. Check document and asset digests against both approval receipts before assigning more build or
+   fix work. Missing or stale approval returns to the relevant human gate. Follow the legacy
+   migration rules in `references/run-state.md`; never infer approval from an old opt-out flag.
 
 Record the resumption and every reconciliation in `summary.md` and continue from the recorded phase.
 

@@ -14,6 +14,7 @@ Resolve:
   `security-<SECURITY_REVIEWER>-review-r<ROUND>.md` for a security reviewer;
 - `<BASE_SHA>`;
 - `<RUNDIR>`;
+- `<BRIEF_PATH>` and `<PLAN_PATH>` from manifest `artifacts` paths;
 - `<ROUND>`;
 - `<CODE_REVIEWER>`: the stable code-reviewer label;
 - `<SECURITY_REVIEWER>`: the stable security-reviewer label;
@@ -41,10 +42,11 @@ Run /<SKILL> and follow its instructions. The skill exists. Do not check for it.
 branch against base commit <BASE_SHA>.
 
 Context:
-- <RUNDIR>/plan/brief.md is the task contract: approved requirements, scope, exclusions, and human
+- <BRIEF_PATH> is the task contract: approved requirements, scope, exclusions, and human
   decisions.
-- <RUNDIR>/plan/plan.md is the intended design, not proof that the design is correct.
-- <RUNDIR>/summary.md and test results are evidence, not proof.
+- <PLAN_PATH> is the intended design, not proof that the design is correct.
+- <RUNDIR>/summary.md and test results are revision-bound evidence, not proof of later changes.
+- Preserve existing finding IDs when confirming prior fixes or reporting a persistent finding.
 <ROUND_CONTEXT>
 
 Inspect the repository and diff independently. Report implementation defects, and plan defects when

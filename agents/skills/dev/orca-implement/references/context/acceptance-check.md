@@ -10,6 +10,7 @@ task. Reuse it for every later pass.
 Resolve:
 
 - `<RUNDIR>`;
+- `<BRIEF_PATH>` and `<PLAN_PATH>` from manifest `artifacts` paths;
 - `<BASE_SHA>`;
 - `<PASS>`: the number of acceptance checks run so far in this run, plus one;
 - `<CRITERIA>`: the criterion and constraint ids in scope for this pass;
@@ -49,7 +50,7 @@ Every other criterion and constraint keeps its previous verdict, evidence, and r
 ## Dispatch template
 
 ```text
-Read <RUNDIR>/plan/plan.md. Verify these acceptance criteria and constraints against the integrated
+Read <PLAN_PATH>. Verify these acceptance criteria and constraints against the integrated
 HEAD in this worktree: <CRITERIA>.
 <PREVIOUS_CONTEXT>
 
@@ -58,11 +59,13 @@ behaviour when a command can exercise it. Leave implementation files unchanged.
 
 Report each criterion and constraint by id as one of:
 
-- verified, with the command output or path:line evidence;
+- verified, with the command output or path:line evidence and the checked code revision;
 - not met, with what is missing;
 - not verifiable here, with the reason.
 
-Judge only whether each is met. Do not assess code quality, design, or scope.
+Record the actual HEAD and any dirty implementation state. Preserve the previous report's code
+revision for unchanged evidence. Distinguish static inspection from executed checks and planned
+behaviour. Judge only whether each criterion is met; do not assess code quality, design, or scope.
 
 <SWEEP>
 

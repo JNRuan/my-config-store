@@ -14,7 +14,7 @@ SKILL.md commits it at the boundaries it lists.
 | `scout` | Phase 1 starts |
 | `understanding` | Phase 2 starts |
 | `plan` | Phase 3 starts |
-| `plan_gate` | Phase 4 starts; skipped when `plan_gate` is false |
+| `plan_gate` | Phase 4 starts for mandatory human approval of the final plan |
 | `build` | Phase 5 starts |
 | `verification` | Phase 6 starts |
 | `code_review` | Phase 7 starts |
@@ -66,7 +66,7 @@ These fields accept `pending`, `low`, `medium`, `high`, or `xhigh`:
 
 Read final caps and QA policy from `references/routing.md`.
 
-Keep plan frontmatter, the plan's Review Policy, and these manifest fields synchronised.
+Keep plan metadata, the plan's Review Policy, and these manifest fields synchronised.
 
 ## Base and start refs
 
@@ -131,7 +131,7 @@ Phase 0 creates the manifest with these top-level fields:
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "run_name": "<RUN>",
   "orca_run_id": "<ORCA_RUN_ID>",
   "source": "<NORMALISED_SOURCE>",
@@ -145,7 +145,13 @@ Phase 0 creates the manifest with these top-level fields:
   "run_complexity": "pending",
   "code_review_cap": "pending",
   "qa_policy": "pending",
-  "plan_gate": false,
+  "artifacts": {
+    "brief": "plan/brief.html",
+    "plan": "plan/plan.html",
+    "review": "review.html"
+  },
+  "approvals": {"brief": null, "plan": null},
+  "approval_history": [],
   "pr_draft": false,
   "replans": 0,
   "decisions": [],
@@ -158,15 +164,18 @@ Phase 0 creates the manifest with these top-level fields:
   },
   "verification": {
     "fix_waves": 0,
-    "post_review_fix_waves": 0
+    "post_review_fix_waves": 0,
+    "evidence": []
   },
   "browser_verification": {
     "policy": "pending",
     "result": null
   },
   "run_page": {
+    "title": null,
     "goal": null,
-    "outcome": null
+    "outcome": null,
+    "constraints": []
   },
   "integration_worktree": {
     "id": "<WT>",
@@ -330,7 +339,7 @@ Each entry in `phase_dispatches` contains:
 ```
 
 Use `round` for critic and reviewer rounds. Leave it `null` for unrounded roles. Record a fact
-check's `role` as `plan-fact-check` or `plan-fact-check-final`, and an acceptance check's `role` as
+check's `role` as `plan-fact-check-<CHECK>` and an acceptance check's `role` as
 `acceptance-check-<PASS>`.
 
 Use the build-task record's identity rules for active tasks, follow-ups, superseded dispatches, and
@@ -341,6 +350,55 @@ Use the same baseline for every worker and retry in one collection batch.
 Preserve it when the coordinator resumes.
 Leave `start_head` null for workers outside `<WT>`.
 
+## Artefacts and approvals
+
+`artifacts` holds run-relative paths. Resolve worker `<BRIEF_PATH>` and `<PLAN_PATH>` to absolute
+paths from these fields rather than assuming a filename. New or revised human documents use HTML.
+Keep authoring templates, task packets, reports, and summaries in Markdown.
+
+`approvals.brief` and `approvals.plan` are null until the human approves the exact document and its
+referenced assets. Each receipt has this shape:
+
+```json
+{
+  "path": "plan/plan.html",
+  "document_sha256": "<SHA256>",
+  "assets": [
+    {"path": "plan/assets/design.png", "sha256": "<SHA256>"}
+  ],
+  "approved_at": "<ISO_8601_UTC>",
+  "review": {
+    "method": "<mapped skill name or conversation>",
+    "identity": "<returned session or review identity, or explicit approval message reference>",
+    "evidence_path": "<review receipt path or null>"
+  },
+  "brief_receipt_sha256": "<SHA256 of the approved brief receipt, or null for brief approval>"
+}
+```
+
+Hash the exact file bytes with SHA-256. Inventory each document's local asset dependencies,
+including linked design documents that form part of the approval and transitive stylesheet or
+image dependencies. Inline content is covered by the document digest. Keep approval material local
+and stable, or record an immutable external revision with its provenance. Do not add unrelated
+files to the inventory merely because they share `plan/assets/`.
+
+Compute `brief_receipt_sha256` from the approved brief receipt encoded as UTF-8 JSON with sorted
+keys and separators `(',', ':')`. This binds plan approval to the brief document and asset revisions.
+The mapped human-review skill owns review mechanics and returned identities. Record its actual
+receipt, or the explicit conversational approval evidence when unavailable. An unrelated empty
+session is not approval. Include any explicitly approved missing-critic coverage in that evidence.
+
+Before editing an approved document or its referenced assets, append its receipt to
+`approval_history` with `artifact`, `receipt`, `invalidated_at`, and `reason`, then clear its active
+approval. Invalidating the brief also invalidates the plan. Preserve the prior approved version
+through its checkpoint or review history; if neither holds it, save a run-owned copy under
+`scratch/` before editing. Never update a receipt to claim approval of changed bytes. Store approval
+status in the manifest rather than editing an approved page to add an approval badge.
+
+Require current brief and plan receipts before dispatching build or fix work. Recompute digests on
+resume and before continuing after a revision. Any changed document or referenced asset needs
+renewed human approval. Only material changes require another critic round, as Phase 3 defines.
+
 ## Plan-review record
 
 Each entry in `plan_review.rounds` contains:
@@ -349,26 +407,63 @@ Each entry in `plan_review.rounds` contains:
 {
   "round": 1,
   "start_head": "<SHA>",
+  "trigger": "<initial plan or reason for revision>",
+  "snapshot_path": "scratch/plan-pre-critique-r1.html",
+  "input": {"document_sha256": "<SHA256>", "assets": []},
+  "output": {"document_sha256": "<SHA256>", "assets": []},
   "critique_reports": [],
   "accepted_findings": {"blocking": 0, "risky": 0, "note": 0},
   "missing_lenses": [],
-  "plan_changed": false
+  "plan_changed": false,
+  "material_change": false,
+  "change_reason": null
 }
 ```
 
-Set `accepted_findings` at triage to the counts of findings you accepted, by severity. Add a lens to
-`missing_lenses` when its in-round retry fails. Critique runs one round, so `rounds_run` is `1` when
-it finishes. `stop_reason` accepts `critique complete` or `all critics failed`.
+Set `accepted_findings` at triage to counts by severity and `missing_lenses` when an in-round
+retry fails. Record whether features, approach, proposed fixes, contracts, scope, or safety
+assumptions changed materially, with the reason. Count fact-check corrections in that assessment.
+Use the approval asset-inventory shape for input and output, hashing the actual plan dependencies.
+Set output only after triage and fact-checking finish. Compare digests on resume to identify an
+unfinished or subsequently changed revision. A snapshot in `scratch/` retains the plan's original
+asset-resolution base under `plan/`; resolve asset paths from the actual plan, not the snapshot.
+
+`rounds_run` counts collected rounds across the run, not just the current revision. Continue with
+both critics whenever material changes require it, including fixes to previous critics' findings.
+`stop_reason` accepts `critique complete`, `all critics failed`, or `awaiting decision`. The last
+one pauses a repeated unresolved disagreement and does not complete critique. Preserve the original
+tier, prior rounds, stable `PF-n` findings, and their dispositions when resuming critique.
 
 ## Verification record
 
 `verification.fix_waves` counts Phase 6 fix waves. `verification.post_review_fix_waves` counts the
 post-review verification fix waves in Phase 7. Each has its own limit of three.
 
-`run_page.goal` and `run_page.outcome` are prose written for the run page only, each under 512
-characters. Set `goal` when the brief is approved: a summary of the brief's Problem and Goal
-sections. Set `outcome` when the run ends: what the PR delivers, or what failed, for the person who
-asked for the work. Neither is a copy of a brief or summary section.
+Append each check to `verification.evidence` with this shape:
+
+```json
+{
+  "head": "<code HEAD at the check>",
+  "dirty": false,
+  "scope": ["AC-1", "C-1"],
+  "check": "<command or inspection performed>",
+  "result": "<passed, failed, or not verified>",
+  "evidence_path": "<report or screenshot path>",
+  "recorded_at": "<ISO_8601_UTC>"
+}
+```
+
+Record implementation HEAD independently of later bookkeeping checkpoints. If implementation files
+were dirty, record `dirty=true` with the patch or tree digest identifying the checked contents.
+Unverified behaviour needs its reason in the evidence. Carry scoped evidence forward only when its
+inputs are unaffected, retaining its original code revision. Use review-round `start_head` for code
+actually reviewed. Do not relabel old results as proof of a newer revision. Summarise differences
+between approved, delivered, reviewed, and verified revisions in the final human review.
+
+`run_page.title`, `goal`, `outcome`, and `constraints` supply status-page display data independently
+of document layout. Set title, goal, and the human-readable constraint list when approving the brief.
+Keep goal and outcome under 512 characters. Set outcome when the run ends to explain what the PR
+delivers or what failed. The status page is not an approval interface.
 
 `browser_verification.policy` accepts `pending`, `run`, or `not_needed`. Set it in Phase 6.
 `browser_verification.result` accepts `null`, `passed`, `failed`, or `not verified`, recorded from
@@ -522,8 +617,18 @@ Each entry in `decisions` records one decision required from the human:
 `held_tasks` lists the build-owned task ids the decision holds. Release them when the answer is
 recorded.
 
-A manifest without `plan_gate`, `pr_draft`, `replans`, or `decisions` predates them. Read
-`plan_gate` as true, the others as their initial values.
+## Resume earlier manifests
+
+Leave completed historical runs unchanged. For an active older run, initialise missing `pr_draft`,
+`replans`, and `decisions` to their initial values. Recover artefact paths from the actual run,
+including existing `plan/brief.md` and `plan/plan.md`. Keep those paths until a document needs
+revision, then write its HTML replacement and update `artifacts` and every affected task packet.
+
+Initialise missing approval, history, and verification-evidence fields. Recover approval only when
+existing receipts or explicit human approval identify the exact document and asset revision. If
+that cannot be proved, return to the appropriate human gate before dispatching more build or fix
+work. An old `plan_gate=false` never bypasses approval. Remove that boolean after reconciliation.
+Populate run-page display fields from the actual brief once, rather than parsing arbitrary HTML.
 
 When resuming a schema 1 manifest, reconcile its recorded task and dispatch ids through Orca
 Orchestration before assigning more work. Initialise missing `active_task_id` from the reconciled
@@ -531,8 +636,9 @@ Task, missing follow-up and superseded-id lists as empty, and `remaining_dispatc
 Recover worker handles from Orca state or receipts rather than copying a terminal title or guessing
 a handle. Leave a missing worker handle null and inspect the recorded dispatch through Orca
 Orchestration.
-Keep terminal records as ownership evidence and set `schema_version` to 2 after reconciliation.
-If live state or history reveals a follow-up, record its returned identities before continuing.
+Keep terminal records as ownership evidence. If live state or history reveals a follow-up, record
+its returned identities before continuing. Set `schema_version` to 3 after resource, artefact, and
+approval reconciliation. Retain missing approval as null until the required human gate completes.
 
 ## PR state
 

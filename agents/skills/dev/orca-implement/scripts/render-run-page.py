@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render <RUNDIR>/run-page.html from run-state.json, timeline.md, and plan/brief.md.
+"""Render <RUNDIR>/run-page.html from run-state.json and timeline.md.
 
 Usage: render-run-page.py <RUNDIR> [--standalone]
 
@@ -379,13 +379,18 @@ def main(argv):
         return 2
     rundir = Path(args[0]).resolve()
     manifest = json.loads((rundir / "run-state.json").read_text(encoding="utf-8")) or {}
-    brief = rundir / "plan" / "brief.md"
+    legacy = manifest.get("schema_version", 1) < 3
+    artifacts = manifest.get("artifacts") or {}
+    brief = rundir / artifacts.get("brief", "plan/brief.md")
+    plan = rundir / artifacts.get("plan", "plan/plan.md")
     events = read_timeline(rundir / "timeline.md")
 
     page_text = manifest.get("run_page") or {}
     phase = manifest.get("phase", "setup")
     status = manifest.get("status", "active")
-    phases = [p for p in PHASES if p[0] != "plan_gate" or manifest.get("plan_gate", True)]
+    phases = PHASES
+    if legacy and not manifest.get("plan_gate", True):
+        phases = [p for p in phases if p[0] != "plan_gate"]
     cls, state = now_state(phase, status, manifest.get("pr_draft"))
     now_html = "<p>" + esc(events[-1][1] if events else "Run started.") + "</p>"
     if status in TERMINAL_OK | TERMINAL_BAD:
@@ -476,15 +481,19 @@ def main(argv):
         ]
     )
 
-    goal = (
-        page_text.get("goal")
-        or first_paragraph(brief, "Goal")
-        or first_paragraph(rundir / "plan" / "plan.md", "Overview")
-    )
+    title = page_text.get("title") or manifest.get("run_name", "Orca run")
+    goal = page_text.get("goal") or ""
+    decisions = page_text.get("constraints") or []
+    if legacy and brief.suffix == ".md":
+        title = page_text.get("title") or read_title(brief, title)
+        goal = goal or first_paragraph(brief, "Goal")
+        if "constraints" not in page_text:
+            decisions = read_decisions(brief)
+    if legacy and not goal and plan.suffix == ".md":
+        goal = first_paragraph(plan, "Overview")
     if len(goal) > 512:
         goal = goal[:511].rstrip() + "…"
     goal_html = f'<p class="goal"><span class="eyebrow">Goal</span>{esc(goal)}</p>' if goal else ""
-    decisions = read_decisions(brief)
     decisions_html = (
         "<ul>" + "".join(f"<li>{esc(d)}</li>" for d in decisions) + "</ul>"
         if decisions
@@ -508,7 +517,7 @@ def main(argv):
     )
 
     values = {
-        "title": esc(read_title(brief, manifest.get("run_name", "Orca run"))),
+        "title": esc(title),
         "run_name": esc(manifest.get("run_name")),
         "base": esc(manifest.get("base_ref")) + " @ " + esc(short(manifest.get("base_sha"))),
         "updated": esc(fmt_updated(datetime.now(timezone.utc))),
