@@ -61,8 +61,9 @@ assignments. This README describes roles and phases without repeating them.
 
 The human touchpoints are invocation, the understanding check, and review of the resulting PR, plus
 the plan gate when requested. After that the coordinator runs autonomously. It pauses only for a
-critical decision: an off-brief security-posture change or destructive operation outside the run
-branch. A run that cannot finish cleanly ends in a draft PR that states what remains unresolved.
+critical decision, such as an off-brief security-posture change or destructive operation outside the
+run branch, or for recovery authorisation required by Orca Orchestration. A run that cannot finish
+cleanly ends in a draft PR that states what remains unresolved.
 
 ## Requirements
 
@@ -86,9 +87,11 @@ brew install --cask stablyai/orca/orca
 
 ## Orca CLI contract
 
-At intake, the coordinator loads the version-matched `orchestration` and `orca-cli` guides from the
-installed Orca binary. Those guides are the source for command names, flags, response fields, and
-recovery actions.
+The coordinator uses Orca Orchestration through the `orchestration` skill for supervised workers,
+including assignment, messages, follow-ups, recovery, and cleanup. It uses `orca-cli` for other Orca
+resources. These skills own CLI mechanics; this pipeline owns workflow and verification policy.
+Workers launch through the nono sandbox commands in `references/routing.md` before registration
+with Orca Orchestration.
 
 This README does not duplicate CLI syntax. See
 [`references/orca-mechanics.md`](./references/orca-mechanics.md) for the pipeline's ownership,

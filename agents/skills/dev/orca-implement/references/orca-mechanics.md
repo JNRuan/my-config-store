@@ -1,41 +1,43 @@
 # Orca runtime mechanics
 
-This file defines how to run shared Orca operations for `/orca-implement`. Phase instructions define
-what happens and when. The version-matched Orca guides own command syntax, capabilities, response
-fields, and recovery commands.
+This file defines the integration policy for `/orca-implement`. Use Orca Orchestration to register
+and manage supervised workers. Load the `orchestration` skill and follow its instructions for
+assignment, messages, follow-ups, recovery, and cleanup. Use `orca-cli` for other Orca resources.
+
+Phase instructions own workflow, verification, retry limits, and resource ownership.
+`references/routing.md` owns sandboxed launch commands. Orca Orchestration owns command syntax,
+response fields, and worker lifecycle mechanics.
 
 ## 1.0 Record run ownership
 
 1. Record every handle, id, path, branch, and dispatch id in `run-state.json` when Orca creates it.
 2. Use the manifest rather than deriving identifiers later.
-3. After an Orca restart, treat terminal handles as stale. Reacquire them by matching the recorded
-   terminal title and worktree with live terminal state.
+3. After an Orca restart, recover worker identities through Orca Orchestration using the recorded
+   run and dispatch ids. Treat terminal titles as metadata, not proof of identity or ownership.
 4. Act on a live resource only when the manifest proves that this run owns it.
 
-## 2.0 Follow the live Orca contract
+## 2.0 Use Orca Orchestration
 
-Do not guess syntax or repeat a mutation from memory. When a guide does not support a required
-operation, stop through the current phase's failure path.
+Follow the `orchestration` skill for worker operations and `orca-cli` for other Orca resources.
+Follow each receipt's next action. Resolve uncertain startup or cleanup through Orca Orchestration
+before another mutation. When a required operation is unsupported, use the current phase's failure
+path. Preserve the sandbox requirements in `references/routing.md` during every recovery.
 
 ## 3.0 Receive orchestration messages
 
-1. Run `check --wait` in slices of at most 540000 ms. Use a shorter slice when the coordinator
-   runtime's command timeout is lower.
-2. Treat a timeout or empty delivery as a signal to wait again.
-3. Process every message in a delivery before acknowledging it.
-4. Correlate `payload.taskId` and `payload.dispatchId` with an active manifest dispatch. Log and
-   ignore messages for another run or a superseded dispatch.
-5. Use `dispatch-show` when dispatch state is uncertain.
-6. Mark a collected task complete in the manifest only after confirming that its required report is
-   non-empty.
+1. Follow Orca Orchestration for waiting, message consumption, and recovery of interrupted reads.
+2. Save the current phase and worker identities before yielding. Keep the run `active` while it
+   awaits workers. Reserve `awaiting_input` for a decision the human must make.
+3. Correlate messages with this run's recorded active Orca task and dispatch ids. Record messages
+   for superseded attempts without applying them to the current attempt. Ignore other runs' mail.
+4. Resolve questions within the approved brief. Use the Human touchpoints rule for other decisions.
+5. Follow Orca Orchestration to inspect and continue stopped workers. Silence or a timeout alone
+   does not authorise stopping or replacing a worker.
+6. Require a successful completion outcome and a non-empty report from the active attempt before
+   marking a collected task complete in the manifest.
 
-A valid `worker_done` completes its task and dispatch in Orca automatically. Do not follow it with a
-manual completion update.
-
-Use manual task updates only for recovery:
-
-- `ready` for a fix cycle;
-- `failed` for a confirmed failure.
+Orca Orchestration owns task and dispatch settlement. Follow its recovery instructions for failed
+attempts. Do not manually mark a worker's reported failure as successful.
 
 Orca task state records the worker signal. The manifest records whether the coordinator verified and
 merged the result.
@@ -46,36 +48,32 @@ Phase workers are scouts, fact checks, planners, critics, the acceptance check, 
 Builders follow Phase 5 and the rules for every worker below.
 
 1. For a worker in `<WT>`, record `<WT>` HEAD as `<H>`.
-2. Create the task under this run.
-3. Start the routed terminal from `references/routing.md`, titled `<role>:<slug>`.
-4. Wait for `tui-idle`. A terminal that is still starting drops injected input.
-5. Resolve every required value in the role context and dispatch its template.
-6. Record the task id, terminal handle, and dispatch id in the manifest.
-7. Confirm receipt from the terminal and dispatch state. If the prompt left no trace, wait for
-   readiness and inject it once more.
+2. Resolve every required value in the role context and task template.
+3. Launch the routed sandboxed terminal from `references/routing.md`, titled `<role>:<slug>`.
+   Record it as a run-owned terminal before assignment.
+4. Register that terminal and assign the task under this run through Orca Orchestration.
+5. Record the task, dispatch, and worker identities returned in the manifest. Record terminal
+   metadata only when Orca identifies a terminal. Confirm assignment through the startup receipt.
 
 For every worker, including builders:
 
-- If readiness times out, inspect the terminal before deciding whether the worker failed.
-- If an Orca CLI command returns an error, or returns no response, inspect its structured result and
-  live Orca state to determine whether the command had an effect. Retry only when the live guide
-  permits it or state proves that no effect occurred.
+- Follow Orca Orchestration for readiness, delivery confirmation, and command failure. Do not
+  resend a task or start a replacement while the previous operation's outcome is unresolved.
 - After one confirmed recovery failure, follow the current phase's failure path. Builders enter fix
   or retry handling.
 
-Prefer structured `worker_done` payloads and report files. Read terminal output for status only.
-Never treat it as the worker's result.
+Use Orca Orchestration to inspect worker status and output. Structured completion outcomes and
+designated report files are the result; status output alone is not.
 
 ## 5.0 Collect a phase worker
 
-1. Wait through 3.0 until the dispatch is terminal. A worker is overdue after two consecutive slices
-   with no message for it. Read its terminal. If it is active, keep waiting. Otherwise treat it as
-   failed.
-2. Require a non-empty report.
+1. Collect through [Receive orchestration messages](#30-receive-orchestration-messages) until the
+   dispatch settles. Resolve questions and permission prompts before considering a retry.
+2. Require a successful completion outcome and a non-empty report from the active attempt.
 3. For a worker in `<WT>`, run the read-only check. For a parallel panel, defer the check until
    every worker and allowed retry has reached a terminal outcome, then check the whole panel once.
 4. Record the collected reports in the manifest after the check passes.
-5. Close the terminal unless the phase keeps it across rounds.
+5. Follow [Manage terminals and worktrees](#70-manage-terminals-and-worktrees) for cleanup or reuse.
 
 ### Read-only check
 
@@ -112,14 +110,18 @@ manifest and `summary.md`.
 
 ## 6.0 Retry a phase worker
 
-For a failed, overdue, or reportless worker:
+For a confirmed failed attempt, or a settled dispatch with a missing or empty report:
 
-1. Mark its task `failed` and close its terminal.
-2. Start a fresh routed terminal. Use the listed fallback when the model is unavailable. Never
-   substitute one panel member for another.
-3. Create a fresh task with the same prompt, then dispatch and collect it.
+1. Follow Orca Orchestration's recovery instructions. Confirm the previous worker stopped before
+   starting a replacement or closing its terminal. Leave unresolved resources intact.
+2. Launch a fresh sandboxed terminal from `references/routing.md`. Use the listed fallback when
+   the model is unavailable. Never substitute one panel member for another.
+3. Register the replacement through Orca Orchestration. Retry an execution failure on the same Orca
+   Task in its owning Run; for a settled success with a missing report, follow its follow-up
+   procedure. Record returned identities and retain the previous dispatch id before collection.
 
-Retry each worker once. The phase says what happens when the retry also fails.
+Retry each worker once, subject to Orca Orchestration's recovery requirements and circuit breaker.
+The phase says what happens when the retry also fails.
 
 ## 7.0 Manage terminals and worktrees
 
@@ -131,10 +133,15 @@ Retry each worker once. The phase says what happens when the retry also fails.
   unused shell. Record any terminal you keep.
 - Record the integration worktree's default terminal in the manifest and keep it until teardown. For
   an adopted integration worktree, record no pre-existing terminal. Teardown touches only recorded
-  terminals. Close every terminal recorded for a task or QA worktree before removing that worktree.
-- After accepting `worker_done`, follow the live guide's release or reuse procedure. Keep a terminal
-  only for reuse. A builder keeps its terminal through fix cycles. Reviewers keep theirs through the
-  review round loop.
+  terminals. Record custom sandboxed worker launches here too. Orca-managed resources are tracked
+  by their dispatch ids; do not infer ownership from a terminal title.
+- Follow Orca Orchestration for worker release, reuse, and recovery. Reuse builder and reviewer
+  conversations subject to `references/routing.md`'s sandbox policy. If safe conversation resume is
+  unavailable, give a fresh sandboxed worker the agent task and prior reports as context.
+- Before removing a task or QA worktree, confirm no worker can still write to it. Resolve every
+  recorded dispatch's resources through Orca Orchestration. Use `orca-cli` for separately created,
+  run-owned terminals only after confirming their identity and that no worker still uses them.
+  Respect retention and ownership refusals. Record unresolved resources as partial cleanup.
 - Remove task worktrees after their branches merge.
 - If a failed task's worktree contains uncommitted or untracked changes, retain it. Record its id
   and path in the manifest and `summary.md`, and mark cleanup `partial`.

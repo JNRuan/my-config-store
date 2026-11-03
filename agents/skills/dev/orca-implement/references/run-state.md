@@ -32,8 +32,8 @@ outcome.
 
 | Status | Meaning |
 |---|---|
-| `active` | The pipeline is still running |
-| `awaiting_input` | The run is paused for a critical decision recorded in `decisions` |
+| `active` | The pipeline is still running, including while it awaits workers |
+| `awaiting_input` | The run is paused for a human decision recorded in `decisions` |
 | `pr` | The PR is open and its URL is recorded |
 | `failed` | Setup failed, or no build task merged |
 | `blocked` | The human rejected the brief or cancelled the run |
@@ -84,7 +84,7 @@ Build and fix tasks use:
 | `pending` | Registered, but at least one dependency is not merged |
 | `ready` | Every dependency is merged and the task can dispatch |
 | `dispatched` | An active dispatch owns the task |
-| `completed` | The coordinator accepted `worker_done` and has not yet verified the task |
+| `completed` | The active attempt reported success with its required report; verification is pending |
 | `merged` | Verification passed and the task branch merged |
 | `failed` | The task cannot continue |
 
@@ -95,8 +95,8 @@ pending -> ready
 ready -> dispatched
 dispatched -> completed
 completed -> merged
-completed -> ready       fix cycle
-dispatched -> ready      recovered or replaced worker
+completed -> dispatched  follow-up fix cycle
+dispatched -> ready      confirmed recovery before reassignment
 pending -> failed        dependency failed
 ready -> failed
 dispatched -> failed
@@ -107,6 +107,9 @@ completed -> failed
 
 A dependant becomes `ready` only when every dependency is `merged` in the manifest. Orca's completed
 status alone is not enough.
+
+A replacement can change the active task, dispatch, and worker identities while the pipeline task
+remains `dispatched`. Preserve the original pipeline identity and dependency edges.
 
 ## Phase-dispatch statuses
 
@@ -119,8 +122,8 @@ records, and `qa.dispatch_status`, use:
 - `failed`;
 - `superseded`.
 
-A completed phase dispatch requires its designated report to exist and be non-empty. Record a QA
-policy skip in the QA record, not as a fake dispatch.
+A completed phase dispatch requires a successful outcome and its designated report from the active
+attempt to exist and be non-empty. Record a QA policy skip in the QA record, not as a fake dispatch.
 
 ## Initial manifest
 
@@ -128,7 +131,7 @@ Phase 0 creates the manifest with these top-level fields:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "run_name": "<RUN>",
   "orca_run_id": "<ORCA_RUN_ID>",
   "source": "<NORMALISED_SOURCE>",
@@ -189,11 +192,15 @@ Phase 0 creates the manifest with these top-level fields:
     "dispatch_status": "pending",
     "head": null,
     "task_id": null,
+    "active_task_id": null,
+    "follow_up_task_ids": [],
+    "worker_handle": null,
     "worktree_id": null,
     "worktree_path": null,
     "branch": null,
     "terminal_handle": null,
     "dispatch_id": null,
+    "superseded_dispatch_ids": [],
     "report_path": null,
     "review_path": null,
     "fix_waves": 0,
@@ -221,6 +228,7 @@ Phase 0 creates the manifest with these top-level fields:
   },
   "cleanup": {
     "status": "pending",
+    "remaining_dispatch_ids": [],
     "remaining_terminal_handles": [],
     "remaining_worktree_ids": []
   },
@@ -229,7 +237,8 @@ Phase 0 creates the manifest with these top-level fields:
 ```
 
 Repeat the terminal record for every terminal returned by integration-worktree creation. If creation
-returns none, use an empty array. Update a terminal to `closed` after closing it.
+returns none, use an empty array. Add every custom sandboxed launch before registering it as a
+worker. Update a terminal to `closed` only after confirming it closed.
 
 ## Build-task record
 
@@ -243,6 +252,9 @@ Each entry in `tasks` contains:
   "origin_phase": "build",
   "origin_round": null,
   "task_id": "<TASK_ID>",
+  "active_task_id": "<TASK_ID>",
+  "follow_up_task_ids": [],
+  "worker_handle": null,
   "dependency_task_ids": [],
   "worktree_id": null,
   "worktree_path": null,
@@ -265,6 +277,20 @@ Each entry in `tasks` contains:
 ```
 
 A task with no dependencies starts `ready`. A task with unmerged dependencies starts `pending`.
+
+Keep `task_id`, `dependency_task_ids`, and membership in `build_owned_task_ids` stable for the
+pipeline task. Record the current Orca Task in `active_task_id`. Retain every different Task id
+returned for this pipeline task in `follow_up_task_ids`, including replacement work when Orca
+requires a new Task. Correlate messages with `active_task_id` and `active_dispatch_id`.
+
+Before replacing `active_dispatch_id`, retain its previous value in `superseded_dispatch_ids`.
+Reconcile any failure or resource state from an older attempt without treating its report as the
+current attempt's result. A failed attempt does not by itself make the pipeline task permanently
+`failed` while an authorised recovery or follow-up remains.
+
+Record the worker handle Orca returns. Fill terminal fields only when Orca identifies a terminal.
+Use Orca Orchestration to recover worker identity after a restart. Treat terminal titles as metadata,
+not proof of identity or ownership.
 
 A fix task uses `"kind": "fix"` and records the phase and round that produced it.
 
@@ -289,8 +315,11 @@ Each entry in `phase_dispatches` contains:
   "round": null,
   "start_head": null,
   "task_id": "<TASK_ID>",
-  "terminal_handle": "<HANDLE>",
-  "terminal_title": "<TITLE>",
+  "active_task_id": "<TASK_ID>",
+  "follow_up_task_ids": [],
+  "worker_handle": "<WORKER_HANDLE>",
+  "terminal_handle": null,
+  "terminal_title": null,
   "model": "<MODEL>",
   "effort": "<EFFORT>",
   "active_dispatch_id": "<DISPATCH_ID>",
@@ -303,6 +332,9 @@ Each entry in `phase_dispatches` contains:
 Use `round` for critic and reviewer rounds. Leave it `null` for unrounded roles. Record a fact
 check's `role` as `plan-fact-check` or `plan-fact-check-final`, and an acceptance check's `role` as
 `acceptance-check-<PASS>`.
+
+Use the build-task record's identity rules for active tasks, follow-ups, superseded dispatches, and
+terminal metadata. Preserve each role and round's report path across its permitted recovery.
 
 For a worker in `<WT>`, save the collection baseline `<H>` as `start_head` before dispatch.
 Use the same baseline for every worker and retry in one collection batch.
@@ -399,8 +431,9 @@ For a policy skip:
 }
 ```
 
-For a QA run, record `head`, task, worktree, branch, terminal, dispatch, report, review, and
-fix-wave count as each becomes known. `qa.dispatch_status` uses the phase-dispatch statuses and
+For a QA run, record `head`, task, worktree, branch, worker identity, any terminal metadata, dispatch,
+report, review, and fix-wave count as each becomes known. Use the build-task identity rules, with
+`qa.dispatch_id` as the active dispatch id. `qa.dispatch_status` uses the phase-dispatch statuses and
 tracks the worker dispatch separately from the QA outcome.
 
 Set `completed` only after report collection, triage, accepted fixes, and required verification
@@ -409,6 +442,9 @@ finish.
 Use `not_verified` when the worker fails or the required report is missing. Record the exact reason.
 
 ## Resource records
+
+Worker resources are tracked by the active and superseded dispatch ids in build, phase, and QA
+records. Use Orca Orchestration to inspect their live state and release or retain them.
 
 Each terminal resource contains:
 
@@ -448,7 +484,8 @@ Worktree status accepts:
 - `removed`;
 - `retained`.
 
-At PR state, the integration worktree is `retained`. Task and QA worktrees must be `removed`.
+At PR state, the integration worktree is `retained`. Remove task and QA worktrees only when cleanup
+is confirmed safe. Retain any whose worker state or ownership is unresolved and mark cleanup partial.
 
 ## Cleanup state
 
@@ -458,14 +495,17 @@ At PR state, the integration worktree is `retained`. Task and QA worktrees must 
 - `complete`;
 - `partial`.
 
-Set `complete` when every run-owned terminal is closed and every removable worktree is gone. The
+Set `complete` only when Orca Orchestration confirms no removable run-owned worker resources remain,
+every separately recorded run-owned terminal is closed, and every removable worktree is gone. The
 retained integration worktree does not make cleanup partial.
 
-Record unresolved terminal handles or worktree ids when cleanup is partial.
+Record unresolved worker attempts in `remaining_dispatch_ids`, separate terminals in
+`remaining_terminal_handles`, and retained task or QA worktrees in `remaining_worktree_ids`.
+Retention or an unknown release result never means a resource closed.
 
 ## Decision record
 
-Each entry in `decisions` records one critical decision:
+Each entry in `decisions` records one decision required from the human:
 
 ```json
 {
@@ -484,6 +524,15 @@ recorded.
 
 A manifest without `plan_gate`, `pr_draft`, `replans`, or `decisions` predates them. Read
 `plan_gate` as true, the others as their initial values.
+
+When resuming a schema 1 manifest, reconcile its recorded task and dispatch ids through Orca
+Orchestration before assigning more work. Initialise missing `active_task_id` from the reconciled
+Task, missing follow-up and superseded-id lists as empty, and `remaining_dispatch_ids` as empty.
+Recover worker handles from Orca state or receipts rather than copying a terminal title or guessing
+a handle. Leave a missing worker handle null and inspect the recorded dispatch through Orca
+Orchestration.
+Keep terminal records as ownership evidence and set `schema_version` to 2 after reconciliation.
+If live state or history reveals a follow-up, record its returned identities before continuing.
 
 ## PR state
 
@@ -522,7 +571,7 @@ On failure or blockage:
 3. record failed tasks and cleanup results;
 4. keep the integration worktree and run branch;
 5. write the final manifest to disk;
-6. commit the abort checkpoint.
+6. commit the abort checkpoint when no worker can still write, as the checkpoint rule requires.
 
 ## Recovery authority
 

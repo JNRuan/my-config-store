@@ -36,7 +36,7 @@ The run has these human touchpoints:
 2. understanding check;
 3. plan gate, only when the human asks to review the plan, at invocation or during the understanding
    check;
-4. a critical decision, only when one arises;
+4. a critical decision or a recovery decision required by Orca Orchestration, only when one arises;
 5. PR review.
 
 After the understanding check, and the plan gate when it runs, continue autonomously to the PR.
@@ -159,11 +159,13 @@ The invocation may ask, in any wording, to review the plan before the build, suc
 plan first" or `--plan-gate`. Record that request as `plan_gate` when you initialise the manifest. A
 request made during the understanding check sets it too.
 
-Load the `orchestration` skill. Resolve the Orca executable and load the guides it serves for
-`orchestration` and `orca-cli`.
+Use Orca Orchestration to register and manage supervised workers. Load the `orchestration` skill
+and follow its instructions for assignment, messages, follow-ups, recovery, and cleanup. Launch
+workers through the sandbox commands in `references/routing.md`, preserving the routed model,
+effort, nono profile, filesystem grants, and report paths.
 
-`orca` in this skill means the resolved executable. The guides own command names, flags, and message
-mechanics. This skill owns process, ownership, and safety.
+Load `orca-cli` for other Orca resources. `orca` in this skill means the executable selected by those
+skills. This skill owns workflow, verification, resource ownership, and safety.
 
 Resolve the argument:
 
@@ -277,7 +279,7 @@ Complete every step in order before Phase 1.
    Create the Orca Run with objective `<RUN>`. Record the run id when you initialise
    `run-state.json`.
 
-   Pass that run id to every `task-create`. Tasks and messages outside that run are not yours.
+   Associate every task with that run id. Tasks and messages outside that run are not yours.
 
 7. **Choose the integration worktree.**
 
@@ -290,7 +292,8 @@ Complete every step in order before Phase 1.
    Otherwise create the worktree named `<RUN>` with `--setup run`. Pass `--base-branch <start_ref>`
    when `start_ref` is set and `--base-branch <base_ref>` otherwise. Link it to the source issue
    when one exists. Record `integration_worktree.origin` as `created`. Wait for the setup terminal
-   as mechanics 7.0 requires.
+   as [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees)
+   requires.
 
    After creation, when the primary checkout has `.env` and the worktree does not, stop before
    creating anything else. Print this command for the human, wait for them to say in the
@@ -376,8 +379,9 @@ Complete every step in order before Phase 1.
    creation, and worktree creation.
 
    For a created worktree, record every auto-started terminal from the worktree-create response or
-   terminal list before any other action, then handle it as mechanics 7.0 requires. For an adopted
-   worktree, record none.
+   terminal list before any other action, then follow [Manage terminals and
+   worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees). For an adopted worktree,
+   record none.
 
 10. **Start the summary and report the choice.**
 
@@ -518,7 +522,8 @@ and code review cover it. Set `rounds_run=1` and record stop reason `critique co
 
 #### Finish plan critique
 
-1. Close every critic terminal.
+1. Clean up the critic workers through Orca Orchestration and their recorded run-owned terminals
+   through [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
 2. When `plan_changed=true`, repeat Step 3 against the revised plan as `plan-fact-check-final`,
    scoped to the sections that differ from `scratch/plan-pre-critique.md`. Correct every reported
    mismatch.
@@ -589,64 +594,68 @@ Select ready tasks only from the build-owned set. Never dispatch directly from t
 For each ready task:
 
 1. Create worktree `<RUN>-{seq}-{slug}` from `<RUN-BRANCH>` with parent worktree `<WT>` and
-   `--setup run`. Wait for the setup terminal as mechanics 7.0 requires.
+   `--setup run`. Wait for setup through [Manage terminals and
+   worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
 2. Capture the worktree id, absolute path, and actual branch.
-3. Handle any auto-started terminal as mechanics 7.0 requires.
+3. Handle auto-started terminals through [Manage terminals and
+   worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
 4. Record the starting commit with `git -C <path> rev-parse HEAD`.
 5. Resolve every required builder-context value.
 6. Write `<RUNDIR>/tasks/{seq}-{slug}-agent-task.md` in the shape of
    `references/templates/agent-task-template.md`.
-7. Start the routed builder in the task worktree and wait for readiness.
-8. Dispatch the task to that terminal. Do not pass resolved context through a shell argument.
-9. Record the dispatch id and set manifest status to `dispatched`.
+7. Launch the routed sandboxed builder from `references/routing.md` in the task worktree and record
+   the run-owned terminal. Register it and assign this task through Orca Orchestration, using the
+   agent-task file as input. Do not pass resolved context through a shell argument.
+8. Record the worker identity and active Orca task and dispatch ids from the startup receipt.
+   Set manifest status to `dispatched` only when that receipt confirms dispatch.
 
 ### Collect workers
 
-Wait for `worker_done`, `escalation`, and `question` messages through the bounded wait in mechanics
-3.0. A timeout means wait again. It is not worker failure.
+Collect `worker_done`, `escalation`, and `question` messages using [Receive orchestration
+messages](references/orca-mechanics.md#30-receive-orchestration-messages). Follow Orca Orchestration
+for waiting and keep the run `active` while it awaits workers.
 
 Handle each message that matches an active dispatch by type:
 
-- `question`: answer with an orchestration reply, which releases the worker's waiting `ask`. When
+- `question`: answer through Orca Orchestration within the approved brief. When
   the answer settles something the plan left open, add it to the agent task so a re-dispatched or
   replacement worker builds on it. When it changes a contract another task uses, update every
   affected agent task as in [Stop contract drift](#stop-contract-drift).
-- `escalation`: resolve the blocker within the approved task contract, then reply or update the
-  agent task.
+- `escalation`: inspect the reported stop reason and live worker state through Orca Orchestration.
+  Resolve the blocker within the approved task contract and continue the worker through that
+  interface. Update the agent task when the resolution changes its instructions.
 - Neither message completes the task. When either needs a critical decision, follow the Human
   touchpoints rule.
-- `worker_done`: run the task verification and merge procedure below. After a successful merge,
-  dispatch newly ready tasks from the build-owned set up to the concurrency cap.
+- `worker_done`: for a successful outcome, run the task verification and merge procedure below.
+  Handle a failed outcome through Orca Orchestration's recovery instructions and the run's retry
+  limits. After a successful merge, dispatch newly ready tasks from the build-owned set up to the
+  concurrency cap.
 
-Continue until every build-owned dispatch is terminal.
+Continue until every build-owned pipeline task is merged or permanently failed, with no unsettled
+attempts. Follow-up Orca Tasks remain associated with their original pipeline task.
 
-### Recover an overdue worker
+### Recover a stopped worker
 
-A worker is overdue only when both conditions hold:
+Use Orca Orchestration to inspect the stop reason, worker output, and live state. Silence, a timeout,
+or a lack of commits alone does not authorise stopping or replacing a worker.
 
-- two consecutive wait slices returned no message for it;
-- its branch received no new commit during those slices.
+- If the worker is active, continue other ready work or wait through Orca Orchestration.
+- If it needs an answer or permission, resolve that blocker through the Human touchpoints rule and
+  continue the worker through Orca Orchestration.
+- For a confirmed failed attempt, follow Orca Orchestration's recovery instructions. Preserve the
+  existing task worktree, branch, and committed work. If replacement is required, confirm the
+  previous worker stopped before launching another worker through `references/routing.md`.
 
-Read its terminal before taking action.
-
-- If the worker is active, continue waiting.
-- If it is stuck, waiting for input, or crashed, re-dispatch it:
-
-  1. Stop the worker and close its terminal.
-  2. Inspect committed work on the task branch.
-  3. Start a fresh terminal in the same worktree and branch.
-  4. Set the task back to `ready`.
-  5. Re-dispatch with the existing work as context.
-  6. Record the previous dispatch id as superseded.
-  7. Increment the task's verify-to-fix cycle count.
-
-This re-dispatch counts towards the task's verify-to-fix limit. It does not use the retry protocol's
-replacement attempt.
+Record the returned task, dispatch, and worker identities before continuing. Preserve the pipeline
+task's original identity and dependencies. Count a recovered build attempt towards its
+verify-to-fix limit; it does not consume the retry protocol's replacement attempt. Respect Orca
+Orchestration's recovery requirements even when the pipeline has cycles remaining.
 
 ### Verify a completed task
 
-A valid `worker_done` makes Orca mark the task and dispatch complete. It does not prove that the
-work is correct or ready to merge. Keep the manifest task unmerged until every check below passes.
+Orca Orchestration settles the task and dispatch from the worker's outcome. A successful outcome
+does not prove the work is correct or ready to merge. Keep the manifest task unmerged until every
+check below passes.
 
 1. Compare the task branch with its recorded starting commit:
 
@@ -671,10 +680,11 @@ Start a fix cycle if the worktree has uncommitted changes, a check fails, or the
 its requirements:
 
 1. Append the coordinator's findings and failing output to the agent task.
-2. Set the task back to `ready`.
-3. Re-dispatch it to the same terminal.
-4. Record the new dispatch id and supersede the previous one.
-5. Increment the verify-to-fix cycle count.
+2. Request follow-up work from the builder through Orca Orchestration in the same task worktree,
+   preserving the sandbox launch policy in `references/routing.md`.
+3. Record the returned Orca task, dispatch, and worker identities against the existing pipeline task.
+   Preserve its original identity and dependencies. Set manifest status to `dispatched` after confirmation.
+4. Increment the verify-to-fix cycle count.
 
 After three verify-to-fix cycles, use the retry protocol.
 
@@ -720,10 +730,12 @@ Only after merge and integration verification pass:
 
 1. Mark the task merged in the manifest and record the merge commit as `merge_commit`.
 2. Allow dependent tasks to become ready.
-3. Release the accepted dispatch.
-4. Close the builder terminal and every other terminal recorded for the worktree.
-5. Remove the task worktree by its recorded id and require an `.ok` response.
-6. Delete the task branch with:
+3. Clean up every recorded attempt's worker resources through Orca Orchestration.
+4. Follow [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees)
+   for separately recorded terminals. Confirm no worker can still write to the worktree.
+5. Remove the task worktree by its recorded id and confirm removal through `orca-cli`. If cleanup
+   is unresolved or refused, retain the worktree and record partial cleanup.
+6. After its worktree is removed, delete the task branch with:
 
    ```bash
    git -C <WT-PATH> branch -d <task-branch>
@@ -873,8 +885,8 @@ findings get one fix wave and never reopen review.
 2. Read `<CODE_REVIEW_CAP>` from the plan's Review Policy.
 3. Set `review_fixes_applied=false` in the manifest.
 4. Start every routed code reviewer in `<WT>` from `references/routing.md`. Start the security
-   reviewers only when `run_complexity` is `medium` or above. Reviewer terminals stay open across
-   rounds.
+   reviewers only when `run_complexity` is `medium` or above. Reuse reviewer conversations across
+   rounds through Orca Orchestration subject to the sandbox launch policy in `references/routing.md`.
 
 ### Run a review round
 
@@ -893,8 +905,9 @@ For each `<ROUND>` from 1 through `<CODE_REVIEW_CAP>`:
      wave since the previous round changed a file that handles attacker-controlled input as the
      trust model in the mapped `{security-review-skill}` defines it. When neither holds, set
      `security_lenses_run=false` and `security_skip_reason` in the round record.
-4. Dispatch a fresh task with a unique report path to every code reviewer and each selected security
-   reviewer. Collect, and retry a failed lens once within the round.
+4. Assign each selected reviewer the round's task and unique report path through Orca Orchestration.
+   Record any new task and dispatch ids against that reviewer's round record. Collect, and retry a
+   failed lens once within the round.
 5. In round 1, when `browser_verification.policy` is `run`, read
    `references/context/browser-verification.md` and resolve every required value. Start one native
    subagent in the same wave as the reviewers, on the model from `references/routing.md`. Use the
@@ -902,7 +915,7 @@ For each `<ROUND>` from 1 through `<CODE_REVIEW_CAP>`:
    subagent is not a phase worker. Its report stays in coordinator context. If it produces no
    report, start it once more.
 6. When a retry also fails, record the lens in the round's `missing_lenses` and in the round review,
-   and start a fresh terminal for it before any later round. If both code-review lenses are
+   and launch a fresh sandboxed worker for it before any later round. If both code-review lenses are
    unavailable, record `no code review` as the stop reason, set `pr_draft` to true, and stop the
    review loop. Record every missing security lens, then continue with the surviving lenses.
 7. Read the browser screenshots yourself. A browser report without screenshots is not verified.
@@ -1005,7 +1018,8 @@ When `severe_fix_merged=false`, stop the review loop.
 
 ### Finish code review
 
-1. Close every reviewer terminal.
+1. Clean up reviewer workers through Orca Orchestration and their recorded run-owned terminals
+   through [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
 2. If `review_fixes_applied=true`, rerun the Phase 6 project checks and the acceptance check for
    affected criteria against the post-review HEAD. Rerun browser verification only when a fix
    changed UI files, and only for the pages it touched.
@@ -1049,9 +1063,11 @@ When `qa_policy` is `run`, run the procedure below.
    ```
 
 2. Create a disposable worktree named `<RUN>-qa` from the current `<RUN-BRANCH>`, using `<WT>` as
-   its parent worktree and `--setup run`. Wait for the setup terminal as mechanics 7.0 requires.
+   its parent worktree and `--setup run`. Wait for setup through [Manage terminals and
+   worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
 3. Record its id, absolute path, and actual branch.
-4. Handle any auto-started terminal as mechanics 7.0 requires.
+4. Handle auto-started terminals through [Manage terminals and
+   worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
 5. Confirm that the QA worktree HEAD equals `QA_HEAD`.
 
 The QA worktree is disposable. Never merge its branch.
@@ -1059,7 +1075,8 @@ The QA worktree is disposable. Never merge its branch.
 ### Run and collect QA
 
 Read `references/context/adversarial-qa.md`. Dispatch the `<RUN>-qa` task to the routed QA worker in
-the QA worktree, record the task, terminal, and dispatch in the QA record, then collect.
+the QA worktree through Orca Orchestration, using the sandbox commands in `references/routing.md`.
+Record the task, dispatch, worker identity, and any terminal metadata in the QA record, then collect.
 
 On successful completion:
 
@@ -1067,8 +1084,10 @@ On successful completion:
 2. Set `qa.dispatch_status` to `completed`. Keep `qa.status` as `pending` until triage, accepted
    fixes, and verification finish.
 
-On worker failure or a missing report, set `qa.dispatch_status` to `failed`, reset the QA worktree
-to `QA_HEAD`, remove untracked files, and retry once.
+On a confirmed worker failure, or a settled dispatch with a missing report, set `qa.dispatch_status`
+to `failed`. Follow Orca Orchestration's recovery instructions and confirm no worker can still
+write before resetting the QA worktree to `QA_HEAD` and removing its untracked files. Retry once
+through Orca Orchestration with a sandboxed worker and record the returned identities.
 
 If the retry also fails:
 
@@ -1078,9 +1097,11 @@ If the retry also fails:
 
 In all cases:
 
-1. Close every terminal recorded for the QA worktree and mark each resource record `closed`.
-2. Remove the QA worktree by its recorded id and mark its resource record `removed`.
-3. Delete the QA branch.
+1. Clean up recorded QA attempts through Orca Orchestration. Resolve their separately recorded
+   terminals through [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
+2. Confirm no worker can still write, then remove the QA worktree by its recorded id and mark it
+   `removed`. If cleanup is unresolved or refused, retain it and record partial cleanup.
+3. Delete the QA branch only after the worktree is removed.
 4. Confirm that you never merged the QA branch.
 
 ### Triage and fix QA findings
@@ -1157,15 +1178,17 @@ PR, deduplicated; omit effort levels}
 
 Use only handles and ids recorded in `run-state.json`.
 
-1. Close every recorded terminal and mark its resource record `closed`.
-2. Remove each remaining task or QA worktree by its recorded id and mark its resource record
-   `removed`.
-3. Confirm that every removed terminal and worktree is gone.
-4. Do not act on unfiltered `terminal list` or `worktree list` output.
+1. Resolve every recorded worker attempt's resources through Orca Orchestration. Record any retained
+   or unresolved dispatch ids.
+2. Clean up separately recorded terminals through [Manage terminals and
+   worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
+3. Remove each remaining task or QA worktree only after confirming no worker can still write there.
+   Record confirmed removals and preserve unresolved resources.
+4. Confirm cleanup using recorded identities only. Do not act on unfiltered resource lists.
 5. Keep the integration worktree until the PR merges and mark it `retained`. Its later removal with
    `orca worktree rm` belongs to the human.
 6. Set `cleanup.status` to `complete` when no removable resource remains. Otherwise set it to
-   `partial` and record every remaining handle or worktree id.
+   `partial` and record every unresolved dispatch id, terminal handle, or worktree id.
 
 ### Record PR state
 
@@ -1198,19 +1221,24 @@ attempt.
    - the report path and relevant Git revisions;
    - the coordinator's diagnosis;
    - what the replacement must do differently.
-5. Stop and close the original worker.
-6. Start a fresh worker in the same task worktree and branch.
-7. Supersede the previous dispatch and start a new dispatch through the version-matched Orca retry
-   mechanism.
+5. Resolve the original worker through Orca Orchestration's recovery and cleanup instructions.
+   Confirm it stopped before starting a replacement.
+6. Launch a fresh sandboxed worker from `references/routing.md` in the same task worktree and branch.
+7. Register and assign the replacement through Orca Orchestration. Follow its same-Task recovery
+   rules for execution failures and record any returned task and dispatch ids against the original
+   pipeline task. Preserve its dependencies and prior attempt identities.
 
 The replacement receives its own limit of three verify-to-fix cycles.
 
 If the replacement exhausts that limit, the task fails permanently:
 
-1. Mark it `failed` in Orca and the manifest.
+1. Mark the pipeline task `failed` in the manifest. Settle any outstanding Orca assignments through
+   Orca Orchestration; do not rewrite a successful worker outcome as an execution failure.
 2. Mark its build-owned dependants `failed` with reason `dependency failed`.
-3. Close its terminal.
-4. Remove its worktree by recorded id, preserving its branch as mechanics 7.0 requires.
+3. Resolve all recorded worker attempts through Orca Orchestration.
+4. Remove its worktree only after [Manage terminals and
+   worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees) permits it, preserving its
+   branch and any uncommitted work.
 5. Record every attempt and the preserved branch in `summary.md`.
 
 Continue every task that does not depend on the failed task through dispatch, collection,
@@ -1221,6 +1249,8 @@ Otherwise continue the run: record each acceptance criterion that only failed ta
 
 ### Pause for a critical decision
 
+Use this routine also when Orca Orchestration requires explicit human authorisation for recovery.
+
 1. Add an entry to `decisions` in `run-state.json`. Write the question as the brief writes one: a
    full question, what the answer decides, one to three options with the consequence of each, and a
    marked recommendation. Cite the evidence that raised it with `path:line`.
@@ -1228,8 +1258,9 @@ Otherwise continue the run: record each acceptance criterion that only failed ta
    continues.
 3. Hold every task the decision affects. Collect, verify, merge, and dispatch every other task as
    normal.
-4. When nothing else can progress, set `status` to `awaiting_input`, commit the `awaiting decision`
-   checkpoint, and present the question in the conversation. Keep every terminal and worktree.
+4. When nothing else can progress, set `status` to `awaiting_input`, save the run record, and present
+   the question in the conversation. Commit the `awaiting decision` checkpoint only when the
+   checkpoint rule permits it. Keep every terminal and worktree.
 5. When the human answers, record the answer in the decision entry and as a `C-n` constraint in the
    brief, update the affected agent tasks, set `status` to `active`, and release the held tasks.
 
@@ -1251,15 +1282,18 @@ Use run status:
 Then:
 
 1. Mark this run's remaining non-terminal tasks `failed`.
-2. Close every manifest-owned terminal.
-3. Remove task and disposable worktrees by recorded id, preserving each task branch as mechanics 7.0
-   requires.
-4. Delete a disposable QA branch when one exists.
+2. Resolve run-owned worker attempts through Orca Orchestration. Record any unsettled or unresolved
+   resources; marking a pipeline task failed does not prove its worker stopped.
+3. Clean up terminals and worktrees through [Manage terminals and
+   worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees), preserving task branches
+   and uncommitted work. Retain a worktree while its worker state is unresolved.
+4. Delete a disposable QA branch only after its worktree is removed.
 5. Keep the integration worktree and run branch for inspection.
 6. Complete `summary.md` in the shape of `references/templates/summary-template.md`. Set `finished`
    and fill every section.
 7. Update `run-state.json`.
-8. Commit the `run failed` or `run blocked` checkpoint for the run status.
+8. Commit the `run failed` or `run blocked` checkpoint only when the checkpoint rule permits it.
+   If a worker can still write, leave the run record on disk and report the unresolved worker.
 9. Report the failure or blocker to the human.
 
 ### Detect an infeasible plan
@@ -1313,8 +1347,11 @@ Then reconcile the manifest with live state:
 1. Use Git to establish which task branches have merged. Mark a task `merged` in the manifest only
    after integration verification passes.
 2. Treat live Orca dispatch state as authoritative over manifest dispatch status.
-3. Reacquire stale terminal handles by matching the recorded title and worktree.
-4. Collect pending `worker_done` messages before dispatching anything.
+3. Reconcile active and superseded dispatches through Orca Orchestration. Recover worker identities
+   from live state and initialise missing manifest fields as `references/run-state.md` describes.
+   Do not infer ownership from terminal titles.
+4. Recover pending and previously consumed completion messages through Orca Orchestration before
+   assigning more work. Record any follow-up task and dispatch identities.
 5. Dispatch only unfinished work, using existing task-branch commits as context. Merge only branches
    not yet merged.
 6. In Phases 6 through 8, resume from the recorded round and fix-wave counts.
@@ -1326,23 +1363,25 @@ When `status` is `awaiting_input`, present the open decision again and continue 
 
 ### Handle the Orca circuit breaker
 
-When Orca marks a task failed after three consecutive dispatch failures, enter the retry protocol.
-Do not treat it as immediate permanent failure.
+When Orca reports a circuit breaker, follow Orca Orchestration's recovery instructions. The
+pipeline's retry allowance does not override Orca's recovery requirements. Record the blocker and
+use [Pause for a critical decision](#pause-for-a-critical-decision) when human authorisation is
+required. Preserve the recorded task and attempt history.
 
 Never run `orca orchestration reset`. The orchestration store is shared with other runs.
 
 ## Orca runtime mechanics
 
-Read `references/orca-mechanics.md` completely during Phase 0, after loading the version-matched
-Orca guides and before the first Orca mutation. Re-read the relevant heading when a phase needs it.
+Read `references/orca-mechanics.md` completely during Phase 0, after loading the `orchestration` and
+`orca-cli` skills and before the first Orca mutation. Re-read the relevant heading when a phase needs it.
 
 | Reference heading | Use |
 |---|---|
 | [1.0 Record run ownership](references/orca-mechanics.md#10-record-run-ownership) | Orca resource creation and recovery |
-| [2.0 Follow the live Orca contract](references/orca-mechanics.md#20-follow-the-live-orca-contract) | Every Orca command and command failure |
-| [3.0 Receive orchestration messages](references/orca-mechanics.md#30-receive-orchestration-messages) | Every bounded wait and delivery |
+| [Use Orca Orchestration](references/orca-mechanics.md#20-use-orca-orchestration) | Every Orca worker operation and command failure |
+| [Receive orchestration messages](references/orca-mechanics.md#30-receive-orchestration-messages) | Every worker wake and message batch |
 | [4.0 Dispatch a phase worker](references/orca-mechanics.md#40-dispatch-a-phase-worker) | Every phase-worker dispatch; readiness and command failure for every worker |
 | [5.0 Collect a phase worker](references/orca-mechanics.md#50-collect-a-phase-worker) | Every phase-worker collection and the read-only check |
-| [6.0 Retry a phase worker](references/orca-mechanics.md#60-retry-a-phase-worker) | Every failed, overdue, or reportless phase worker |
-| [7.0 Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees) | Terminal release and reuse, worktree cleanup, branch preservation, and teardown |
+| [Retry a phase worker](references/orca-mechanics.md#60-retry-a-phase-worker) | Confirmed failed attempts and settled dispatches with missing reports |
+| [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees) | Worker cleanup and reuse, worktree cleanup, branch preservation, and teardown |
 | [8.0 Operational safety](references/orca-mechanics.md#80-operational-safety) | Every mutation, cleanup, push, and PR action |

@@ -18,13 +18,16 @@ argument is `<BASE>`, a branch, tag, or SHA, default `origin/main`.
 
 ## Orca contract
 
-Load the `orchestration` skill. Resolve the Orca executable and load the guides it serves for
-`orchestration` and `orca-cli`. The guides own command names, flags, response fields, and
-recovery commands. This skill owns the workflow, resource ownership, and safety. Do not guess
-syntax or repeat a mutation from memory.
+Use Orca Orchestration to register and manage supervised workers. Load the `orchestration` skill
+and follow its instructions for assignment, messages, follow-ups, recovery, and cleanup. Load
+`orca-cli` for separately created terminals and other Orca resources. This skill owns workflow,
+model routing, sandbox requirements, resource ownership, and safety.
 
-Record every run id, terminal handle, task id, and dispatch id when Orca returns it. Orca is
-shared with other runs: act only on resources this review created.
+Record every run, task, dispatch, and worker identity when Orca returns it, including follow-up ids.
+Keep the original task identity for each lens and correlate messages with its current task and
+dispatch. Record separately created terminals before assignment. Orca is shared with other runs:
+act only on resources this review created. Recover worker identities through Orca Orchestration,
+not terminal-title matching.
 
 ## Workers
 
@@ -36,13 +39,22 @@ shared with other runs: act only on resources this review created.
 All four run at `<EFFORT>`, interactively, in the current worktree, against the same `<BASE>`.
 Identical input is what makes the reports comparable.
 
-Boot each with `terminal create` and an explicit `--command`, titled `<stream>:<model>`. The
-`nclaude` and `ncodex` aliases run the worker inside its nono sandbox profile:
+Launch every worker through the sandbox commands below in a terminal titled `<stream>:<model>`.
+Register it and assign its task through Orca Orchestration. The `nclaude` and `ncodex` aliases run
+the worker inside its nono sandbox profile. Preserve those profiles and filesystem grants. Do not
+substitute Orca's normal agent launch or an agent's built-in sandbox for these commands:
 
 ```bash
 nclaude --model <opus|fable> --effort <EFFORT> --permission-mode bypassPermissions
 ncodex --model <gpt-6-astra|gpt-6.1-sol> -c 'model_reasoning_effort="<EFFORT>"' --sandbox danger-full-access --ask-for-approval never
 ```
+
+Apply the same sandbox requirement to processes started for follow-ups, retries, or resume.
+Continue an existing worker only through operations that preserve its sandbox. If an operation can
+automatically reopen a worker outside nono, assign the work to a terminal launched through these
+commands instead. A liveness check alone does not make automatic reopening safe. Resolve uncertain
+liveness through Orca Orchestration before launching a replacement. Use the task and prior reports
+as context if safe conversation resume is unavailable.
 
 ## Phase 1: Set up
 
@@ -62,12 +74,11 @@ later. Substitute it, `<BASE>`, and `<EFFORT>` literally in everything below.
 ## Phase 2: Dispatch
 
 1. Create an Orca run with objective `cross-model code + security review vs <BASE>`.
-2. Boot the four terminals from the Workers table. Wait for each to reach `tui-idle`. A
-   terminal still starting drops injected input.
-3. Create one task per worker from the template below and dispatch it into its terminal with
-   inject. Record each dispatch id.
-4. Confirm the prompt landed in each terminal. If it left no trace, wait for readiness and
-   inject once more.
+2. Launch the four sandboxed workers from the Workers table and record their run-owned terminals.
+3. Register and assign them through Orca Orchestration, using the task template below. Record the
+   returned run, task, dispatch, and worker identities for each lens and its report path.
+4. Follow Orca Orchestration's startup and recovery instructions. Resolve uncertain startup before
+   attempting another launch or delivering the task again.
 
 Task template. `<SKILL>` is the stream's skill. `<REPORT>` is `claude-review.md`,
 `codex-review.md`, `claude-security.md`, or `codex-security.md`:
@@ -78,27 +89,30 @@ Run /<SKILL> and follow its instructions. The skill exists. Do not check for it.
 
 ## Phase 3: Collect
 
-Wait with `check --wait` for `worker_done`, `escalation`, and `question` messages, in slices
-of at most 540000 ms, or shorter when your command timeout is lower. A delivery repeats until
-acknowledged: handle every message in it, acknowledge it, then wait again until all four
-dispatches are terminal. A timeout or empty delivery is a checkpoint, not a failure.
+Use Orca Orchestration to collect results, answer questions, and handle escalations. Save the review's
+worker identities and report paths before yielding. Correlate messages with this review's current
+task and dispatch ids. Keep the review active while workers remain unsettled.
 
-- `worker_done`: Orca completes the task and dispatch itself; do not update them by hand.
-  Confirm the report file exists and is non-empty. Then release the worker and close its tab,
-  in that order. Release settles the ledger and archives the worker's output; the tab came
-  from `terminal create`, so an explicit `terminal close --tab` removes it. Do the same after
-  a failed report.
-- `question`: reply, then keep waiting.
-- `escalation`, two consecutive slices with no message from a worker, or a missing or empty
-  report: read its terminal. A worker still producing output needs more time. A dead one:
-  stop it, release it, close its tab, then retry it once in a fresh terminal on the fallback
-  model with the same task text.
+Require a successful completion outcome and a non-empty report from the active attempt for each
+completed lens. A settled dispatch with a failed outcome or missing report permits one retry, subject
+to Orca Orchestration's recovery requirements. Preserve the original review input and report path.
+Use the fallback model in a fresh sandboxed terminal when a worker must be replaced. Retry execution
+failures on the same Orca Task; record any new identities returned for follow-up work.
+
+Follow Orca Orchestration for startup uncertainty, stopped workers, retry eligibility, and cleanup.
+Respect its recovery limits even when the review still has a retry available. A question or
+permission prompt requires resolution, not automatic replacement. Answer within the approved review
+scope or ask the human when their decision or authorisation is required. Silence or a timeout alone
+does not prove failure or exit.
 
 Record which lenses completed. A stream that lost one worker continues single-lens, and the
 synthesis says so. A stream that lost both is reported missing, never fabricated. If all four
 failed, stop and report the errors.
 
-Synthesis reads the report files, not the tabs. Close every tab before it.
+Synthesis reads the report files. Resolve worker resources through Orca Orchestration before
+synthesis. Use `orca-cli` to clean up separately recorded run-owned terminals only after confirming
+their identity and that no worker still uses them. Respect retention and ownership refusals. Record
+retained or unresolved resources rather than treating them as closed.
 
 ## Phase 4: Synthesise
 

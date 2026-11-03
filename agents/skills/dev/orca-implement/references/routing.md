@@ -105,8 +105,16 @@ Rules:
 
 ## Worker boot
 
-Boot workers with `terminal create` and an explicit `--command`, never `worker-start`. Orca command
-syntax comes from the guides loaded at intake through the `orchestration` skill.
+Launch every worker through the sandbox commands below, preserving the required nono profile
+and filesystem grants. Use Orca Orchestration to register and manage the sandboxed worker.
+Load the `orchestration` skill for worker assignment, messages, follow-ups, recovery, and cleanup.
+Do not substitute Orca's normal agent launch or an agent's built-in sandbox for these commands.
+
+Apply these requirements to every process started for follow-ups, retries, or resume. Continue an
+existing worker only through operations that preserve its sandbox. If an operation can automatically
+reopen a worker outside nono, assign the work to a terminal launched through these commands instead.
+A liveness check alone does not make automatic reopening safe. Resolve uncertain liveness through
+Orca Orchestration before launching a replacement.
 
 - Substitute model and effort from the tables. Title each terminal `<role>:<slug>`.
 - The `nclaude` and `ncodex` aliases run workers through the `my-claude` and `my-codex` nono
