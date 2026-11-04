@@ -1,16 +1,10 @@
 ---
 name: simplify-code
 description: >-
-  Review recently changed code and propose quality cleanups WITHOUT changing
-  behaviour: removing duplication, cutting needless complexity, fixing
-  inefficiencies, raising fix-altitude (deep fixes over symptom patches), and cutting
-  tests that protect nothing. Use when the user wants to simplify, clean up,
-  tidy, declutter, refactor for clarity, DRY up / deduplicate, reduce nesting
-  or complexity, prune tests, or polish a diff, branch, or PR before
-  committing. Also aligns the diff with project convention files
-  (CLAUDE.md/AGENTS.md). Proposes edits as diffs in crit; never edits files
-  unasked. Quality only: does NOT hunt for correctness bugs; that's the job of
-  a code review.
+  Propose behaviour-preserving cleanups to the current diff as reviewable
+  diffs in crit: reuse, simplification, efficiency, altitude, conventions,
+  and test pruning. Quality only; use a code review for bugs.
+disable-model-invocation: true
 ---
 
 # Simplify code
@@ -48,7 +42,7 @@ Every subagent spawn uses this table. Choose the column for the harness you are 
 
 | Role                      | Claude                                                 | Codex                              | Other harness   |
 | ------------------------------------------- | ------------------------------------------------------ | ---------------------------------- | --------------- |
-| Angle reviewers, large diffs only (Phase 1) | Fable, `<EFFORT>`; Opus if the Fable limit is reached | gpt-6-astra, `<EFFORT>` reasoning effort | session default |
+| Angle reviewers, large diffs only (Phase 1) | Opus, `<EFFORT>`                                       | gpt-6-astra, `<EFFORT>` reasoning effort | session default |
 
 If the harness cannot set model or effort per subagent, spawn with defaults. The table is an upgrade, not a requirement. Never fail a pass over it.
 
@@ -62,8 +56,9 @@ default.
 Fan out only when the diff is large: more than 1000 changed lines or more
 than 10 files. Then, if your harness supports subagents, launch two agents at
 once on the model from the table above. Give one the diff and the four code
-angles, Reuse through Altitude. Give the other the diff and the Conventions
-and Tests angles. They read different material. If the harness has no
+angles, Reuse through Altitude. Give the other the diff, the Conventions
+and Tests angles, and the session instructions that bear on the changed
+code. They read different material. If the harness has no
 subagents, walk the angles yourself and say in the summary that a large diff
 got a single pass.
 
