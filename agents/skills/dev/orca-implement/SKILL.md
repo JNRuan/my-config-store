@@ -807,6 +807,33 @@ Use one fix task for a wave by default. Split a wave only when the fixes are ind
 saved execution time exceeds the coordination cost. Add dependencies between split tasks when their
 changes are not independent.
 
+### Simplify the integrated build
+
+After every build-owned task has merged, run one simplify task over the integrated branch when
+`run_complexity` is `medium` or above. At `low`, record `simplify skipped: run complexity policy`
+under Decisions in `summary.md` and start Phase 6.
+
+The simplify task is a fix task with these differences:
+
+1. Title it `{seq}-simplify` and record `origin_phase` as `simplify`.
+2. Route it through the Simplify row in `references/routing.md`, not a builder row.
+3. Write its agent task with origin `simplify`. Its Objective & scope instructs the worker to:
+   - run `/{simplify-skill} <BASE_SHA>..HEAD`, excluding `.agents/orca/orchestration/`;
+   - launch the skill's four angle agents on the model and effort the Simplify row names;
+   - keep every pinned contract as written, and report an Altitude fix that would change one
+     instead of applying it;
+   - commit the applied fixes in the recorded commit style.
+
+   Copy every pinned contract from the plan into its Contracts section. Its verification
+   requirements are the applicable project checks.
+4. Dispatch, collect, verify, merge, and clean up through the normal build flow.
+5. When the worker fails, or verification still fails after three verify-to-fix cycles, remove its
+   worktree, delete its branch with `git branch -D`, record the failure under Incidents in
+   `summary.md`, and start Phase 6. A failed simplify task skips the retry protocol.
+
+Record each Altitude fix the worker reported without applying under Remaining in `summary.md` as
+deferred work.
+
 ## Phase 6: Whole-run verification
 
 Whole-run verification checks the integrated HEAD against the acceptance criteria and decides
@@ -843,8 +870,9 @@ If the retry fails, verify each in-scope criterion yourself and record the missi
 
 Read the report. Confirm each `not met` and `not verifiable here` entry against the code before
 acting on it. Treat each confirmed `not met` criterion or constraint as a verification failure.
-Confirm each reported unrequested change against the plan. Revert a confirmed one through a fix
-task, or keep it and record the reason under Decisions in `summary.md`. Carry forward the verdict
+Confirm each reported unrequested change against the plan. Treat a change from the simplify task's
+merge as requested. Revert a confirmed one through a fix task, or keep it and record the reason
+under Decisions in `summary.md`. Carry forward the verdict
 and evidence of every criterion and constraint outside the pass's scope. Record the evidence for
 every criterion and constraint in `summary.md`.
 

@@ -10,7 +10,7 @@ Braces mark what the coordinator fills. Text outside braces stays as written.
 run: {RUN}
 task: {seq}-{slug}
 kind: {build | fix}
-origin: {plan | verification | review r<ROUND> | qa | conflict}
+origin: {plan | simplify | verification | review r<ROUND> | qa | conflict}
 created: {ISO 8601 UTC}
 modified: {ISO 8601 UTC}
 ---

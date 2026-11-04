@@ -302,6 +302,7 @@ Use Orca Orchestration to recover worker identity after a restart. Treat termina
 not proof of identity or ownership.
 
 A fix task uses `"kind": "fix"` and records the phase and round that produced it.
+The simplify task records `origin_phase` as `simplify` and `origin_round` as null.
 
 `worker_attempt` is 1 for the original worker and 2 for its single replacement. `verify_fix_cycles`
 counts cycles for the current attempt. When moving from attempt 1 to 2, reset `verify_fix_cycles`

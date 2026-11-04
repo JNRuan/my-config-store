@@ -8,6 +8,7 @@ names.
 | ---------------------- | ------------------------- | ----------------------- |
 | Code review lens       | `{code-review-skill}`     | `code-review-local`     |
 | Security review lens   | `{security-review-skill}` | `security-review-local` |
+| Simplify pass          | `{simplify-skill}`        | `simplify`              |
 | Adversarial QA         | `{adversarial-qa-skill}`  | `adversarial-review`    |
 | Browser verification   | `{browser-skill}`         | `agent-browser`         |
 | Test design            | `{test-skill}`            | `writing-useful-tests`  |

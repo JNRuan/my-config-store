@@ -51,6 +51,8 @@ assignments. This README describes roles and phases without repeating them.
 7. **Build**: registers the build tasks and their dependencies, then dispatches workers as
    dependencies merge.
 8. **Verify and integrate**: checks, fixes, and merges each task before releasing its dependants.
+   After the last merge, a `medium`-or-above run sends one Claude worker to run the built-in
+   `/simplify` over the integrated branch, through the same verify-and-merge flow.
 9. **Whole-run verification**: runs the project checks, sends a routed read-only worker to verify
    every acceptance criterion, turns unmet criteria into fix tasks, and records any remaining gaps.
    Later passes re-check only the criteria a fix affected.
