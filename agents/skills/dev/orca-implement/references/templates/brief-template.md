@@ -30,10 +30,14 @@ Seek human approval before materially departing from supplied designs.
 Explain what is wrong or missing today, for whom, and the intended outcome. Use the source's terms.
 Show a concrete current-to-intended example when it helps the human assess the change.
 
-Assess whether diagrams would clarify the journey, process, system context, or scope, and include
-them where useful. Reuse supplied diagrams and design screenshots where adequate. Add missing
-visual explanations only when useful. Label supplied designs, observed screenshots, and proposed
-mockups distinctly, with their provenance. A mockup is not evidence of running behaviour.
+Use diagrams when they make the change easier to understand than prose alone. Where useful,
+compare the current situation with the intended outcome for a journey, process, system context,
+or scope. Use paired views or one annotated view, with clear labels and consistent names.
+For a new capability, show what is missing today rather than inventing a current implementation.
+
+Reuse supplied diagrams and design screenshots where adequate. Add missing visual explanations
+only when useful. Label supplied designs, observed screenshots, and proposed mockups distinctly,
+with their provenance. A mockup is not evidence of running behaviour.
 
 ## Requirements and acceptance criteria
 

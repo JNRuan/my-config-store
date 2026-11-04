@@ -23,11 +23,15 @@ and genuine unresolved details. Reuse settled choices and adequate visuals. Crea
 work only to resolve a gap or explain something the supplied material leaves unclear. Seek human
 approval before materially departing from a supplied design.
 
-Explain how the approach works and why it meets the requirements. Assess which diagrams help and
-include relevant component boundaries, data flows, sequences, state transitions, or task
-dependencies. Show current and proposed interface or type shapes when their change matters.
-Include design screenshots or mockups where they help assess the implementation. Label supplied,
-observed, and proposed material with its provenance. A mockup is not runtime verification.
+Explain how the approach works and why it meets the requirements. Use diagrams where they help
+assess the design. Compare existing and proposed component boundaries, data flows, sequences,
+or state transitions when the difference matters. Use paired views or one annotated view, with
+clear labels and consistent names. Include task dependencies only when a diagram clarifies the
+execution order. Choose only the views the change needs.
+
+Show current and proposed interface or type shapes when their change matters. Include design
+screenshots or mockups where they help assess the implementation. Label supplied, observed,
+and proposed material with its provenance. A mockup is not runtime verification.
 
 For each significant risk, give a concrete failure scenario, mitigation, and observable check.
 State what evidence would invalidate the approach. Verify repository-dependent mitigations with

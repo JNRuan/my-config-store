@@ -24,6 +24,9 @@ The task is `plan-fact-check-<CHECK>` and the report is `<RUNDIR>/scratch/fact-c
 Read <PLAN_PATH> and verify every checkable claim against the repository: file paths, path:line
 citations, commands, symbols, contracts, and claimed mitigation mechanisms. Verify that the coverage
 mapping lists every requirement, criterion, and task, and that each referenced ID exists.
+Include current-state claims made in diagrams. Report contradictions between diagrams and the
+plan's written approach or contracts. Treat clearly labelled proposed behaviour as a design,
+not a claim about existing repository behaviour.
 <SCOPE>
 Report mismatches only. Do not assess reasoning, decomposition, scope, or run complexity. HTML
 layout does not change the claims to check. Write the full report to
