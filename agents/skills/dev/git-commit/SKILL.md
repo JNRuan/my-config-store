@@ -34,7 +34,7 @@ When the message needs a body or trailers, use a heredoc so blank lines and quot
 git commit -m "$(cat <<'EOF'
 <subject>
 
-<body bullets>
+<body>
 
 <trailers>
 EOF
@@ -55,7 +55,9 @@ Decide which grammar the repository uses, in this order:
 ## Shared message rules
 
 - **Subject ≤72 chars total**, imperative mood ("add", not "added"), lowercase first letter unless the project's log shows otherwise, no trailing period.
-- **Add a body only when the subject can't carry the why**: bullet points only, ≤500 chars total, grouped under topic subheadings where useful, lines wrapped at ~72 chars (line width only; a bullet may span several wrapped lines).
+- **Default to a subject only.** Before adding a body, ask whether it provides important context
+  the subject cannot convey. If not, omit it. Keep any body within 500 characters total, wrapped
+  at ~72 characters per line. The limit is a ceiling, not a target.
 - **Trailers** for non-obvious metadata (tickets, co-authors); their exact form is style-specific — see the reference.
 - **Mark breaking changes**; the marking mechanism differs per style — see the reference.
 

@@ -161,6 +161,22 @@ calls, files, states, and boundaries the reviewer needs. One visual is usually e
 - Include implementation details only when they help explain the change.
 - Prefer one strong sentence over two weak ones.
 
+## Editorial review
+
+Before returning or publishing a PR description, have a subagent review the final title and body,
+including any material retained from an existing PR.
+
+1. Give it the draft, repository PR template, and this skill's structure and content rules.
+   Leave out the implementation conversation so it reads the description as a fresh reviewer.
+2. Ask it to load `writing-standards`, `technical-writing`, and `unslop`. Check whether the purpose,
+   changes, risks, and validation are understandable without the session history. Cut repetition
+   and needless detail while preserving important facts, links, and required sections.
+3. Have it return revised wording and flag unclear claims rather than invent explanations.
+   It reviews prose only and must not edit files or publish the PR.
+
+Resolve flagged questions and verify the revised wording against the diff and recorded evidence
+before using it.
+
 ## PR signoff
 
 Append this sign-off as the final lines of the PR body:
