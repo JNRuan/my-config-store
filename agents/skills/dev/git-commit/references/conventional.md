@@ -22,17 +22,16 @@ Breaking change, scoped:
 feat(api)!: send an email to the customer when a product is shipped
 ```
 
-Body grouped under subheadings, with footers:
+With body and footers:
 
 ```
 fix: prevent racing of requests
 
-Behaviour:
-- add request id + reference to the latest request
-- dismiss incoming responses other than from the latest request
+A slow response could arrive after a newer request and overwrite its
+result. Each request now carries an id, and a response from any
+request other than the latest is dismissed.
 
-Cleanup:
-- remove timeouts that mitigated the race but are now obsolete
+Remove the timeouts that mitigated the race.
 
 Refs: #123
 Ticket: ABC-123
