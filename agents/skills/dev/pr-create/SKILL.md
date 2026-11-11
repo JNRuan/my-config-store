@@ -94,11 +94,14 @@ or fewer bullets.>
 
 <Name anything a reviewer would expect in this PR that was left out on purpose, and why.>
 
+<Name each known issue left unfixed, with the reason.>
+
 ## Evidence
 
 <Include only when the session captured it. Show the behaviour before and after: a screenshot pair
 for a visual change; otherwise the test or command output that failed before and passes now, with
-the test's steps as pseudocode.>
+the test's steps as pseudocode. Reference each image by its absolute local path, with alt text that
+says what it shows.>
 
 ## Test plan
 
@@ -202,7 +205,13 @@ For create mode, write the body to `/tmp/pr-body-{branch-slug}.md` using the Wri
    - **State is `OPEN`** → retain relevant decisions, issue links and validation notes from the
      existing body in the draft, then update its title and body:
      `gh pr edit --title "<title>" --body-file <body-file>`
-3. Report the PR URL.
+
+   When the body references images, add one `--attach <path>` per image to either command, using
+   the same path the body uses. `gh` uploads each file and rewrites its reference. On an update,
+   attach only images that are new or changed.
+3. Read the body back with `gh pr view --json body --jq .body`. Each image reference points at a
+   `user-attachments` URL and no local path remains.
+4. Report the PR URL.
 
 If `gh` is not installed or not authenticated, report it and fall back to Summary-only mode so the
 work isn't lost.
@@ -212,6 +221,7 @@ work isn't lost.
 In summary-only mode, run no push or `gh` create/edit commands. Instead:
 
 - Write the body to `/tmp/pr-body-{branch-slug}.md` using the Write tool.
+- List the local path of each image the body references, so the user can add it in GitHub's editor.
 - Give the user the title, then copy the body to the clipboard with the platform's tool:
   - macOS: `pbcopy < <file>`
   - Linux (Wayland): `wl-copy < <file>`, (X11): `xclip -selection clipboard < <file>`
