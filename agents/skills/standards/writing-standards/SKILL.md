@@ -23,7 +23,8 @@ Pick the genre before you draft. Each genre adds to Orwell's rules:
 
 - **Technical prose**, such as documentation, READMEs, RFCs, instructions, PR descriptions, commit messages, and docstrings on a public API. Load the `technical-writing` skill and apply it. Write positive instructions that state what the reader must do.
 - **Agent documents**, such as skills, agent definitions, and `AGENTS.md` or `CLAUDE.md` files. Load the `writing-for-agents` skill and apply it.
-- **Replies, emails, and code comments.** Orwell's rules alone, unless directed otherwise.
+- **Replies and emails.** Orwell's rules alone, unless directed otherwise.
+- **Code comments.** Load the `writing-useful-comments` skill and apply it.
 - **UI text.** Follow the product's copy guidelines when they exist, then Orwell's rules.
 - **Persuasive writing**, such as essays, blog posts, case studies, marketing copy, and sales pitches. Orwell's rules, with `technical-writing` applied only to passages that describe or explain technology.
 - **Creative writing**, such as fiction, poetry, memoir, scripts, and lyrical prose. Keep intentional ambiguity, cadence, dialogue style, imagery, and character voice where they create a real effect. Remove only language that feels inherited, inflated, evasive, or lazy.

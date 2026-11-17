@@ -61,13 +61,8 @@ a URL as `Title - what it contributed, in about ten words - URL`.
 
 - **Write readable code.** Favour clarity over cleverness: clear names, obvious control flow, and
 plain code even when the idea is inventive.
-- **Comment only what the code cannot say.** Reread each comment and docstring you wrote. It stays
-only when it gives the reader one of these:
-  - a reason that the function definition or code does not explain;
-  - a constraint, invariant, or important trade-off;
-  - a contract the code does not make self-evident, such as side effects;
-  - behaviour forced by a dependency, platform, or protocol you cannot change;
-  - a link to the issue or RFC that explains a constraint.
+- **Follow `writing-useful-comments`.** Load the `writing-useful-comments` skill before you write,
+change, or review a comment or docstring.
 - **Suppress a check only when the rule is wrong.** A lint, type, or formatter suppression stays
 only when the rule it silences is wrong for this code. Otherwise fix the code.
 - **Write general solutions.** Make the code correct for every valid input, not just the case or
