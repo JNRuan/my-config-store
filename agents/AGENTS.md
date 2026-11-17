@@ -97,7 +97,7 @@ alters behaviour, and before you write, change, or review a test.
 a frontier model. Use Luna on Codex and Pi, or Haiku on Claude, at medium or high effort to match
 how broad and open-ended the search is.
 When scouting needs synthesis, such as tracing a flow across modules or explaining how a subsystem
-fits together, use Sol (medium effort) on Codex and Pi, or Sonnet (medium effort) on Claude.
+fits together, use Sol on Codex and Pi, or Sonnet on Claude, at medium or high effort.
 - **Name the model on every Claude spawn.** Subagents and workflow agents inherit the session
 model, so a frontier-model session spawns frontier-model workers by default. Pass an explicit
 model and reasoning effort sized to the subagent's task. Use Fable only when the user or the
