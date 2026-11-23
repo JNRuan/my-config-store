@@ -74,7 +74,10 @@ Invoke `{test-skill}` before you write or change a test.
 1. Existing coverage to run (must still pass): {test files or commands}
 2. Tests to add or update: {behaviours and scenarios, not test code}
 3. Edge cases to cover: {behaviours}
-4. Manual/visual checks: {steps, or `none`}
+4. Manual checks: {steps that need no browser, or `none`}
+
+Check UI behaviour through tests and the project commands. The coordinator runs every browser check
+after merge.
 
 {For a fix task: replace the four items with each finding's exact reproduction, then the applicable
 project checks.}
@@ -95,10 +98,6 @@ Dev server:    {command and port, or `none`}
 Commit style:  {the repository's commit-message convention, from the plan}
 Project rules: {each rule file from the plan's Project rules section, as path and one-sentence
 summary, or `none`}
-Browser: agent-browser, headless, with `AGENT_BROWSER_ARGS="--no-sandbox"` set for every
-agent-browser command
-
-Give the Browser instruction to every subagent that runs a browser.
 
 ## Worktree & branch
 

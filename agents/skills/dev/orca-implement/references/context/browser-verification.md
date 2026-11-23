@@ -16,9 +16,14 @@ Resolve:
 - `<AFFECTED_PAGES>`;
 - `<INTERACTIONS>`;
 - `<EXPECTED_RESULTS>`;
-- `<RUNDIR>`.
+- `<RUNDIR>`;
+- `<PASS>`: the number of browser verifications run so far in this run, plus one.
 
-The subagent runs on the model in `references/routing.md`.
+`<INTERACTIONS>` and `<EXPECTED_RESULTS>` include every in-scope browser check from the plan's task
+verification requirements.
+
+The task is `browser-verification-<PASS>` and the report is
+`<RUNDIR>/scratch/browser-verification-<PASS>.md`.
 
 ## Dispatch template
 
@@ -45,4 +50,7 @@ designs or mockups.
 If the dev server does not start, try at most three times: another port, confirm that .env exists,
 run the recorded install command when a dependency is missing. After the third failure, report
 `not verified: dev server unavailable` with every startup error.
+
+Write the full report to <RUNDIR>/scratch/browser-verification-<PASS>.md. That report and the
+screenshots are the only files you may write. Then report completion.
 ```

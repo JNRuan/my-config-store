@@ -138,7 +138,8 @@ The artifact set is closed. A run writes these and nothing else:
   manifest by `scripts/render-run-page.py` and published for the human when an artifact route is
   available
 - `screenshots/`, browser-verification evidence when applicable
-- `scratch/`, scout, fact-check, planner, critic, acceptance-check, review-lens, and QA reports
+- `scratch/`, scout, fact-check, planner, critic, acceptance-check, browser-verification,
+  review-lens, and QA reports
 
 Browser verification stores raw screenshots when applicable. Its report stays in coordinator
 context. Selected images used by durable human documents are copied into `plan/assets/` and included

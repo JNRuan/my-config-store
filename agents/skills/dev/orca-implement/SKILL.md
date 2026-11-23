@@ -383,6 +383,7 @@ Complete every step in order before Phase 1.
    scratch/plan-pre-critique-r<ROUND>.html    the exact input to each critic round
    scratch/critique-<critic>-r<ROUND>.md      one per critic per round
    scratch/acceptance-check-<PASS>.md         acceptance-criteria check, one per pass
+   scratch/browser-verification-<PASS>.md     browser check, one per pass
    scratch/<claude|codex>-review-r<ROUND>.md  one per code reviewer per round
    scratch/security-<reviewer>-review-r<ROUND>.md
                                               one per security reviewer per round in which
@@ -423,8 +424,8 @@ Run these read-only lenses in parallel:
 - **Discovery**: find project mechanics, tooling commands, `.env` presence, the commit-message
   convention, relevant code locations, and whether `orca.yaml` defines a `scripts.setup` hook and
   what that hook does. Find the project rules: rule files that touch this task, such as `CLAUDE.md`,
-  `AGENTS.md`, `CONTRIBUTING.md`, `CONTEXT.md`, `DESIGN.md`, `ARCHITECTURE.md`, `STYLEGUIDE.md`, or
-  `CONSTITUTION.md`, at any depth. Report their paths, not their contents.
+  `AGENTS.md`, `CONTRIBUTING.md`, `CONTEXT.md`/`GLOSSARY.md`, `DESIGN.md`, `ARCHITECTURE.md`,
+  `STYLEGUIDE.md`, or `CONSTITUTION.md`, at any depth. Report their paths, not their contents.
 - **Comprehension**: establish current behaviour, affected code, and dependencies on existing code.
 - **Test coverage**: find existing coverage that needs adjustment and important gaps to close.
 - **Additional lenses**: add a lens when the task needs evidence not covered above.
@@ -606,8 +607,8 @@ For each planned task, use title `{seq}-{slug}`, set dependencies by owned build
 the builder context's required task-spec values, and use its Orca task spec.
 
 Record every returned task id in `run-state.json` as the build-owned set. This set contains build
-and fix tasks only. Keep scout, fact-check, planner, critic, acceptance-check, and reviewer task ids
-in their phase dispatch records, and the QA task id in the QA record.
+and fix tasks only. Keep scout, fact-check, planner, critic, acceptance-check, browser-verification,
+and reviewer task ids in their phase dispatch records, and the QA task id in the QA record.
 
 ### Dispatch ready tasks
 
@@ -879,7 +880,8 @@ every criterion and constraint in `summary.md`.
 ### Decide browser verification
 
 Set `browser_verification.policy` to `run` in `run-state.json` when the diff touches components,
-pages, layouts, styles, or templates, or when the visual effect is uncertain. Otherwise set it to
+pages, layouts, styles, or templates, when a task's verification requirements list a browser
+check, or when the visual effect is uncertain. Otherwise set it to
 `not_needed`. Browser verification runs in Phase 7 round 1, in parallel with the review lenses.
 
 ### Confirm the review policy
@@ -963,11 +965,10 @@ For each `<ROUND>` from 1 through `<CODE_REVIEW_CAP>`:
    Record any new task and dispatch ids against that reviewer's round record. Collect, and retry a
    failed lens once within the round.
 5. In round 1, when `browser_verification.policy` is `run`, read
-   `references/context/browser-verification.md` and resolve every required value. Start one native
-   subagent in the same wave as the reviewers, on the model from `references/routing.md`. Use the
-   dispatch template and failure policy in `references/context/browser-verification.md`. The browser
-   subagent is not a phase worker. Its report stays in coordinator context. If it produces no
-   report, start it once more.
+   `references/context/browser-verification.md` and resolve every required value. Dispatch the
+   `browser-verification-<PASS>` task to the routed worker in `<WT>` in the same wave as the
+   reviewers, collect, and retry once. If the retry fails, record the browser result as
+   `not verified` with the failure as its reason.
 6. When a retry also fails, record the lens in the round's `missing_lenses` and in the round review,
    and launch a fresh sandboxed worker for it before any later round. If both code-review lenses are
    unavailable, record `no code review` as the stop reason, set `pr_draft` to true, and stop the
@@ -1075,8 +1076,9 @@ When `severe_fix_merged=false`, stop the review loop.
 
 ### Finish code review
 
-1. Clean up reviewer workers through Orca Orchestration and their recorded run-owned terminals
-   through [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
+1. Clean up reviewer and browser-verification workers through Orca Orchestration and their recorded
+   run-owned terminals through
+   [Manage terminals and worktrees](references/orca-mechanics.md#70-manage-terminals-and-worktrees).
 2. If `review_fixes_applied=true`, rerun the Phase 6 project checks and the acceptance check for
    affected criteria against the post-review HEAD. Rerun browser verification only when a fix
    changed UI files, and only for the pages it touched.

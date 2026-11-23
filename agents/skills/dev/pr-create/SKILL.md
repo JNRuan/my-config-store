@@ -157,7 +157,7 @@ calls, files, states, and boundaries the reviewer needs. One visual is usually e
 - If the change breaks existing consumers (removed exports, changed API shapes, renamed public
   interfaces), lead with that in the Risk section, and flag it in the Summary.
 - Open directly with what the change does: the PR is already the context.
-- Use the project's domain terms from `CONTEXT.md` when one exists.
+- Use the project's domain terms from `CONTEXT.md`/`GLOSSARY.md` when one exists.
 - Write in plain prose; don't decorate with bold, emoji, or badges.
 - Lead with the change, not the file. "Statically generated category routes with client-side
   filtering via react-query" adds useful context. "Updated `[[...slug]].tsx`" does not.

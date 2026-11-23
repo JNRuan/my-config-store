@@ -105,8 +105,8 @@ For each task, provide:
 - Contracts: pinned interfaces this task obeys or produces.
 - Constraints and context: patterns, invariants, and background the builder needs.
 - Relevant existing code: files to read first and why, with `path:line` evidence.
-- Verification requirements: existing coverage to run, tests to add or update, edge cases, and
-  manual or visual checks. Describe behaviour rather than test code. Use `{test-skill}` to decide
+- Verification requirements: existing coverage to run, tests to add or update, edge cases, manual
+  checks, and browser checks. The coordinator runs browser checks after merge, not the builder. Describe behaviour rather than test code. Use `{test-skill}` to decide
   which tests are useful.
 - Covers: the acceptance criteria this task satisfies.
 

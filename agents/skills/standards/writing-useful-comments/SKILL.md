@@ -15,9 +15,11 @@ it.
 
 ## When to comment
 
-First try to make the code say it: rename, extract, tighten a type, or add an assertion or a test.
-A rule that must hold belongs where breaking it fails the build. Make these changes in code your
-task already touches. Elsewhere, propose them.
+First try to make the code say it: rename, extract, or tighten a type. A rule that must hold
+belongs where breaking it fails the build, and "talk to X before changing this" belongs in a
+code-owners file. Make these changes in code your task already touches. Elsewhere, propose them.
+Surprising behaviour in code you own is the clearest case for one of these changes. Name the
+symbol that needs it.
 
 A comment stays only when it gives the next reader one of these:
 
@@ -33,8 +35,13 @@ Everything else belongs somewhere else:
   condition, a match, or a signature adds nothing.
 - **The task, the fix, the callers, and what the code used to do.** The commit and the PR
   description hold these. In the file they stop being true as the code changes.
+- **Old code and section banners.** Git keeps deleted code. Names and the file layout show the
+  grouping a banner announces.
 
 If deleting the comment would confuse nobody, delete it.
+
+Licence headers and comments a tool reads, such as formatter, linter, and build directives,
+follow the project's own rules.
 
 ## How to write it
 
@@ -68,6 +75,14 @@ If deleting the comment would confuse nobody, delete it.
 ## Existing comments
 
 - When your change makes a comment false, fix or delete it in the same change.
+- For each comment in scope, check its claim before you keep or reword it. Trace the symbol it
+  names, and read the commit that added it with `git log -S` or `git blame`. A claim that no
+  longer holds goes. A claim that holds becomes the constraint, written as above. When you cannot
+  tell, keep the comment and say so in your reply.
+- Treat `IMPORTANT`, `do not remove`, and `fine for now` as a prompt for that check. The label
+  alone proves nothing.
+- A comment that defends a workaround points at code to fix. Fix the workaround, or propose the
+  fix, rather than rewording its defence.
 - When asked to fix one comment, fix that one. Leave the others in the file as they are, including
   those in a style you would not use.
 

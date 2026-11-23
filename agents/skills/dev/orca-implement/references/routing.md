@@ -10,10 +10,8 @@ These roles follow the runtime that runs `/orca-implement`.
 | Role                 | Claude coordinator   | Codex coordinator      | Effort (Claude / Codex) | Notes                                                                                             |
 | -------------------- | -------------------- | ---------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
 | Coordinator          | the invoking session | the invoking session   | session / session       | never writes implementation code; trivial-fix and trivial-merge-conflict exceptions only          |
-| Browser verification | `sonnet` subagent    | `gpt-6.1-sol` subagent | `medium` / `medium`     | mapped browser skill (`references/skill-map.md`), headless; native subagent, not an Orca terminal |
 
 
-This browser row governs the round 1 browser verification in Phase 7 and its scoped reruns.
 Worker-invoked skills own the routing of any subagents they spawn.
 
 ## Pinned roles
@@ -26,6 +24,7 @@ Identical regardless of coordinator.
 | Scouts                        | Codex `gpt-6-luna`                                                                                                    | `high`                  | —                                                                                | read-only; Orca terminals in `<WT>`; one report per lens                                                                                                                                                     |
 | Plan fact check               | Codex `gpt-6-luna`                                                                                                    | `high`                  | —                                                                                | read-only; Orca terminal in `<WT>`; verifies checkable plan claims only; runs before critique and for changed claims after revisions                                                              |
 | Acceptance check              | Codex `gpt-6.1-sol`                                                                                                   | `high`                  | `Claude opus` at `high`                                                          | read-only; Orca terminal in `<WT>`; verifies each acceptance criterion against the integrated HEAD; one report per pass                                                                                      |
+| Browser verification          | Codex `gpt-6.2-sol`                                                                                                   | `medium`                | —                                                                                | Orca terminal in `<WT>`; boot with `-c 'service_tier="fast"'`; Phase 7 round 1 and scoped reruns; mapped browser skill (`references/skill-map.md`), headless                                                 |
 | Planner, `low`/`medium` tier  | Claude `opus`                                                                                                         | `high`                  | coordinator drafts the plan                                                      | single planner; a complete plan from the brief; writes only its own draft file                                                                                                                               |
 | Planners, `high`/`xhigh` tier | Claude `opus` + Codex `gpt-6.1-sol`                                                                                   | `high` all              | continue with the surviving planner                                              | independent complete plans from the brief; each writes only its own draft file                                                                                                                               |
 | Plan critics                  | Claude `fable` + Codex `gpt-6-astra`                                                                                  | `xhigh` all             | continue with the surviving critic                                               | both each round; repeat after material plan changes per Phase 3; critique adversarially; read-only by instruction                                                                                                                                       |
@@ -140,10 +139,11 @@ nono run --profile my-claude --allow-cwd --allow-gpu --allow "<RUNDIR>" -- \
   claude --model <opus|fable|sonnet> --effort <effort> --permission-mode bypassPermissions
 ```
 
-**Codex in `<WT>`** (scout, plan fact check, planner, critic, reviewer, acceptance check):
+**Codex in `<WT>`** (scout, plan fact check, planner, critic, reviewer, acceptance check, browser
+verification):
 
 ```bash
-ncodex --model <gpt-6-luna|gpt-6-astra|gpt-6.1-sol> -c 'model_reasoning_effort="<effort>"' \
+ncodex --model <gpt-6-luna|gpt-6-astra|gpt-6.1-sol|gpt-6.2-sol> -c 'model_reasoning_effort="<effort>"' \
   --sandbox danger-full-access --ask-for-approval never
 ```
 

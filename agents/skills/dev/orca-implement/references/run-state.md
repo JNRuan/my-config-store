@@ -113,8 +113,8 @@ remains `dispatched`. Preserve the original pipeline identity and dependency edg
 
 ## Phase-dispatch statuses
 
-Scout, fact-check, planner, critic, acceptance-check, reviewer, and security-reviewer dispatch
-records, and `qa.dispatch_status`, use:
+Scout, fact-check, planner, critic, acceptance-check, browser-verification, reviewer, and
+security-reviewer dispatch records, and `qa.dispatch_status`, use:
 
 - `pending`;
 - `dispatched`;
@@ -189,6 +189,7 @@ Phase 0 creates the manifest with these top-level fields:
     "scouts": [],
     "fact_checks": [],
     "acceptance_checks": [],
+    "browser_verifications": [],
     "planners": [],
     "critics": [],
     "code_reviewers": [],
@@ -340,8 +341,8 @@ Each entry in `phase_dispatches` contains:
 ```
 
 Use `round` for critic and reviewer rounds. Leave it `null` for unrounded roles. Record a fact
-check's `role` as `plan-fact-check-<CHECK>` and an acceptance check's `role` as
-`acceptance-check-<PASS>`.
+check's `role` as `plan-fact-check-<CHECK>`, an acceptance check's `role` as
+`acceptance-check-<PASS>`, and a browser verification's `role` as `browser-verification-<PASS>`.
 
 Use the build-task record's identity rules for active tasks, follow-ups, superseded dispatches, and
 terminal metadata. Preserve each role and round's report path across its permitted recovery.
