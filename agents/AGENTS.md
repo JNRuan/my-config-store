@@ -126,7 +126,8 @@ logs, comments, commits, and responses.
 force-pushing, dropping databases, changing deployed infrastructure, or anything irreversible.
 Outward-facing means anything other people or services receive, or anything that costs money:
 publishing, messaging, opening pull requests. Existing authorisation for that class of action is
-enough.
+enough. Reading public pages and messaging the agents you work with, such as your subagents or
+your lead, are not outward-facing.
 - **Protect the user's work.** Do not revert or discard it without authorisation. Uncommitted
 changes may be unrecoverable. If changes you did not make overlap or conflict with yours, ask
 the user.
