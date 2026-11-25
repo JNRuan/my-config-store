@@ -810,9 +810,7 @@ changes are not independent.
 
 ### Simplify the integrated build
 
-After every build-owned task has merged, run one simplify task over the integrated branch when
-`run_complexity` is `medium` or above. At `low`, record `simplify skipped: run complexity policy`
-under Decisions in `summary.md` and start Phase 6.
+After every build-owned task has merged, run one simplify task over the integrated branch.
 
 The simplify task is a fix task with these differences:
 
@@ -821,8 +819,13 @@ The simplify task is a fix task with these differences:
 3. Write its agent task with origin `simplify`. Its Objective & scope instructs the worker to:
    - run `/{simplify-skill} <BASE_SHA>..HEAD`, excluding `.agents/orca/orchestration/`;
    - launch the skill's four angle agents on the model and effort the Simplify row names;
-   - keep every pinned contract as written, and report an Altitude fix that would change one
-     instead of applying it;
+   - after the simplify fixes are applied, launch two subagents on the same model and effort. One
+     loads `{test-skill}` and fixes the tests, the other loads `{comment-skill}` and fixes the
+     comments;
+   - keep each pinned contract that code outside `<BASE_SHA>..HEAD`, an external caller, or stored
+     data depends on, or whose shape the brief or plan sets on purpose so that a change would clash
+     with their intent, and report an Altitude fix that would change one instead of applying it;
+   - simplify any other pinned contract along with its code, and report each one changed;
    - commit the applied fixes in the recorded commit style.
 
    Copy every pinned contract from the plan into its Contracts section. Its verification
@@ -833,7 +836,7 @@ The simplify task is a fix task with these differences:
    `summary.md`, and start Phase 6. A failed simplify task skips the retry protocol.
 
 Record each Altitude fix the worker reported without applying under Remaining in `summary.md` as
-deferred work.
+deferred work. Record each contract the worker changed under Decisions in `summary.md`.
 
 ## Phase 6: Whole-run verification
 

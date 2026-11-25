@@ -1,18 +1,18 @@
 ---
-name: simplify-code
+name: simplify-code-report
 description: >-
   Propose behaviour-preserving cleanups to the current diff as reviewable
   diffs in crit: reuse, simplification, efficiency, altitude, conventions,
-  and test pruning. Quality only; use a code review for bugs.
+  tests, and comments. Quality only; use a code review for bugs.
 disable-model-invocation: true
 ---
 
-# Simplify code
+# Simplify code report
 
 Improve the quality of recently changed code without changing its behaviour.
 Review the diff for **reuse, simplification, efficiency, altitude,
-conventions, and tests** issues, then propose the fixes as diffs. This is a
-quality pass, **not a bug hunt**, and it edits nothing unasked.
+conventions, tests, and comments** issues, then propose the fixes as diffs.
+This is a quality pass, **not a bug hunt**, and it edits nothing unasked.
 
 ## Goal
 
@@ -48,17 +48,17 @@ If the harness cannot set model or effort per subagent, spawn with defaults. The
 
 Everything else, including the default single pass and Phases 2 and 3, runs in your own context on the session model.
 
-## Phase 1: Review (six angles)
+## Phase 1: Review (seven angles)
 
-Walk the six angles below yourself, in one pass, in this context. That is the
+Walk the seven angles below yourself, in one pass, in this context. That is the
 default.
 
 Fan out only when the diff is large: more than 1000 changed lines or more
 than 10 files. Then, if your harness supports subagents, launch two agents at
 once on the model from the table above. Give one the diff and the four code
-angles, Reuse through Altitude. Give the other the diff, the Conventions
-and Tests angles, and the session instructions that bear on the changed
-code. They read different material. If the harness has no
+angles, Reuse through Altitude. Give the other the diff, the Conventions,
+Tests, and Comments angles, and the session instructions that bear on the
+changed code. They read different material. If the harness has no
 subagents, walk the angles yourself and say in the summary that a large diff
 got a single pass.
 
@@ -66,7 +66,8 @@ For each finding record:
 
 - `file` and `line`;
 - a one-line `summary`;
-- the cost: what is duplicated, wasted, harder to maintain, or protects nothing;
+- the cost: what is duplicated, wasted, harder to maintain, misleading, or
+  protects nothing;
 - a severity of `low`, `med`, or `high` for how much it hurts maintainability;
 - the proposed edit as a unified diff with enough context to apply it.
 
@@ -108,45 +109,18 @@ convention file applies, return nothing for this angle.
 
 ### Tests
 
-Scope: every test the diff adds or changes. Do not review tests the diff
-leaves alone, and do not propose new tests.
+Load the `writing-useful-tests` skill and review every test the diff adds or
+changes against it. Propose each fix it calls for, including a cut, a merge,
+a rewrite, or a test for a break the diff leaves unprotected. Leave tests the
+diff does not touch alone.
 
-Keep a test only when it catches a failure that reading the code would not
-catch and that no other test catches. For each test, name the failure it
-guards against. If you cannot, or another test guards the same failure,
-propose cutting it.
+### Comments
 
-Keep a test that covers:
-
-- the main path of a public behaviour;
-- a failure path with an observable effect: an error, a rejection, a fallback,
-  a refusal;
-- a boundary or branch: an empty input, a limit, an off-by-one, a comparison,
-  a regex;
-- a bug this change fixes, so the bug cannot return;
-- a contract between modules that a change on either side would break.
-
-Propose cutting a test that:
-
-- repeats another test's path with a different literal, and the literal
-  exercises no new branch; propose merging into one parametrised case instead
-  of two tests when both inputs matter;
-- asserts what the type checker, the compiler, or the framework already
-  guarantees;
-- tests a trivial unit in isolation: a getter, a constructor setting a field,
-  a wrapper that forwards to what it wraps, a constant, a one-line helper
-  whose calling path is already tested;
-- asserts on the test's own setup: a mock returning what the test told it to
-  return, a mock called with the arguments the test passed in;
-- pins implementation rather than behaviour: internal call order, private
-  state, an exact log message, a snapshot no reader could verify by eye;
-- mocks the unit under test, so the code the test names never runs;
-- cannot fail: no assertion, an assertion on a constant, or `expect(true)`.
-
-Report each finding with the test name, the verdict `cut` or `merge`, the
-failure it was meant to guard, and which kept test already guards it. When a
-test file is small and every test in it catches a distinct failure, return
-nothing for that file. When in doubt, keep the test and say why.
+Load the `writing-useful-comments` skill and review against it every comment
+and docstring the diff adds or changes, plus every existing comment the diff
+makes false. Propose each fix it calls for, including a deletion, a rewrite,
+a change to the code that makes the comment unnecessary, or a comment for a
+constraint the diff adds that the code does not show.
 
 ## Phase 2: Consolidate the findings
 
@@ -196,7 +170,7 @@ one in place.
 ### Without crit
 
 When crit is unavailable, write the same content as a Markdown report to
-`.agents/simplify-code-reviews/{yyyymmdd-hhmm}-{branch-slug}.md` at the
+`.agents/simplify-code-reports/{yyyymmdd-hhmm}-{branch-slug}.md` at the
 repository root, creating the directory if needed. Group findings by file,
 highest severity first, each with `file:line`, angle, summary, cost, and diff,
 followed by the summary sections from step 2. Tell the user the path and

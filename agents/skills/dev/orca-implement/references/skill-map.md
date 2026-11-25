@@ -12,5 +12,6 @@ names.
 | Adversarial QA         | `{adversarial-qa-skill}`  | `adversarial-review`    |
 | Browser verification   | `{browser-skill}`         | `agent-browser`         |
 | Test design            | `{test-skill}`            | `writing-useful-tests`  |
+| Comment quality        | `{comment-skill}`         | `writing-useful-comments` |
 | Human review interface | `{human-review-skill}`    | `crit`                  |
 | PR creation            | `{pr-skill}`              | `pr-create`             |
